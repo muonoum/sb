@@ -7,7 +7,6 @@ import sb/field.{Field}
 import sb/inspect
 import sb/kind
 import sb/options
-import sb/reset
 import sb/source
 import sb/task.{type Task, Task}
 import sb/value
@@ -18,22 +17,10 @@ pub fn main() -> Nil {
   let string = value.String("str")
   let object = source.Literal(value.Object([#("en", strings), #("to", string)]))
 
-  let radio1 = kind.Radio(None, options.SingleSource(reset.new(Ok(object), [])))
-
-  let radio2 =
-    kind.Radio(
-      None,
-      options.SingleSource(reset.new(Ok(source.Reference("1")), ["1"])),
-    )
-
-  let checkbox1 =
-    kind.Checkbox([], options.SingleSource(reset.new(Ok(object), [])))
-
-  let checkbox2 =
-    kind.Checkbox(
-      [],
-      options.SingleSource(reset.new(Ok(source.Reference("1")), ["1"])),
-    )
+  let radio1 = kind.Radio(None, options.from_source(object))
+  let radio2 = kind.Radio(None, options.from_source(source.Reference("1")))
+  let checkbox1 = kind.Checkbox([], options.from_source(object))
+  let checkbox2 = kind.Checkbox([], options.from_source(source.Reference("1")))
 
   let task =
     Task(

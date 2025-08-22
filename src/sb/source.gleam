@@ -8,6 +8,13 @@ pub type Source {
   Reference(String)
 }
 
+pub fn refs(source: Source) -> List(String) {
+  case source {
+    Literal(..) | Loading(..) -> []
+    Reference(id) -> [id]
+  }
+}
+
 pub fn evaluate(source: Source, scope: Scope) -> Result(Source, Error) {
   case source {
     Loading(load) -> load()

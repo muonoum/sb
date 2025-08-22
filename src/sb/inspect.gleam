@@ -59,16 +59,12 @@ fn multiple_selected(selected: List(Choice)) -> String {
 }
 
 fn inspect_options(options: Options) -> String {
-  case options {
-    options.SingleSource(source) -> inspect_source(source)
+  case options.sources(options) {
+    [source] -> inspect_source(source)
 
-    options.SourceGroups(groups) -> {
-      let groups = {
-        use options.Group(label, source) <- list.map(groups)
-        "Group(" <> label <> " " <> inspect_source(source) <> ")"
-      }
-
-      "Groups(" <> string.join(groups, ",") <> ")"
+    sources -> {
+      list.map(sources, inspect_source)
+      |> string.join("|")
     }
   }
 }

@@ -9,13 +9,35 @@ import sb/scope.{type Scope}
 import sb/source.{type Source}
 import sb/value.{type Value}
 
-pub type Options {
+pub opaque type Options {
   SingleSource(Reset(Result(Source, Error)))
   SourceGroups(List(Group))
 }
 
 pub type Group {
   Group(label: String, source: Reset(Result(Source, Error)))
+}
+
+pub fn from_source(source: Source) -> Options {
+  SingleSource(reset.new(Ok(source), source.refs(source)))
+}
+
+pub fn from_groups(groups: List(#(String, Source))) -> Options {
+  SourceGroups({
+    use #(label, source) <- list.map(groups)
+    Group(label:, source: reset.new(Ok(source), source.refs(source)))
+  })
+}
+
+pub fn sources(options: Options) -> List(Reset(Result(Source, Error))) {
+  case options {
+    SingleSource(source) -> [source]
+
+    SourceGroups(groups) -> {
+      use Group(_label, source) <- list.map(groups)
+      source
+    }
+  }
 }
 
 pub fn reset(options: Options, refs: Set(String)) -> Options {
