@@ -10,9 +10,34 @@ import sb/field
 import sb/kind.{type Kind}
 import sb/options.{type Options}
 import sb/reset.{type Reset}
+import sb/scope.{type Scope}
 import sb/source.{type Source}
 import sb/task.{type Task}
 import sb/value.{type Value}
+
+pub fn scope(scope: Scope) -> Scope {
+  {
+    ansi.grey("<< ")
+    <> dict.to_list(scope)
+    |> list.map(fn(pair) {
+      let #(id, value) = pair
+
+      ansi.green(id)
+      <> ansi.grey("=")
+      <> {
+        case value {
+          Error(error) -> ansi.red(string.inspect(error))
+          Ok(value) -> inspect_value(value)
+        }
+      }
+    })
+    |> string.join(" ")
+    <> ansi.grey(" >>")
+  }
+  |> io.println
+
+  scope
+}
 
 pub fn task(task: Task) -> Task {
   dict.map_values(task.fields, fn(id, field) {
@@ -58,7 +83,7 @@ fn multiple_selected(selected: List(Choice)) -> String {
     list ->
       "["
       <> list.map(list, inspect_choice)
-      |> string.join(",")
+      |> string.join(" ")
       <> "]"
   }
 }
@@ -86,7 +111,7 @@ fn inspect_source(source: Reset(Result(Source, Error))) -> String {
 pub fn inspect_value(value: Value) -> String {
   case value {
     value.List(list) ->
-      "#[" <> list.map(list, inspect_value) |> string.join(",") <> "]"
+      "#[" <> list.map(list, inspect_value) |> string.join(" ") <> "]"
 
     value.Object(pairs) -> {
       let pairs = {
@@ -94,7 +119,7 @@ pub fn inspect_value(value: Value) -> String {
         key <> "=" <> inspect_value(value)
       }
 
-      "#{" <> string.join(pairs, ",") <> "}"
+      "#{" <> string.join(pairs, " ") <> "}"
     }
 
     value.String(string) -> ansi.cyan(string)

@@ -1,7 +1,7 @@
 import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/list
-import gleam/option.{Some}
+import gleam/option
 import gleam/result
 import gleam/set
 import sb/error.{type Error}
@@ -22,28 +22,25 @@ pub fn evaluate(task: Task, scope: Scope) -> #(Task, Scope) {
     |> option.unwrap(scope)
   }
 
+  let changed =
+    set.from_list({
+      use #(id, next) <- list.filter_map(dict.to_list(values))
+      use last <- result.try(dict.get(scope, id))
+      use <- bool.guard(last == next, Error(Nil))
+      Ok(id)
+    })
+
   let fields = {
-    let fields = {
-      use _id, field <- dict.map_values(task.fields)
-      field.evaluate(field, values)
-    }
-
-    let changed =
-      set.from_list({
-        use #(id, evaluated) <- list.filter_map(dict.to_list(fields))
-        use value <- result.try(dict.get(scope, id))
-        let unchanged = Some(value) == field.value(evaluated)
-        use <- bool.guard(unchanged, Error(Nil))
-        Ok(id)
-      })
-
-    echo changed
-    use <- bool.guard(set.is_empty(changed), fields)
-    use _id, field <- dict.map_values(fields)
+    use <- bool.guard(set.is_empty(changed), task.fields)
+    use _id, field <- dict.map_values(task.fields)
     field.reset(field, changed)
   }
 
-  echo fields
+  let fields = {
+    use _id, field <- dict.map_values(fields)
+    field.evaluate(field, values)
+  }
+
   #(Task(fields:), values)
 }
 

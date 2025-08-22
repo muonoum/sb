@@ -37,11 +37,13 @@ pub fn main() -> Nil {
   let scope = dict.new()
   let #(task, scope) = task.evaluate(task, scope)
   inspect.task(task)
+  inspect.scope(scope)
 
   let assert Ok(task) = update(task, "1", value.String("en"))
   // let assert Ok(task) = update(task, "1", value.List([value.String("en")]))
   let #(task, scope) = task.evaluate(task, scope)
   inspect.task(task)
+  inspect.scope(scope)
 
   let assert Ok(task) = update(task, "2", value.String("a"))
   // let assert Ok(task) = update(task, "2", value.List([strings]))
