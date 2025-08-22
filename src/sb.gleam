@@ -18,8 +18,8 @@ pub fn main() -> Nil {
   let string = value.String("str")
   let object = source.Literal(value.Object([#("en", strings), #("to", string)]))
 
-  let radio1 = kind.Radio(None, options.from_source(object))
-  let radio2 = kind.Radio(None, options.from_source(source.Reference("1")))
+  let radio1 = kind.Select(None, options.from_source(object))
+  let radio2 = kind.Select(None, options.from_source(source.Reference("1")))
   // let checkbox1 = kind.Checkbox([], options.from_source(object))
   // let checkbox2 = kind.Checkbox([], options.from_source(source.Reference("1")))
 

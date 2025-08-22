@@ -27,10 +27,10 @@ fn inspect_kind(kind: Kind) -> String {
     kind.Data(source:) -> inspect_source(source)
     kind.Text(string) | kind.Textarea(string) -> string
 
-    kind.Radio(selected, options:) | kind.Select(selected, options:) ->
+    kind.Select(selected, options:) ->
       inspect_options(options) <> " => " <> single_selected(selected)
 
-    kind.Checkbox(selected, options:) | kind.MultiSelect(selected, options:) ->
+    kind.MultiSelect(selected, options:) ->
       inspect_options(options) <> " => " <> multiple_selected(selected)
   }
 }
