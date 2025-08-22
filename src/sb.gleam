@@ -14,6 +14,7 @@ import sb/value
 pub fn main() -> Nil {
   let strings =
     value.List([value.String("a"), value.String("b"), value.String("c")])
+
   let string = value.String("str")
   let object = source.Literal(value.Object([#("en", strings), #("to", string)]))
 
@@ -48,7 +49,7 @@ pub fn main() -> Nil {
 
   let assert Ok(task) = update(task, "1", value.String("to"))
   // let assert Ok(task) = update(task, "1", value.List([value.String("to")]))
-  let #(task, scope) = task.evaluate(task, scope)
+  let #(task, _scope) = task.evaluate(task, scope)
   inspect.task(task)
 
   Nil
