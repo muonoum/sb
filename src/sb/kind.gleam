@@ -2,6 +2,7 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/set.{type Set}
+import sb/choice.{type Choice}
 import sb/error.{type Error}
 import sb/options.{type Options}
 import sb/reset.{type Reset}
@@ -13,10 +14,10 @@ pub type Kind {
   Text(String)
   Textarea(String)
   Data(source: Reset(Result(Source, Error)))
-  Radio(Option(Value), options: Options)
-  Select(Option(Value), options: Options)
-  Checkbox(List(Value), options: Options)
-  MultiSelect(List(Value), options: Options)
+  Radio(Option(Choice), options: Options)
+  Select(Option(Choice), options: Options)
+  Checkbox(List(Choice), options: Options)
+  MultiSelect(List(Choice), options: Options)
 }
 
 pub fn reset(kind: Kind, refs: Set(String)) -> Kind {
@@ -25,22 +26,54 @@ pub fn reset(kind: Kind, refs: Set(String)) -> Kind {
     Data(source:) -> Data(reset.maybe(source, refs))
 
     Radio(selected, options:) -> {
-      // let options = options.reset(options, refs)
-
-      // case option.map(echo selected, options.select(echo options, _)) |> echo {
-      //   None | Some(Error(..)) -> Radio(None, options:)
-      //   Some(Ok(selected)) -> Radio(Some(selected), options:)
-      // }
-      Radio(selected, options.reset(options, refs))
+      let options = options.reset(options, refs)
+      let selected = reset_selected(selected, options)
+      Radio(selected, options:)
     }
 
-    Select(selected, options:) -> Select(selected, options.reset(options, refs))
+    Select(selected, options:) -> {
+      let options = options.reset(options, refs)
+      let selected = reset_selected(selected, options)
+      Select(selected, options:)
+    }
 
-    Checkbox(selected, options:) ->
-      Checkbox(selected, options.reset(options, refs))
+    Checkbox(selected, options:) -> {
+      let options = options.reset(options, refs)
+      let selected = multi_reset_selected(selected, options)
+      Checkbox(selected, options:)
+    }
 
-    MultiSelect(selected, options:) ->
-      MultiSelect(selected, options.reset(options, refs))
+    MultiSelect(selected, options:) -> {
+      let options = options.reset(options, refs)
+      let selected = multi_reset_selected(selected, options)
+      MultiSelect(selected, options:)
+    }
+  }
+}
+
+fn reset_selected(selected: Option(Choice), options: Options) -> Option(Choice) {
+  let selected =
+    option.map(selected, choice.key)
+    |> option.map(options.select(options, _))
+
+  case selected {
+    None | Some(Error(..)) -> None
+    Some(Ok(selected)) -> Some(selected)
+  }
+}
+
+fn multi_reset_selected(
+  selected: List(Choice),
+  options: Options,
+) -> List(Choice) {
+  let selected =
+    list.try_map(selected, fn(choice) {
+      options.select(options, choice.key(choice))
+    })
+
+  case selected {
+    Ok([]) | Error(..) -> []
+    Ok(selected) -> selected
   }
 }
 
@@ -116,9 +149,10 @@ pub fn value(kind: Kind) -> Option(Result(Value, Error)) {
         Ok(..) -> None
       }
 
-    Radio(Some(selected), ..) | Select(Some(selected), ..) -> Some(Ok(selected))
+    Radio(Some(selected), ..) | Select(Some(selected), ..) ->
+      Some(Ok(choice.value(selected)))
 
     Checkbox(selected, ..) | MultiSelect(selected, ..) ->
-      Some(Ok(value.List(selected)))
+      Some(Ok(value.List(list.map(selected, choice.value))))
   }
 }

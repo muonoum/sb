@@ -2,6 +2,7 @@ import gleam/bool
 import gleam/list
 import gleam/result
 import gleam/set.{type Set}
+import sb/choice.{type Choice}
 import sb/error.{type Error}
 import sb/reset.{type Reset}
 import sb/scope.{type Scope}
@@ -29,23 +30,6 @@ pub fn reset(options: Options, refs: Set(String)) -> Options {
   }
 }
 
-pub fn reset2(options: Options, refs: Set(String)) -> #(Options, Bool) {
-  case options {
-    SingleSource(source) -> {
-      let #(source, did_reset) = reset.maybe2(source, refs)
-      #(SingleSource(source), did_reset)
-    }
-
-    SourceGroups(groups) -> #(
-      SourceGroups({
-        use group <- list.map(groups)
-        Group(..group, source: reset.maybe(group.source, refs))
-      }),
-      False,
-    )
-  }
-}
-
 pub fn evaluate(options: Options, scope: Scope) -> Options {
   case options {
     SingleSource(source) ->
@@ -68,7 +52,7 @@ pub fn evaluate(options: Options, scope: Scope) -> Options {
   }
 }
 
-pub fn select(options: Options, value: Value) -> Result(Value, Error) {
+pub fn select(options: Options, value: Value) -> Result(Choice, Error) {
   case options {
     SourceGroups(groups) -> {
       let error = Error(error.BadValue(value))
@@ -92,17 +76,18 @@ pub fn select(options: Options, value: Value) -> Result(Value, Error) {
   }
 }
 
-fn select_list(want: Value, choices: List(Value)) -> Result(Value, Nil) {
-  use have <- list.find(choices)
-  have == want
+fn select_list(want: Value, choices: List(Value)) -> Result(Choice, Nil) {
+  use have <- list.find_map(choices)
+  use <- bool.guard(have != want, Error(Nil))
+  Ok(choice.new(have, have))
 }
 
 fn select_object(
   want: Value,
   choices: List(#(String, Value)),
-) -> Result(Value, Nil) {
+) -> Result(Choice, Nil) {
   use want <- result.try(value.string(want))
   use #(have, value) <- list.find_map(choices)
   use <- bool.guard(have != want, Error(Nil))
-  Ok(value)
+  Ok(choice.new(value.String(have), value))
 }

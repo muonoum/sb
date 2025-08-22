@@ -22,7 +22,7 @@ pub fn main() -> Nil {
   let radio2 =
     kind.Radio(
       None,
-      options.SingleSource(reset.new(Ok(source.Reference("r1")), ["r1"])),
+      options.SingleSource(reset.new(Ok(source.Reference("1")), ["1"])),
     )
 
   let checkbox1 =
@@ -31,31 +31,16 @@ pub fn main() -> Nil {
   let checkbox2 =
     kind.Checkbox(
       [],
-      options.SingleSource(reset.new(Ok(source.Reference("c1")), ["c1"])),
+      options.SingleSource(reset.new(Ok(source.Reference("1")), ["1"])),
     )
-
-  // fields:
-  //   id: c1
-  //   kind: checkbox
-  //   source.literal:
-  //     - en: [a, b, c]
-  //     - to: str
-  // 
-  //   id: c2
-  //   kind: checkbox
-  //   source.reference: c1
-  //
-  //   c1 select "en", "to"
-  //   c1 => [[a, b, c], str]
-  //   c2 => [[a, b, c], str]
 
   let task =
     Task(
       dict.from_list([
-        #("r1", Field(radio1)),
-        #("r2", Field(radio2)),
-        // #("c1", Field(checkbox1)),
-      // #("c2", Field(checkbox2)),
+        #("1", Field(radio1)),
+        #("2", Field(radio2)),
+        // #("1", Field(checkbox1)),
+      // #("2", Field(checkbox2)),
       ]),
     )
 
@@ -63,38 +48,23 @@ pub fn main() -> Nil {
   let #(task, scope) = task.evaluate(task, scope)
   inspect.task(task)
 
-  // io.println(ansi.grey("# c1 select [\"en\"] "))
-  // let assert Ok(task) =
-  //   task.update(
-  //     task,
-  //     "c1",
-  //     value.List([value.String("en"), value.String("to")]),
-  //   )
-
-  io.println(ansi.grey("# r1 select \"en\" "))
-  let assert Ok(task) = task.update(task, "r1", value.String("en"))
+  io.println(ansi.grey("# 1 select \"en\" "))
+  let assert Ok(task) = task.update(task, "1", value.String("en"))
+  // let assert Ok(task) = task.update(task, "1", value.List([value.String("en")]))
   let #(task, scope) = task.evaluate(task, scope)
   inspect.task(task)
 
-  io.println(ansi.grey("# r2 select \"a\" "))
-  let assert Ok(task) = task.update(task, "r2", value.String("a"))
+  io.println(ansi.grey("# 2 select \"a\" "))
+  let assert Ok(task) = task.update(task, "2", value.String("a"))
+  // let assert Ok(task) = task.update(task, "2", value.List([strings]))
   let #(task, scope) = task.evaluate(task, scope)
   inspect.task(task)
 
-  io.println(ansi.grey("# r1 select \"to\" "))
-  let assert Ok(task) = task.update(task, "r1", value.String("to"))
+  io.println(ansi.grey("# 1 select \"to\" "))
+  let assert Ok(task) = task.update(task, "1", value.String("to"))
+  // let assert Ok(task) = task.update(task, "1", value.List([value.String("to")]))
   let #(task, scope) = task.evaluate(task, scope)
   inspect.task(task)
-
-  // io.println(ansi.grey("# c2 select [\"b\"] "))
-  // let assert Ok(task) = task.update(task, "c2", value.List([value.String("b")]))
-  // let #(task, scope) = task.evaluate(task, scope)
-  // inspect.task(task)
-
-  // io.println(ansi.grey("# c1 select []"))
-  // let assert Ok(task) = task.update(task, "c1", value.List([]))
-  // let #(task, _scope) = task.evaluate(task, scope)
-  // inspect.task(task)
 
   Nil
 }

@@ -4,6 +4,7 @@ import gleam/list
 import gleam/option.{type Option}
 import gleam/string
 import gleam_community/ansi
+import sb/choice.{type Choice}
 import sb/error.{type Error}
 import sb/kind.{type Kind}
 import sb/options.{type Options}
@@ -33,15 +34,27 @@ fn inspect_kind(kind: Kind) -> String {
   }
 }
 
-fn single_selected(selected: Option(Value)) -> String {
-  option.map(selected, inspect_value)
-  |> option.unwrap(ansi.grey("*"))
+fn inspect_choice(choice: Choice) -> String {
+  inspect_value(choice.key(choice))
+  <> "="
+  <> inspect_value(choice.value(choice))
 }
 
-fn multiple_selected(selected: List(Value)) -> String {
+fn single_selected(selected: Option(Choice)) -> String {
+  case selected {
+    option.Some(choice) -> inspect_choice(choice)
+    option.None -> ansi.grey("*")
+  }
+}
+
+fn multiple_selected(selected: List(Choice)) -> String {
   case selected {
     [] -> ansi.grey("*")
-    list -> "[" <> list.map(list, inspect_value) |> string.join(",") <> "]"
+    list ->
+      "["
+      <> list.map(list, inspect_choice)
+      |> string.join(",")
+      <> "]"
   }
 }
 
