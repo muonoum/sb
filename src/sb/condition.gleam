@@ -14,6 +14,10 @@ pub fn true() -> Condition {
   Resolved(True)
 }
 
+pub fn false() -> Condition {
+  Resolved(False)
+}
+
 pub fn refs(condition: Condition) -> List(String) {
   case condition {
     Resolved(_) -> []

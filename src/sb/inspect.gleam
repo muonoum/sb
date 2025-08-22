@@ -28,10 +28,14 @@ fn inspect_kind(kind: Kind) -> String {
     kind.Text(string) | kind.Textarea(string) -> string
 
     kind.Select(selected, options:) ->
-      inspect_options(options) <> " => " <> single_selected(selected)
+      inspect_options(options)
+      <> ansi.grey(" ==> ")
+      <> single_selected(selected)
 
     kind.MultiSelect(selected, options:) ->
-      inspect_options(options) <> " => " <> multiple_selected(selected)
+      inspect_options(options)
+      <> ansi.grey(" ==> ")
+      <> multiple_selected(selected)
   }
 }
 
@@ -44,13 +48,13 @@ fn inspect_choice(choice: Choice) -> String {
 fn single_selected(selected: Option(Choice)) -> String {
   case selected {
     option.Some(choice) -> inspect_choice(choice)
-    option.None -> ansi.grey("*")
+    option.None -> ansi.yellow("*")
   }
 }
 
 fn multiple_selected(selected: List(Choice)) -> String {
   case selected {
-    [] -> ansi.grey("*")
+    [] -> ansi.yellow("*")
     list ->
       "["
       <> list.map(list, inspect_choice)
@@ -75,7 +79,7 @@ fn inspect_source(source: Reset(Result(Source, Error))) -> String {
     Error(error) -> ansi.red(string.inspect(error))
     Ok(source.Literal(value)) -> inspect_value(value)
     Ok(source.Loading(..)) -> ansi.yellow("Loading")
-    Ok(source.Reference(id)) -> "->" <> ansi.pink(id)
+    Ok(source.Reference(id)) -> "<--" <> ansi.pink(id)
   }
 }
 

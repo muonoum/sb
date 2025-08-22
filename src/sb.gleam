@@ -1,6 +1,7 @@
 import gleam/dict
 import gleam/io
 import gleam/option.{None}
+import gleam/string
 import gleam_community/ansi
 import sb/error.{type Error}
 import sb/field
@@ -56,8 +57,7 @@ pub fn main() -> Nil {
 }
 
 fn update(task: Task, id: String, value: value.Value) -> Result(Task, Error) {
-  io.println(
-    ansi.grey("==> ") <> id <> " select " <> inspect.inspect_value(value),
-  )
+  let parts = [id, ansi.grey("<=="), inspect.inspect_value(value)]
+  io.println(string.join(parts, " "))
   task.update(task, id, value)
 }

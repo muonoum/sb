@@ -20,10 +20,11 @@ pub fn evaluate(source: Source, scope: Scope) -> Result(Source, Error) {
     Loading(load) -> load()
     Literal(value) -> Ok(Literal(value))
 
-    Reference(id) ->
+    Reference(id) -> {
       case scope.value(scope, id) {
         Ok(value) -> Ok(Literal(value))
         Error(Nil) -> Ok(Reference(id))
       }
+    }
   }
 }

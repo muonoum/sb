@@ -37,11 +37,13 @@ pub fn evaluate(task: Task, scope: Scope) -> #(Task, Scope) {
         Ok(id)
       })
 
+    echo changed
     use <- bool.guard(set.is_empty(changed), fields)
     use _id, field <- dict.map_values(fields)
     field.reset(field, changed)
   }
 
+  echo fields
   #(Task(fields:), values)
 }
 
