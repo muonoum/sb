@@ -6,6 +6,7 @@ import gleam/string
 import gleam_community/ansi
 import sb/choice.{type Choice}
 import sb/error.{type Error}
+import sb/field
 import sb/kind.{type Kind}
 import sb/options.{type Options}
 import sb/reset.{type Reset}
@@ -15,7 +16,7 @@ import sb/value.{type Value}
 
 pub fn task(task: Task) -> Task {
   dict.map_values(task.fields, fn(id, field) {
-    io.println(ansi.green(id) <> " " <> inspect_kind(field.kind))
+    io.println(ansi.green(id) <> " " <> inspect_kind(field.kind(field)))
   })
 
   task

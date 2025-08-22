@@ -3,7 +3,7 @@ import gleam/io
 import gleam/option.{None}
 import gleam_community/ansi
 import sb/error.{type Error}
-import sb/field.{Field}
+import sb/field
 import sb/inspect
 import sb/kind
 import sb/options
@@ -19,16 +19,16 @@ pub fn main() -> Nil {
 
   let radio1 = kind.Radio(None, options.from_source(object))
   let radio2 = kind.Radio(None, options.from_source(source.Reference("1")))
-  let checkbox1 = kind.Checkbox([], options.from_source(object))
-  let checkbox2 = kind.Checkbox([], options.from_source(source.Reference("1")))
+  // let checkbox1 = kind.Checkbox([], options.from_source(object))
+  // let checkbox2 = kind.Checkbox([], options.from_source(source.Reference("1")))
 
   let task =
     Task(
       dict.from_list([
-        #("1", Field(radio1)),
-        #("2", Field(radio2)),
-        // #("1", Field(checkbox1)),
-      // #("2", Field(checkbox2)),
+        #("1", field.new(radio1)),
+        #("2", field.new(radio2)),
+        // #("1", field.new(checkbox1)),
+      // #("2", field.new(checkbox2)),
       ]),
     )
 

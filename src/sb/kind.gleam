@@ -27,31 +27,31 @@ pub fn reset(kind: Kind, refs: Set(String)) -> Kind {
 
     Radio(selected, options:) -> {
       let options = options.reset(options, refs)
-      let selected = reset_selected(selected, options)
+      let selected = select_one(selected, options)
       Radio(selected, options:)
     }
 
     Select(selected, options:) -> {
       let options = options.reset(options, refs)
-      let selected = reset_selected(selected, options)
+      let selected = select_one(selected, options)
       Select(selected, options:)
     }
 
     Checkbox(selected, options:) -> {
       let options = options.reset(options, refs)
-      let selected = multi_reset_selected(selected, options)
+      let selected = select_multiple(selected, options)
       Checkbox(selected, options:)
     }
 
     MultiSelect(selected, options:) -> {
       let options = options.reset(options, refs)
-      let selected = multi_reset_selected(selected, options)
+      let selected = select_multiple(selected, options)
       MultiSelect(selected, options:)
     }
   }
 }
 
-fn reset_selected(selected: Option(Choice), options: Options) -> Option(Choice) {
+fn select_one(selected: Option(Choice), options: Options) -> Option(Choice) {
   let selected =
     option.map(selected, choice.key)
     |> option.map(options.select(options, _))
@@ -62,14 +62,10 @@ fn reset_selected(selected: Option(Choice), options: Options) -> Option(Choice) 
   }
 }
 
-fn multi_reset_selected(
-  selected: List(Choice),
-  options: Options,
-) -> List(Choice) {
+fn select_multiple(selected: List(Choice), options: Options) -> List(Choice) {
   let selected =
-    list.try_map(selected, fn(choice) {
-      options.select(options, choice.key(choice))
-    })
+    list.map(selected, choice.key)
+    |> list.try_map(options.select(options, _))
 
   case selected {
     Ok([]) | Error(..) -> []

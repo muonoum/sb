@@ -8,8 +8,16 @@ import sb/kind.{type Kind}
 import sb/scope.{type Scope}
 import sb/value.{type Value}
 
-pub type Field {
+pub opaque type Field {
   Field(kind: Kind)
+}
+
+pub fn new(kind: Kind) -> Field {
+  Field(kind:)
+}
+
+pub fn kind(field: Field) -> Kind {
+  field.kind
 }
 
 pub fn reset(field: Field, refs: Set(String)) -> Field {
