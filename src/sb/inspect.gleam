@@ -82,7 +82,7 @@ fn inspect_source(source: Reset(Result(Source, Error))) -> String {
   }
 }
 
-fn inspect_value(value: Value) -> String {
+pub fn inspect_value(value: Value) -> String {
   case value {
     value.List(list) ->
       "#[" <> list.map(list, inspect_value) |> string.join(",") <> "]"
