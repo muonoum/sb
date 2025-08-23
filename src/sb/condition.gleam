@@ -2,12 +2,16 @@ import gleam/dict
 import sb/scope.{type Scope}
 import sb/value.{type Value}
 
-pub type Condition {
+pub opaque type Condition {
   Resolved(Bool)
   Defined(String)
   Equal(String, Value)
   NotDefined(String)
   NotEqual(String, Value)
+}
+
+pub fn resolved(state: Bool) -> Condition {
+  Resolved(state)
 }
 
 pub fn true() -> Condition {

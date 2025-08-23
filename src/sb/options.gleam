@@ -4,18 +4,19 @@ import gleam/result
 import gleam/set.{type Set}
 import sb/choice.{type Choice}
 import sb/error.{type Error}
+import sb/report.{type Report}
 import sb/reset.{type Reset}
 import sb/scope.{type Scope}
 import sb/source.{type Source}
 import sb/value.{type Value}
 
 pub opaque type Options {
-  SingleSource(Reset(Result(Source, Error)))
+  SingleSource(Reset(Result(Source, Report(Error))))
   SourceGroups(List(Group))
 }
 
 pub type Group {
-  Group(label: String, source: Reset(Result(Source, Error)))
+  Group(label: String, source: Reset(Result(Source, Report(Error))))
 }
 
 pub fn from_source(source: Source) -> Options {
@@ -29,7 +30,7 @@ pub fn from_groups(groups: List(#(String, Source))) -> Options {
   })
 }
 
-pub fn sources(options: Options) -> List(Reset(Result(Source, Error))) {
+pub fn sources(options: Options) -> List(Reset(Result(Source, Report(Error)))) {
   case options {
     SingleSource(source) -> [source]
 
@@ -74,10 +75,10 @@ pub fn evaluate(options: Options, scope: Scope) -> Options {
   }
 }
 
-pub fn select(options: Options, value: Value) -> Result(Choice, Error) {
+pub fn select(options: Options, value: Value) -> Result(Choice, Report(Error)) {
   case options {
     SourceGroups(groups) -> {
-      let error = Error(error.BadValue(value))
+      let error = report.error(error.BadValue(value))
       use result, Group(source:, ..) <- list.fold(groups, error)
       use <- result.lazy_or(result)
       select(SingleSource(source), value)
@@ -87,13 +88,13 @@ pub fn select(options: Options, value: Value) -> Result(Choice, Error) {
       case reset.unwrap(source) {
         Ok(source.Literal(value.List(choices))) ->
           select_list(value, choices)
-          |> result.replace_error(error.BadValue(value))
+          |> report.replace_error(error.BadValue(value))
 
         Ok(source.Literal(value.Object(choices))) ->
           select_object(value, choices)
-          |> result.replace_error(error.BadValue(value))
+          |> report.replace_error(error.BadValue(value))
 
-        _source -> Error(error.BadSource)
+        _source -> report.error(error.BadSource)
       }
   }
 }
@@ -108,7 +109,7 @@ fn select_object(
   want: Value,
   choices: List(#(String, Value)),
 ) -> Result(Choice, Nil) {
-  use want <- result.try(value.string(want))
+  use want <- result.try(value.to_string(want))
   use #(have, value) <- list.find_map(choices)
   use <- bool.guard(have != want, Error(Nil))
   Ok(choice.new(value.String(have), value))

@@ -1,3 +1,4 @@
+import gleam/bool
 import gleam/dict
 import gleam/io
 import gleam/list
@@ -9,6 +10,7 @@ import sb/error.{type Error}
 import sb/field
 import sb/kind.{type Kind}
 import sb/options.{type Options}
+import sb/report.{type Report}
 import sb/reset.{type Reset}
 import sb/scope.{type Scope}
 import sb/source.{type Source}
@@ -16,27 +18,24 @@ import sb/task.{type Task}
 import sb/value.{type Value}
 
 pub fn scope(scope: Scope) -> Scope {
-  {
-    ansi.grey("<< ")
-    <> dict.to_list(scope)
-    |> list.map(fn(pair) {
-      let #(id, value) = pair
-
-      ansi.green(id)
-      <> ansi.grey("=")
-      <> {
-        case value {
-          Error(error) -> ansi.red(string.inspect(error))
-          Ok(value) -> inspect_value(value)
-        }
-      }
-    })
-    |> string.join(" ")
-    <> ansi.grey(" >>")
-  }
-  |> io.println
-
+  io.println(inspect_scope(scope))
   scope
+}
+
+pub fn inspect_scope(scope: Scope) -> String {
+  let values = {
+    use #(id, value) <- list.map(dict.to_list(scope))
+
+    ansi.green(id)
+    <> ansi.grey("=")
+    <> case value {
+      Error(report) -> ansi.red(string.inspect(report.issue))
+      Ok(value) -> inspect_value(value)
+    }
+  }
+
+  use <- bool.guard(values == [], ansi.yellow("*"))
+  string.join(values, " ")
 }
 
 pub fn task(task: Task) -> Task {
@@ -49,16 +48,18 @@ pub fn task(task: Task) -> Task {
 
 fn inspect_kind(kind: Kind) -> String {
   case kind {
-    kind.Data(source:) -> inspect_source(source)
-    kind.Text(string) | kind.Textarea(string) -> string
+    kind.Data(source:) -> ansi.grey("dat ") <> inspect_source(source)
+    kind.Text(string) | kind.Textarea(string) -> ansi.grey("str ") <> string
 
     kind.Select(selected, options:) ->
-      inspect_options(options)
+      ansi.grey("sel ")
+      <> inspect_options(options)
       <> ansi.grey(" ==> ")
       <> single_selected(selected)
 
     kind.MultiSelect(selected, options:) ->
-      inspect_options(options)
+      ansi.grey("mse ")
+      <> inspect_options(options)
       <> ansi.grey(" ==> ")
       <> multiple_selected(selected)
   }
@@ -99,12 +100,13 @@ fn inspect_options(options: Options) -> String {
   }
 }
 
-fn inspect_source(source: Reset(Result(Source, Error))) -> String {
+fn inspect_source(source: Reset(Result(Source, Report(Error)))) -> String {
   case reset.unwrap(source) {
-    Error(error) -> ansi.red(string.inspect(error))
+    Error(report) -> ansi.red(string.inspect(report))
     Ok(source.Literal(value)) -> inspect_value(value)
     Ok(source.Loading(..)) -> ansi.yellow("Loading")
-    Ok(source.Reference(id)) -> "<--" <> ansi.pink(id)
+    Ok(source.Reference(id)) -> ansi.grey("-->") <> ansi.pink(id)
+    Ok(source.Template(_text)) -> "TODO(text)"
   }
 }
 

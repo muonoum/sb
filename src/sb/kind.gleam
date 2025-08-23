@@ -5,6 +5,7 @@ import gleam/set.{type Set}
 import sb/choice.{type Choice}
 import sb/error.{type Error}
 import sb/options.{type Options}
+import sb/report.{type Report}
 import sb/reset.{type Reset}
 import sb/scope.{type Scope}
 import sb/source.{type Source}
@@ -13,7 +14,7 @@ import sb/value.{type Value}
 pub type Kind {
   Text(String)
   Textarea(String)
-  Data(source: Reset(Result(Source, Error)))
+  Data(source: Reset(Result(Source, Report(Error))))
   Select(Option(Choice), options: Options)
   MultiSelect(List(Choice), options: Options)
 }
@@ -78,13 +79,13 @@ pub fn evaluate(kind: Kind, scope: Scope) -> Kind {
   }
 }
 
-pub fn update(kind: Kind, value: Value) -> Result(Kind, Error) {
+pub fn update(kind: Kind, value: Value) -> Result(Kind, Report(Error)) {
   case kind, value {
-    Data(..), _value -> Error(error.BadKind)
+    Data(..), _value -> report.error(error.BadKind)
 
     Text(..), value.String(string) -> Ok(Text(string))
     Textarea(..), value.String(string) -> Ok(Textarea(string))
-    Text(..), value | Textarea(..), value -> Error(error.BadValue(value))
+    Text(..), value | Textarea(..), value -> report.error(error.BadValue(value))
 
     Select(_selected, options:), key -> {
       use selected <- result.try(options.select(options, key))
@@ -96,11 +97,11 @@ pub fn update(kind: Kind, value: Value) -> Result(Kind, Error) {
       Ok(MultiSelect(selected, options:))
     }
 
-    MultiSelect(..), value -> Error(error.BadValue(value))
+    MultiSelect(..), value -> report.error(error.BadValue(value))
   }
 }
 
-pub fn value(kind: Kind) -> Option(Result(Value, Error)) {
+pub fn value(kind: Kind) -> Option(Result(Value, Report(Error))) {
   case kind {
     Text("") | Textarea("") -> None
     Select(None, ..) | MultiSelect([], ..) -> None
@@ -109,7 +110,7 @@ pub fn value(kind: Kind) -> Option(Result(Value, Error)) {
 
     Data(source:) ->
       case reset.unwrap(source) {
-        Error(error) -> Some(Error(error))
+        Error(report) -> Some(Error(report))
         Ok(source.Literal(value)) -> Some(Ok(value))
         Ok(..) -> None
       }
