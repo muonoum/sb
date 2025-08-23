@@ -1,6 +1,6 @@
 import gleam/dict
 import gleam/dynamic
-import gleam/dynamic/decode
+import gleam/dynamic/decode.{type Decoder}
 import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{None, Some}
@@ -43,7 +43,7 @@ pub fn to_json(value: Value) -> Json {
   }
 }
 
-pub fn decoder() -> decode.Decoder(Value) {
+pub fn decoder() -> Decoder(Value) {
   decode.one_of(null_decoder(), [
     decode.map(decode.bool, Bool),
     decode.map(decode.float, Float),
@@ -55,7 +55,7 @@ pub fn decoder() -> decode.Decoder(Value) {
   ])
 }
 
-fn null_decoder() -> decode.Decoder(Value) {
+fn null_decoder() -> Decoder(Value) {
   use value <- decode.then(decode.optional(decode.dynamic))
 
   case value {
@@ -64,7 +64,7 @@ fn null_decoder() -> decode.Decoder(Value) {
   }
 }
 
-fn key_value_decoder() -> decode.Decoder(#(String, Value)) {
+fn key_value_decoder() -> Decoder(#(String, Value)) {
   use pairs <- decode.then(dict_decoder())
 
   case pairs {
@@ -74,7 +74,7 @@ fn key_value_decoder() -> decode.Decoder(#(String, Value)) {
   }
 }
 
-fn dict_decoder() -> decode.Decoder(List(#(String, Value))) {
+fn dict_decoder() -> Decoder(List(#(String, Value))) {
   decode.dict(decode.string, decode.recursive(decoder))
   |> decode.map(dict.to_list)
 }
