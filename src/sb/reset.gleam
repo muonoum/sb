@@ -17,9 +17,13 @@ pub fn unwrap(reset: Reset(v)) -> v {
   reset.value
 }
 
-pub fn maybe(reset: Reset(v), refs: Set(String)) -> Reset(v) {
+pub fn changed(reset: Reset(v), refs: Set(String)) -> Bool {
   let intersection = set.intersection(refs, reset.refs)
-  use <- bool.guard(set.is_empty(intersection), reset)
+  set.is_empty(intersection)
+}
+
+pub fn maybe(reset: Reset(v), refs: Set(String)) -> Reset(v) {
+  use <- bool.guard(!changed(reset, refs), reset)
   Reset(..reset, value: reset.initial())
 }
 

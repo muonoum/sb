@@ -1,3 +1,4 @@
+import gleam/json
 import sb/parser
 import sb/value.{type Value}
 
@@ -11,4 +12,5 @@ pub type Error {
   BadValue(Value)
 
   TextError(parser.Message(String))
+  JsonError(json.DecodeError)
 }

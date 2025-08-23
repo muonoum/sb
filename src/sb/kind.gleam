@@ -4,6 +4,7 @@ import gleam/result
 import gleam/set.{type Set}
 import sb/choice.{type Choice}
 import sb/error.{type Error}
+import sb/handlers.{type Handlers}
 import sb/options.{type Options}
 import sb/report.{type Report}
 import sb/reset.{type Reset}
@@ -60,7 +61,12 @@ fn select_multiple(selected: List(Choice), options: Options) -> List(Choice) {
   }
 }
 
-pub fn evaluate(kind: Kind, scope: Scope) -> Kind {
+pub fn evaluate(
+  kind: Kind,
+  scope: Scope,
+  search: Option(String),
+  handlers: Handlers,
+) -> Kind {
   case kind {
     Text(..) | Textarea(..) -> kind
 
@@ -68,7 +74,7 @@ pub fn evaluate(kind: Kind, scope: Scope) -> Kind {
       Data(source: {
         use source <- reset.map(source)
         use source <- result.try(source)
-        source.evaluate(source, scope)
+        source.evaluate(source, scope, search:, handlers:)
       })
 
     Select(selected, options:) ->

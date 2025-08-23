@@ -5,6 +5,7 @@ import gleam/set.{type Set}
 import sb/condition.{type Condition}
 import sb/error.{type Error}
 import sb/filter.{type Filter}
+import sb/handlers.{type Handlers}
 import sb/kind.{type Kind}
 import sb/report.{type Report}
 import sb/reset.{type Reset}
@@ -59,9 +60,14 @@ pub fn reset(field: Field, refs: Set(String)) -> Field {
   )
 }
 
-pub fn evaluate(field: Field, scope: Scope) {
+pub fn evaluate(
+  field: Field,
+  scope: Scope,
+  search: Option(String),
+  handlers: Handlers,
+) -> Field {
   Field(
-    kind: kind.evaluate(field.kind, scope),
+    kind: kind.evaluate(field.kind, scope, search, handlers),
     disabled: reset.map(field.disabled, condition.evaluate(_, scope)),
     hidden: reset.map(field.hidden, condition.evaluate(_, scope)),
     ignored: reset.map(field.ignored, condition.evaluate(_, scope)),

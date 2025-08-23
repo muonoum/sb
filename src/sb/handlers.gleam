@@ -4,9 +4,10 @@ import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
 import gleam/option.{type Option}
 import sb/error.{type Error}
+import sb/report.{type Report}
 
 pub type Http =
-  fn(Request(Option(BytesTree))) -> Result(Response(BitArray), Error)
+  fn(Request(Option(BytesTree))) -> Result(Response(BitArray), Report(Error))
 
 pub type Handlers {
   Handlers(http: Http)

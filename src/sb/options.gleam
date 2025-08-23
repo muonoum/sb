@@ -1,9 +1,11 @@
 import gleam/bool
 import gleam/list
+import gleam/option.{None}
 import gleam/result
 import gleam/set.{type Set}
 import sb/choice.{type Choice}
 import sb/error.{type Error}
+import sb/handlers
 import sb/report.{type Report}
 import sb/reset.{type Reset}
 import sb/scope.{type Scope}
@@ -59,7 +61,7 @@ pub fn evaluate(options: Options, scope: Scope) -> Options {
       SingleSource({
         use source <- reset.map(source)
         use source <- result.try(source)
-        source.evaluate(source, scope)
+        source.evaluate(source, scope, search: None, handlers: handlers.empty())
       })
 
     SourceGroups(groups) ->
@@ -69,7 +71,13 @@ pub fn evaluate(options: Options, scope: Scope) -> Options {
         Group(label, {
           use source <- reset.map(source)
           use source <- result.try(source)
-          source.evaluate(source, scope)
+
+          source.evaluate(
+            source,
+            scope,
+            search: None,
+            handlers: handlers.empty(),
+          )
         })
       })
   }
