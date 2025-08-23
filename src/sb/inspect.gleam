@@ -131,6 +131,11 @@ pub fn inspect_option_value(
 
 pub fn inspect_value(value: Value) -> String {
   case value {
+    value.Null -> inspect_todo("null")
+    value.Bool(_bool) -> inspect_todo("bool")
+    value.Float(_float) -> inspect_todo("float")
+    value.Int(_int) -> inspect_todo("int")
+
     value.List(list) ->
       "#[" <> list.map(list, inspect_value) |> string.join(" ") <> "]"
 
