@@ -1,4 +1,6 @@
-import gleam/bytes_tree
+import gleam/bytes_tree.{type BytesTree}
+import gleam/dict
+import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type Decoder}
 import gleam/http
 import gleam/http/request.{type Request}
@@ -77,7 +79,7 @@ pub fn evaluate(
         Ok(Some(_string)) -> todo as "evaluate command"
       }
 
-    Fetch(method, uri, headers, body: None) -> {
+    Fetch(method:, uri:, headers:, body: None) -> {
       let placeholder = option.map(search, uri.percent_encode)
 
       case text.evaluate(uri, scope, placeholder:) {
@@ -88,13 +90,13 @@ pub fn evaluate(
           use request <- result.map(build_request(method, string, headers))
 
           use <- Loading
-          send_request(request, handlers.http)
+          send_request(request, value.decoder(), handlers.http)
           |> result.map(Literal)
         }
       }
     }
 
-    Fetch(method, uri, headers, Some(body)) -> {
+    Fetch(method:, uri:, headers:, body: Some(body)) -> {
       let placeholder = option.map(search, uri.percent_encode)
 
       case text.evaluate(uri, scope, placeholder:) {
@@ -112,7 +114,7 @@ pub fn evaluate(
               )
 
               use <- Loading
-              send_request(request, handlers.http)
+              send_request(request, value.decoder(), handlers.http)
               |> result.map(Literal)
             }
 
@@ -143,7 +145,10 @@ pub fn build_request(
   request.set_header(request, key, value)
 }
 
-pub fn set_request_body(request: Request(_), value: Value) -> Request(_) {
+pub fn set_request_body(
+  request: Request(v),
+  value: Value,
+) -> Request(Option(BytesTree)) {
   request
   |> request.set_header("content-type", "application/json")
   |> request.set_body(Some(
@@ -154,17 +159,46 @@ pub fn set_request_body(request: Request(_), value: Value) -> Request(_) {
 }
 
 pub fn send_request(
-  request: Request(_),
-  handler: fn(Request(_)) -> Result(Response(_), Report(Error)),
+  request: Request(v),
+  decoder: Decoder(Value),
+  handler: fn(Request(v)) -> Result(Response(BitArray), Report(Error)),
 ) -> Result(Value, Report(Error)) {
   use response <- result.try(handler(request))
-  parse_json(response.body, value.decoder())
+  parse_json(response.body, decoder)
 }
 
 pub fn parse_json(
   bits: BitArray,
-  decoder: Decoder(a),
-) -> Result(a, Report(Error)) {
+  decoder: Decoder(v),
+) -> Result(v, Report(Error)) {
   json.parse_bits(bits, decoder)
   |> report.map_error(error.JsonError)
+}
+
+pub fn decoder(dynamic: Dynamic) {
+  use dict <- result.try(
+    dynamic
+    |> decode.run(decode.dict(decode.string, decode.dynamic))
+    |> report.map_error(error.DecodeError),
+  )
+
+  case dict.to_list(dict) {
+    [#("literal", dynamic)] ->
+      decode.run(dynamic, value.decoder())
+      |> report.map_error(error.DecodeError)
+      |> report.error_context(error.BadKind("literal"))
+      |> result.map(Literal)
+
+    [#("reference", dynamic)] ->
+      decode.run(dynamic, decode.string)
+      |> report.map_error(error.DecodeError)
+      |> report.error_context(error.BadKind("reference"))
+      |> result.map(Reference)
+
+    [#("template", _dynamic)] -> todo
+    [#("fetch", _dynamic)] -> todo
+    [#("command", _dynamic)] -> todo
+    [#(name, _)] -> report.error(error.UnknownKind(name))
+    _bad -> todo
+  }
 }

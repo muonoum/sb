@@ -1,0 +1,13 @@
+name: Select literal and data reference
+category: [Tests]
+runners.users: [alex]
+runners.groups: [admins]
+
+fields:
+  - id: a
+    kind: select
+    source.literal: [a, b, c]
+
+  - id: b
+    kind: data
+    source.reference: a

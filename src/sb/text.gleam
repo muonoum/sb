@@ -1,3 +1,4 @@
+import gleam/dynamic/decode.{type Decoder}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
@@ -142,4 +143,13 @@ pub fn parse(source: String) -> Result(Text, Report(Error)) {
   p.parse_string(source, template)
   |> report.map_error(error.TextError)
   |> result.map(Text)
+}
+
+pub fn decoder() -> Decoder(Text) {
+  use string <- decode.then(decode.string)
+
+  case parse(string) {
+    Error(..) -> decode.failure(Text([]), "text")
+    Ok(text) -> decode.success(text)
+  }
 }

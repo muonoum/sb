@@ -4,6 +4,7 @@ import gleam/list
 import gleam/option.{None}
 import gleam/string
 import gleam_community/ansi
+import sb/access
 import sb/error.{type Error}
 import sb/field
 import sb/handlers
@@ -27,11 +28,19 @@ pub fn main() -> Nil {
   let radio1 = kind.Select(None, options.from_source(object))
   let radio2 = kind.Select(None, options.from_source(source.Reference("1")))
   let radio3 = kind.Select(None, options.from_source(source.Reference("2")))
-  let data1 = kind.Data(reset.new(Ok(source.Reference("1")), ["1"]))
+  let data1 = kind.Data(reset.new(Ok(source.Reference("1")), fn(_) { ["1"] }))
 
   let task =
     Task(
-      dict.from_list([
+      id: "task",
+      name: "Task",
+      category: ["Tests"],
+      summary: None,
+      description: None,
+      command: [],
+      runners: access.everyone(),
+      approvers: access.none(),
+      fields: dict.from_list([
         #("1", field.new(radio1)),
         #("2", field.new(radio2)),
         #("3", field.new(radio3)),

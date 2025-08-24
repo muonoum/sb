@@ -1,3 +1,6 @@
+import gleam/dict.{type Dict}
+import gleam/dynamic.{type Dynamic}
+import gleam/dynamic/decode
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
@@ -12,12 +15,37 @@ import sb/scope.{type Scope}
 import sb/source.{type Source}
 import sb/value.{type Value}
 
+pub fn keys(name: String) -> Result(List(String), Report(Error)) {
+  case name {
+    "data" -> Ok(["source"])
+    "markdown" -> Ok(["source"])
+    "text" -> Ok(["default", "placeholder"])
+    "textarea" -> Ok(["default", "placeholder"])
+    "radio" -> Ok(["default", "layout", "source"])
+    "checkbox" -> Ok(["default", "layout", "source"])
+    "select" -> Ok(["default", "multiple", "placeholder", "source"])
+    _unknown -> report.error(error.UnknownKind(name))
+  }
+}
+
 pub type Kind {
   Text(String)
   Textarea(String)
   Data(source: Reset(Result(Source, Report(Error))))
   Select(Option(Choice), options: Options)
   MultiSelect(List(Choice), options: Options)
+}
+
+pub fn data(source: Source) -> Kind {
+  Data(source: reset.try_new(Ok(source), source.refs))
+}
+
+pub fn select(options: Options) -> Kind {
+  Select(None, options:)
+}
+
+pub fn multi_select(options: Options) -> Kind {
+  MultiSelect([], options:)
 }
 
 pub fn reset(kind: Kind, refs: Set(String)) -> Kind {
@@ -87,7 +115,7 @@ pub fn evaluate(
 
 pub fn update(kind: Kind, value: Value) -> Result(Kind, Report(Error)) {
   case kind, value {
-    Data(..), _value -> report.error(error.BadKind)
+    Data(..), _value -> report.error(error.BadKind("data"))
 
     Text(..), value.String(string) -> Ok(Text(string))
     Textarea(..), value.String(string) -> Ok(Textarea(string))
@@ -125,5 +153,74 @@ pub fn value(kind: Kind) -> Option(Result(Value, Report(Error))) {
 
     MultiSelect(selected, ..) ->
       Some(Ok(value.List(list.map(selected, choice.value))))
+  }
+}
+
+pub fn decoder(
+  kind: String,
+  dict: Dict(String, Dynamic),
+) -> Result(Kind, Report(Error)) {
+  case kind {
+    "data" -> data_decoder(dict)
+    "text" -> text_decoder(dict)
+    "textarea" -> textarea_decoder(dict)
+    "radio" -> radio_decoder(dict)
+    "checkbox" -> checkbox_decoder(dict)
+    "select" -> select_decoder(dict)
+    unknown -> report.error(error.UnknownKind(unknown))
+  }
+}
+
+fn data_decoder(dict: Dict(String, Dynamic)) -> Result(Kind, Report(Error)) {
+  use source <- result.try({
+    case dict.get(dict, "source") {
+      Error(Nil) -> error.missing_property("source")
+      Ok(dynamic) -> Ok(source.decoder(dynamic))
+    }
+  })
+
+  Ok(Data(source: reset.try_new(source, source.refs)))
+}
+
+fn text_decoder(_dict: Dict(String, Dynamic)) -> Result(Kind, Report(Error)) {
+  todo
+}
+
+fn textarea_decoder(_dict: Dict(String, Dynamic)) -> Result(Kind, Report(Error)) {
+  todo
+}
+
+fn radio_decoder(_dict: Dict(String, Dynamic)) -> Result(Kind, Report(Error)) {
+  todo
+}
+
+fn checkbox_decoder(_dict: Dict(String, Dynamic)) -> Result(Kind, Report(Error)) {
+  todo
+}
+
+fn select_decoder(dict: Dict(String, Dynamic)) -> Result(Kind, Report(Error)) {
+  use multiple <- result.try({
+    case dict.get(dict, "multiple") {
+      Error(Nil) -> Ok(False)
+
+      Ok(dynamic) ->
+        decode.run(dynamic, decode.bool)
+        |> error.bad_property("multiple")
+    }
+  })
+
+  use options <- result.try({
+    case dict.get(dict, "source") {
+      Error(Nil) -> error.missing_property("source")
+
+      Ok(dynamic) ->
+        options.decoder(dynamic)
+        |> report.error_context(error.BadProperty("source"))
+    }
+  })
+
+  case multiple {
+    False -> Ok(Select(None, options:))
+    True -> Ok(MultiSelect([], options:))
   }
 }

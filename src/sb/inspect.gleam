@@ -1,5 +1,6 @@
 import gleam/bool
 import gleam/dict
+import gleam/io
 import gleam/list
 import gleam/option.{type Option}
 import gleam/string
@@ -13,13 +14,21 @@ import sb/report.{type Report}
 import sb/reset.{type Reset}
 import sb/scope.{type Scope}
 import sb/source.{type Source}
+import sb/task.{type Task}
 import sb/value.{type Value}
+
+pub fn inspect_task(task: Task) {
+  inspect_fields(task.fields)
+  |> list.map(fn(v) { " " <> v })
+  |> string.join("\n")
+  |> io.println
+}
 
 pub fn inspect_scope(scope: Scope) -> String {
   let values = {
     use #(id, value) <- list.map(dict.to_list(scope))
 
-    ansi.green(id)
+    id
     <> ansi.grey("=")
     <> case value {
       Error(report) -> inspect_report(report)
@@ -65,7 +74,7 @@ fn inspect_kind(kind: Kind) -> String {
 }
 
 fn inspect_report(report: Report(Error)) -> String {
-  ansi.red(string.inspect(report.issue))
+  ansi.red(string.inspect(report.issue(report)))
 }
 
 fn inspect_choice(choice: Choice) -> String {

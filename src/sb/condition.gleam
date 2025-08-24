@@ -1,4 +1,9 @@
-import gleam/dict
+import gleam/dict.{type Dict}
+import gleam/dynamic.{type Dynamic}
+import gleam/dynamic/decode
+import gleam/result
+import sb/error.{type Error}
+import sb/report.{type Report}
 import sb/scope.{type Scope}
 import sb/value.{type Value}
 
@@ -68,5 +73,54 @@ pub fn evaluate(condition: Condition, scope: Scope) -> Condition {
         Ok(_) -> Resolved(True)
         Error(Nil) -> Resolved(True)
       }
+  }
+}
+
+pub fn decoder(dynamic: Dynamic) -> Result(Condition, Report(Error)) {
+  case decode.run(dynamic, decode.bool) {
+    Ok(bool) -> Ok(Resolved(bool))
+
+    Error(..) ->
+      decode.run(dynamic, decode.dict(decode.string, decode.dynamic))
+      |> result.try(kind_decoder)
+      |> report.map_error(error.DecodeError)
+  }
+}
+
+fn kind_decoder(
+  dict: Dict(String, Dynamic),
+) -> Result(Condition, List(decode.DecodeError)) {
+  case dict.to_list(dict) {
+    [#("when", dynamic)] -> condition_decoder(dynamic, Defined, Equal)
+    [#("unless", dynamic)] -> condition_decoder(dynamic, NotDefined, NotEqual)
+    [#(_unknown, _)] -> todo
+    _bad -> todo
+  }
+}
+
+fn condition_decoder(
+  dynamic: Dynamic,
+  defined: fn(String) -> Condition,
+  equal: fn(String, Value) -> Condition,
+) -> Result(Condition, List(decode.DecodeError)) {
+  case decode.run(dynamic, decode.string) {
+    Ok(id) -> Ok(defined(id))
+
+    Error(..) -> {
+      use dict <- result.try(decode.run(
+        dynamic,
+        decode.dict(decode.string, decode.dynamic),
+      ))
+
+      case dict.to_list(dict) {
+        [#(id, dynamic)] ->
+          case decode.run(dynamic, value.decoder()) {
+            Error(error) -> Error(error)
+            Ok(value) -> Ok(equal(id, value))
+          }
+
+        _bad -> todo
+      }
+    }
   }
 }

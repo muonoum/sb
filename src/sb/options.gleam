@@ -1,4 +1,7 @@
 import gleam/bool
+import gleam/dict
+import gleam/dynamic.{type Dynamic}
+import gleam/dynamic/decode
 import gleam/list
 import gleam/option.{None}
 import gleam/result
@@ -22,13 +25,13 @@ pub type Group {
 }
 
 pub fn from_source(source: Source) -> Options {
-  SingleSource(reset.new(Ok(source), source.refs(source)))
+  SingleSource(reset.try_new(Ok(source), source.refs))
 }
 
 pub fn from_groups(groups: List(#(String, Source))) -> Options {
   SourceGroups({
     use #(label, source) <- list.map(groups)
-    Group(label:, source: reset.new(Ok(source), source.refs(source)))
+    Group(label:, source: reset.try_new(Ok(source), source.refs))
   })
 }
 
@@ -121,4 +124,21 @@ fn select_object(
   use #(have, value) <- list.find_map(choices)
   use <- bool.guard(have != want, Error(Nil))
   Ok(choice.new(value.String(have), value))
+}
+
+pub fn decoder(dynamic: Dynamic) {
+  use dict <- result.try(
+    dynamic
+    |> decode.run(decode.dict(decode.string, decode.dynamic))
+    |> report.map_error(error.DecodeError),
+  )
+
+  case dict.to_list(dict) {
+    [#("groups", _dynamic)] -> todo
+
+    _else -> {
+      let source = source.decoder(dynamic)
+      Ok(SingleSource(reset.try_new(source, source.refs)))
+    }
+  }
 }
