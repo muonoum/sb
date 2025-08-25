@@ -32,6 +32,7 @@ pub type Task {
     command: List(String),
     runners: Access,
     approvers: Access,
+    layout: List(Result(String, Report(Error))),
     fields: Dict(String, Field),
   )
 }
@@ -107,7 +108,11 @@ pub fn update(
   Ok(Task(..task, fields: dict.insert(task.fields, id, field)))
 }
 
-pub fn decoder(dynamic: Dynamic, fields, filters) -> Result(Task, Report(Error)) {
+pub fn decoder(
+  dynamic: Dynamic,
+  fields: Dict(String, Dict(String, Dynamic)),
+  filters: Dict(String, Dict(String, Dynamic)),
+) -> Result(Task, Report(Error)) {
   let errors = []
 
   use dict <- result.try(
@@ -115,23 +120,6 @@ pub fn decoder(dynamic: Dynamic, fields, filters) -> Result(Task, Report(Error))
     |> report.map_error(error.DecodeError)
     |> result.try(error.unknown_keys(_, [task_keys])),
   )
-
-  // run(decoder, fn(errors) {
-  //   report.error(
-  //     list.reverse(list.unique(errors))
-  //     |> error.Errors,
-  //   )
-  // })
-
-  // use name <- collect_errors(zero: "", value: {
-  //   case dict.get(dict, "name") {
-  //     Error(Nil) -> error.missing_property("name")
-
-  //     Ok(dynamic) ->
-  //       decode.run(dynamic, decode.string)
-  //       |> error.bad_property("name")
-  //   }
-  // })
 
   let #(name, errors) =
     extra.collect_errors(errors, zero: "", value: {
@@ -263,6 +251,11 @@ pub fn decoder(dynamic: Dynamic, fields, filters) -> Result(Task, Report(Error))
         command:,
         runners:,
         approvers:,
+        layout: {
+          use result <- list.map(field_results)
+          use #(id, _field) <- result.map(result)
+          id
+        },
         fields: dict.from_list({
           result.partition(field_results)
           |> pair.first

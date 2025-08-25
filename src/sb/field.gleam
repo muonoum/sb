@@ -7,6 +7,7 @@ import gleam/result
 import gleam/set.{type Set}
 import sb/condition.{type Condition}
 import sb/error.{type Error}
+import sb/extra
 import sb/filter.{type Filter}
 import sb/handlers.{type Handlers}
 import sb/kind.{type Kind}
@@ -136,110 +137,130 @@ fn kind_decoder(
   dict: Dict(String, Dynamic),
   filters: Dict(String, Dict(String, Dynamic)),
 ) -> Result(#(String, Field), Report(Error)) {
+  let errors = []
+
   use kind <- result.try({
     use kind_keys <- result.try(kind.keys(kind))
     error.unknown_keys(dict, [field_keys, kind_keys])
     |> result.try(kind.decoder(kind, _))
   })
 
-  use id <- result.try({
-    case dict.get(dict, "id") {
-      Error(Nil) -> error.missing_property("id")
+  let #(id, errors) =
+    extra.collect_errors(errors, zero: "", value: {
+      case dict.get(dict, "id") {
+        Error(Nil) -> error.missing_property("id")
 
-      Ok(dynamic) ->
-        decode.run(dynamic, decode.string)
-        |> error.bad_property("id")
-    }
-  })
+        Ok(dynamic) ->
+          decode.run(dynamic, decode.string)
+          |> error.bad_property("id")
+      }
+    })
 
-  use label <- result.try({
-    case dict.get(dict, "label") {
-      Error(Nil) -> Ok(None)
+  let #(label, errors) =
+    extra.collect_errors(errors, zero: None, value: {
+      case dict.get(dict, "label") {
+        Error(Nil) -> Ok(None)
 
-      Ok(dynamic) ->
-        decode.run(dynamic, decode.string)
-        |> error.bad_property("label")
-        |> result.map(Some)
-    }
-  })
+        Ok(dynamic) ->
+          decode.run(dynamic, decode.string)
+          |> error.bad_property("label")
+          |> result.map(Some)
+      }
+    })
 
-  use description <- result.try({
-    case dict.get(dict, "description") {
-      Error(Nil) -> Ok(None)
+  let #(description, errors) =
+    extra.collect_errors(errors, zero: None, value: {
+      case dict.get(dict, "description") {
+        Error(Nil) -> Ok(None)
 
-      Ok(dynamic) ->
-        decode.run(dynamic, decode.string)
-        |> error.bad_property("description")
-        |> result.map(Some)
-    }
-  })
+        Ok(dynamic) ->
+          decode.run(dynamic, decode.string)
+          |> error.bad_property("description")
+          |> result.map(Some)
+      }
+    })
 
-  use disabled <- result.try({
-    case dict.get(dict, "disabled") {
-      Error(Nil) -> Ok(condition.false())
+  let #(disabled, errors) =
+    extra.collect_errors(errors, zero: condition.false(), value: {
+      case dict.get(dict, "disabled") {
+        Error(Nil) -> Ok(condition.false())
 
-      Ok(dynamic) ->
-        condition.decoder(dynamic)
-        |> report.error_context(error.BadProperty("disabaled"))
-    }
-  })
+        Ok(dynamic) ->
+          condition.decoder(dynamic)
+          |> report.error_context(error.BadProperty("disabaled"))
+      }
+    })
 
-  use hidden <- result.try({
-    case dict.get(dict, "hidden") {
-      Error(Nil) -> Ok(condition.false())
+  let #(hidden, errors) =
+    extra.collect_errors(errors, zero: condition.false(), value: {
+      case dict.get(dict, "hidden") {
+        Error(Nil) -> Ok(condition.false())
 
-      Ok(dynamic) ->
-        condition.decoder(dynamic)
-        |> report.error_context(error.BadProperty("disabaled"))
-    }
-  })
+        Ok(dynamic) ->
+          condition.decoder(dynamic)
+          |> report.error_context(error.BadProperty("disabaled"))
+      }
+    })
 
-  use ignored <- result.try({
-    case dict.get(dict, "ignored") {
-      Error(Nil) -> Ok(condition.false())
+  let #(ignored, errors) =
+    extra.collect_errors(errors, zero: condition.false(), value: {
+      case dict.get(dict, "ignored") {
+        Error(Nil) -> Ok(condition.false())
 
-      Ok(dynamic) ->
-        condition.decoder(dynamic)
-        |> report.error_context(error.BadProperty("disabaled"))
-    }
-  })
+        Ok(dynamic) ->
+          condition.decoder(dynamic)
+          |> report.error_context(error.BadProperty("disabaled"))
+      }
+    })
 
-  use optional <- result.try({
-    case dict.get(dict, "optional") {
-      Error(Nil) -> Ok(condition.false())
+  let #(optional, errors) =
+    extra.collect_errors(errors, zero: condition.false(), value: {
+      case dict.get(dict, "optional") {
+        Error(Nil) -> Ok(condition.false())
 
-      Ok(dynamic) ->
-        condition.decoder(dynamic)
-        |> report.error_context(error.BadProperty("disabled"))
-    }
-  })
+        Ok(dynamic) ->
+          condition.decoder(dynamic)
+          |> report.error_context(error.BadProperty("disabled"))
+      }
+    })
 
-  use filters <- result.try({
-    case dict.get(dict, "filters") {
-      Error(Nil) -> Ok([])
+  let #(filters, errors) =
+    extra.collect_errors(errors, zero: [], value: {
+      case dict.get(dict, "filters") {
+        Error(Nil) -> Ok([])
 
-      Ok(dynamic) -> {
-        use list <- result.try(
-          decode.run(dynamic, decode.list(decode.dynamic))
-          |> error.bad_property("filters"),
+        Ok(dynamic) -> {
+          use list <- result.try(
+            decode.run(dynamic, decode.list(decode.dynamic))
+            |> error.bad_property("filters"),
+          )
+
+          list.try_map(list, filter.decoder(_, filters))
+        }
+      }
+    })
+
+  case errors {
+    [] -> {
+      let field =
+        Field(
+          kind:,
+          label:,
+          description:,
+          disabled: reset.new(disabled, condition.refs),
+          hidden: reset.new(hidden, condition.refs),
+          ignored: reset.new(ignored, condition.refs),
+          optional: reset.new(optional, condition.refs),
+          filters:,
         )
 
-        list.try_map(list, filter.decoder(_, filters))
-      }
+      Ok(#(id, field))
     }
-  })
 
-  let field =
-    Field(
-      kind:,
-      label:,
-      description:,
-      disabled: reset.new(disabled, condition.refs),
-      hidden: reset.new(hidden, condition.refs),
-      ignored: reset.new(ignored, condition.refs),
-      optional: reset.new(optional, condition.refs),
-      filters:,
-    )
-
-  Ok(#(id, field))
+    errors ->
+      report.error(
+        list.reverse(list.unique(errors))
+        |> error.Errors,
+      )
+  }
 }

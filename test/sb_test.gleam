@@ -23,10 +23,13 @@ pub fn main() -> Nil {
 }
 
 fn load_task(path: String) -> Task {
-  let dynamic = yaml.decode_file(path) |> should.be_ok
+  let dynamic =
+    yaml.decode_file(path)
+    |> should.be_ok
 
   let assert [doc, ..] =
-    decode.run(dynamic, decode.list(decode.dynamic)) |> should.be_ok
+    decode.run(dynamic, decode.list(decode.dynamic))
+    |> should.be_ok
 
   dots.split(doc)
   |> task.decoder(dict.new(), dict.new())
@@ -56,11 +59,19 @@ pub fn reference_reset_test() {
   let task = task.update(task, "a", value.String("a")) |> should.be_ok
   let #(task, scope) = task.evaluate(task, scope, search, handlers)
 
+  field_value(task, "a")
+  |> should.equal(value.String("a"))
+
   field_value(task, "b")
   |> should.equal(value.String("a"))
 
   let task = task.update(task, "a", value.String("b")) |> should.be_ok
-  let #(task, _scope) = task.evaluate(task, scope, search, handlers)
+  let #(task, scope) = task.evaluate(task, scope, search, handlers)
+
+  field_value(task, "a")
+  |> should.equal(value.String("b"))
+
+  pprint.debug(task)
 
   field_value(task, "b")
   |> should.equal(value.String("b"))
@@ -80,6 +91,7 @@ pub fn select_field_update_test() {
       command: [],
       runners: access.everyone(),
       approvers: access.none(),
+      layout: [],
       fields: dict.from_list([#("1", field.new(field))]),
     )
 
@@ -119,6 +131,7 @@ pub fn multi_select_field_update_test() {
       command: [],
       runners: access.everyone(),
       approvers: access.none(),
+      layout: [],
       fields: dict.from_list([#("1", field.new(field))]),
     )
 

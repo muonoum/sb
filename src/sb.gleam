@@ -40,6 +40,7 @@ pub fn main() -> Nil {
       command: [],
       runners: access.everyone(),
       approvers: access.none(),
+      layout: [],
       fields: dict.from_list([
         #("1", field.new(radio1)),
         #("2", field.new(radio2)),
