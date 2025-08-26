@@ -9,6 +9,7 @@ import gleam/result
 import gleam/set.{type Set}
 import gleam/string
 import sb/access.{type Access}
+import sb/do
 import sb/error.{type Error}
 import sb/extra
 import sb/field.{type Field}
@@ -113,161 +114,143 @@ pub fn decoder(
   fields: Dict(String, Dict(String, Dynamic)),
   filters: Dict(String, Dict(String, Dynamic)),
 ) -> Result(Task, Report(Error)) {
-  let errors = []
+  use <- do.run
 
-  use dict <- result.try(
+  use dict <- do.require(
     decode.run(dynamic, decode.dict(decode.string, decode.dynamic))
     |> report.map_error(error.DecodeError)
     |> result.try(error.unknown_keys(_, [task_keys])),
   )
 
-  let #(name, errors) =
-    extra.collect_errors(errors, zero: "", value: {
-      case dict.get(dict, "name") {
-        Error(Nil) -> error.missing_property("name")
+  use name <- do.try(zero: "", value: {
+    case dict.get(dict, "name") {
+      Error(Nil) -> error.missing_property("name")
 
-        Ok(dynamic) ->
-          decode.run(dynamic, decode.string)
-          |> error.bad_property("name")
+      Ok(dynamic) ->
+        decode.run(dynamic, decode.string)
+        |> error.bad_property("name")
+    }
+  })
+
+  use category <- do.try(zero: [], value: {
+    case dict.get(dict, "category") {
+      Error(Nil) -> error.missing_property("category")
+
+      Ok(dynamic) ->
+        decode.run(dynamic, decode.list(decode.string))
+        |> error.bad_property("category")
+    }
+  })
+
+  use id <- do.try(zero: "", value: {
+    case dict.get(dict, "id") {
+      Error(Nil) -> {
+        let category = string.join(list.map(category, into_id), "-")
+        Ok(string.join([category, into_id(name)], "-"))
       }
-    })
 
-  let #(category, errors) =
-    extra.collect_errors(errors, zero: [], value: {
-      case dict.get(dict, "category") {
-        Error(Nil) -> error.missing_property("category")
+      Ok(dynamic) ->
+        decode.run(dynamic, decode.string)
+        |> error.bad_property("id")
+    }
+  })
 
-        Ok(dynamic) ->
-          decode.run(dynamic, decode.list(decode.string))
-          |> error.bad_property("category")
-      }
-    })
+  use summary <- do.try(zero: None, value: {
+    case dict.get(dict, "summary") {
+      Error(Nil) -> Ok(None)
 
-  let #(id, errors) =
-    extra.collect_errors(errors, zero: "", value: {
-      case dict.get(dict, "id") {
-        Error(Nil) -> {
-          let category = string.join(list.map(category, into_id), "-")
-          Ok(string.join([category, into_id(name)], "-"))
-        }
+      Ok(dynamic) ->
+        decode.run(dynamic, decode.string)
+        |> error.bad_property("summary")
+        |> result.map(Some)
+    }
+  })
 
-        Ok(dynamic) ->
-          decode.run(dynamic, decode.string)
-          |> error.bad_property("id")
-      }
-    })
+  use description <- do.try(zero: None, value: {
+    case dict.get(dict, "description") {
+      Error(Nil) -> Ok(None)
 
-  let #(summary, errors) =
-    extra.collect_errors(errors, zero: None, value: {
-      case dict.get(dict, "summary") {
-        Error(Nil) -> Ok(None)
+      Ok(dynamic) ->
+        decode.run(dynamic, decode.string)
+        |> error.bad_property("description")
+        |> result.map(Some)
+    }
+  })
 
-        Ok(dynamic) ->
-          decode.run(dynamic, decode.string)
-          |> error.bad_property("summary")
-          |> result.map(Some)
-      }
-    })
+  use command <- do.try(zero: [], value: {
+    case dict.get(dict, "command") {
+      Error(Nil) -> Ok([])
 
-  let #(description, errors) =
-    extra.collect_errors(errors, zero: None, value: {
-      case dict.get(dict, "description") {
-        Error(Nil) -> Ok(None)
+      Ok(dynamic) ->
+        decode.run(dynamic, decode.list(decode.string))
+        |> error.bad_property("command")
+    }
+  })
 
-        Ok(dynamic) ->
-          decode.run(dynamic, decode.string)
-          |> error.bad_property("description")
-          |> result.map(Some)
-      }
-    })
+  use runners <- do.try(zero: access.none(), value: {
+    case dict.get(dict, "runners") {
+      Error(Nil) -> Ok(access.none())
 
-  let #(command, errors) =
-    extra.collect_errors(errors, zero: [], value: {
-      case dict.get(dict, "command") {
-        Error(Nil) -> Ok([])
+      Ok(dynamic) ->
+        access.decoder(dynamic)
+        |> report.error_context(error.BadProperty("runners"))
+    }
+  })
 
-        Ok(dynamic) ->
-          decode.run(dynamic, decode.list(decode.string))
-          |> error.bad_property("command")
-      }
-    })
+  use approvers <- do.try(zero: access.none(), value: {
+    case dict.get(dict, "approvers") {
+      Error(Nil) -> Ok(access.none())
 
-  let #(runners, errors) =
-    extra.collect_errors(errors, zero: access.none(), value: {
-      case dict.get(dict, "runners") {
-        Error(Nil) -> Ok(access.none())
+      Ok(dynamic) ->
+        access.decoder(dynamic)
+        |> report.error_context(error.BadProperty("approvers"))
+    }
+  })
 
-        Ok(dynamic) ->
-          access.decoder(dynamic)
-          |> report.error_context(error.BadProperty("runners"))
-      }
-    })
+  use field_results <- do.try(zero: [], value: {
+    case dict.get(dict, "fields") {
+      Error(Nil) -> Ok([])
 
-  let #(approvers, errors) =
-    extra.collect_errors(errors, zero: access.none(), value: {
-      case dict.get(dict, "approvers") {
-        Error(Nil) -> Ok(access.none())
+      Ok(dynamic) -> {
+        use list <- result.map(
+          decode.run(dynamic, decode.list(decode.dynamic))
+          |> error.bad_property("fields"),
+        )
 
-        Ok(dynamic) ->
-          access.decoder(dynamic)
-          |> report.error_context(error.BadProperty("approvers"))
-      }
-    })
+        use <- extra.return(pair.second)
+        use seen, dynamic <- list.map_fold(list, set.new())
+        case field.decoder(dynamic, fields, filters) {
+          Error(report) -> #(seen, Error(report))
 
-  let #(field_results, errors) =
-    extra.collect_errors(errors, zero: [], value: {
-      case dict.get(dict, "fields") {
-        Error(Nil) -> Ok([])
-
-        Ok(dynamic) -> {
-          use list <- result.map(
-            decode.run(dynamic, decode.list(decode.dynamic))
-            |> error.bad_property("fields"),
-          )
-
-          use <- extra.return(pair.second)
-          use seen, dynamic <- list.map_fold(list, set.new())
-          case field.decoder(dynamic, fields, filters) {
-            Error(report) -> #(seen, Error(report))
-
-            Ok(#(id, field)) ->
-              case set.contains(seen, id) {
-                True -> #(seen, report.error(error.DuplicateId(id)))
-                False -> #(set.insert(seen, id), Ok(#(id, field)))
-              }
-          }
+          Ok(#(id, field)) ->
+            case set.contains(seen, id) {
+              True -> #(seen, report.error(error.DuplicateId(id)))
+              False -> #(set.insert(seen, id), Ok(#(id, field)))
+            }
         }
       }
-    })
+    }
+  })
 
-  case errors {
-    [] ->
-      Ok(Task(
-        id:,
-        name:,
-        category:,
-        summary:,
-        description:,
-        command:,
-        runners:,
-        approvers:,
-        layout: {
-          use result <- list.map(field_results)
-          use #(id, _field) <- result.map(result)
-          id
-        },
-        fields: dict.from_list({
-          result.partition(field_results)
-          |> pair.first
-        }),
-      ))
-
-    errors ->
-      report.error(
-        list.reverse(list.unique(errors))
-        |> error.Errors,
-      )
-  }
+  do.succeed(Task(
+    id:,
+    name:,
+    category:,
+    summary:,
+    description:,
+    command:,
+    runners:,
+    approvers:,
+    layout: {
+      use result <- list.map(field_results)
+      use #(id, _field) <- result.map(result)
+      id
+    },
+    fields: dict.from_list({
+      result.partition(field_results)
+      |> pair.first
+    }),
+  ))
 }
 
 const valid_id = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
