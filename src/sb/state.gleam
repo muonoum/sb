@@ -23,8 +23,8 @@ pub fn fail(error: e) -> State(v, e, c) {
 }
 
 pub fn try(
-  state: State(a, e, c),
-  then: fn(a) -> State(b, e, c),
+  with state: State(a, e, c),
+  then then: fn(a) -> State(b, e, c),
 ) -> State(b, e, c) {
   use context <- State
   let #(context, result) = state.run(context)
@@ -40,7 +40,7 @@ pub fn get() -> State(c, e, c) {
   #(context, Ok(context))
 }
 
-pub fn set(context: c) -> State(Nil, e, c) {
+pub fn put(context: c) -> State(Nil, e, c) {
   use _context <- State
   #(context, Ok(Nil))
 }

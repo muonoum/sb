@@ -9,7 +9,6 @@ import gleam/result
 import gleam/set.{type Set}
 import gleam/string
 import sb/access.{type Access}
-import sb/collect
 import sb/error.{type Error}
 import sb/extra
 import sb/field.{type Field}
@@ -114,15 +113,13 @@ pub fn decoder(
   fields: Dict(String, Dict(String, Dynamic)),
   filters: Dict(String, Dict(String, Dynamic)),
 ) -> Result(Task, Report(Error)) {
-  use <- collect.run
-
-  use dict <- collect.require(
+  use dict <- result.try(
     decode.run(dynamic, decode.dict(decode.string, decode.dynamic))
     |> report.map_error(error.DecodeError)
     |> result.try(error.unknown_keys(_, [task_keys])),
   )
 
-  use name <- collect.try(zero: "", value: {
+  use name <- result.try({
     case dict.get(dict, "name") {
       Error(Nil) -> error.missing_property("name")
 
@@ -132,7 +129,7 @@ pub fn decoder(
     }
   })
 
-  use category <- collect.try(zero: [], value: {
+  use category <- result.try({
     case dict.get(dict, "category") {
       Error(Nil) -> error.missing_property("category")
 
@@ -142,7 +139,7 @@ pub fn decoder(
     }
   })
 
-  use id <- collect.try(zero: "", value: {
+  use id <- result.try({
     case dict.get(dict, "id") {
       Error(Nil) -> {
         let category = string.join(list.map(category, into_id), "-")
@@ -155,7 +152,7 @@ pub fn decoder(
     }
   })
 
-  use summary <- collect.try(zero: None, value: {
+  use summary <- result.try({
     case dict.get(dict, "summary") {
       Error(Nil) -> Ok(None)
 
@@ -166,7 +163,7 @@ pub fn decoder(
     }
   })
 
-  use description <- collect.try(zero: None, value: {
+  use description <- result.try({
     case dict.get(dict, "description") {
       Error(Nil) -> Ok(None)
 
@@ -177,7 +174,7 @@ pub fn decoder(
     }
   })
 
-  use command <- collect.try(zero: [], value: {
+  use command <- result.try({
     case dict.get(dict, "command") {
       Error(Nil) -> Ok([])
 
@@ -187,7 +184,7 @@ pub fn decoder(
     }
   })
 
-  use runners <- collect.try(zero: access.none(), value: {
+  use runners <- result.try({
     case dict.get(dict, "runners") {
       Error(Nil) -> Ok(access.none())
 
@@ -197,7 +194,7 @@ pub fn decoder(
     }
   })
 
-  use approvers <- collect.try(zero: access.none(), value: {
+  use approvers <- result.try({
     case dict.get(dict, "approvers") {
       Error(Nil) -> Ok(access.none())
 
@@ -207,7 +204,7 @@ pub fn decoder(
     }
   })
 
-  use field_results <- collect.try(zero: [], value: {
+  use field_results <- result.try({
     case dict.get(dict, "fields") {
       Error(Nil) -> Ok([])
 
@@ -232,7 +229,7 @@ pub fn decoder(
     }
   })
 
-  collect.succeed(Task(
+  Ok(Task(
     id:,
     name:,
     category:,

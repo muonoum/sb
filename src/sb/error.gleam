@@ -9,9 +9,10 @@ import sb/report.{type Report}
 import sb/value.{type Value}
 
 pub type Error {
-  Errors(List(Report(Error)))
+  Collected(List(Report(Error)))
 
   DuplicateId(String)
+  Message(String)
   Required
   UnknownKeys(List(String))
   UnknownKind(String)

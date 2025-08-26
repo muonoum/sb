@@ -28,7 +28,7 @@ pub fn error_context(
   }
 }
 
-pub fn with_context(
+pub fn with_error_context(
   context: issue,
   result: fn() -> Result(value, Report(issue)),
 ) -> Result(value, Report(issue)) {
@@ -37,11 +37,11 @@ pub fn with_context(
 
 pub fn map_error(
   result: Result(value, error),
-  f: fn(error) -> issue,
+  map: fn(error) -> issue,
 ) -> Result(value, Report(issue)) {
   case result {
     Ok(value) -> Ok(value)
-    Error(err) -> error(f(err))
+    Error(err) -> error(map(err))
   }
 }
 

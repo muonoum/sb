@@ -219,8 +219,8 @@ fn select_decoder(dict: Dict(String, Dynamic)) -> Result(Kind, Report(Error)) {
     }
   })
 
-  case multiple {
-    False -> Ok(Select(None, options:))
-    True -> Ok(MultiSelect([], options:))
-  }
+  Ok(case multiple {
+    False -> Select(None, options:)
+    True -> MultiSelect([], options:)
+  })
 }

@@ -4,24 +4,32 @@ import sb/error.{type Error}
 import sb/report.{type Report}
 import sb/state.{type State}
 
+fn collect(reports: List(Report(Error))) -> Report(Error) {
+  report.new(error.Collected(list.reverse(reports)))
+}
+
 pub fn run(state: fn() -> State(v, e, List(Report(Error)))) -> Result(v, e) {
   state.run(state(), [])
 }
 
-pub fn require(
-  value: Result(a, Report(Error)),
-  then: fn(a) -> State(b, Report(Error), List(Report(Error))),
-) -> State(b, Report(Error), List(Report(Error))) {
-  state.try(do_require(value), then)
+pub fn succeed(value: v) -> State(v, Report(Error), List(Report(Error))) {
+  use reports <- state.try(state.get())
+  use <- bool.guard(reports == [], state.succeed(value))
+  state.fail(collect(reports))
 }
 
-fn do_require(result: Result(a, Report(Error))) -> State(a, Report(Error), c) {
-  use _context <- state.try(state.get())
+pub fn require(
+  result: Result(a, Report(Error)),
+  then: fn(a) -> State(b, Report(Error), List(Report(Error))),
+) -> State(b, Report(Error), List(Report(Error))) {
+  state.try(then:, with: {
+    use reports <- state.try(state.get())
 
-  case result {
-    Error(report) -> state.fail(report)
-    Ok(value) -> state.succeed(value)
-  }
+    case result {
+      Error(report) -> state.fail(collect([report, ..reports]))
+      Ok(value) -> state.succeed(value)
+    }
+  })
 }
 
 pub fn try(
@@ -29,32 +37,17 @@ pub fn try(
   value result: Result(a, Report(Error)),
   then then: fn(a) -> State(b, Report(Error), List(Report(Error))),
 ) -> State(b, Report(Error), List(Report(Error))) {
-  state.try(do_try(zero, result), then)
-}
+  state.try(then:, with: {
+    use reports <- state.try(state.get())
 
-fn do_try(
-  zero: v,
-  result: Result(v, Report(Error)),
-) -> State(v, Report(Error), List(Report(Error))) {
-  use reports <- state.try(state.get())
+    case result {
+      Ok(value) -> state.succeed(value)
 
-  case result {
-    Ok(value) -> state.succeed(value)
-
-    Error(report) -> {
-      let context = state.set([report, ..reports])
-      use _value <- state.try(context)
-      state.succeed(zero)
+      Error(report) -> {
+        let context = state.put([report, ..reports])
+        use _value <- state.try(context)
+        state.succeed(zero)
+      }
     }
-  }
-}
-
-pub fn succeed(value: v) -> State(v, Report(Error), List(Report(Error))) {
-  use reports <- state.try(state.get())
-  use <- bool.guard(reports == [], state.succeed(value))
-
-  state.fail(report.new(
-    list.reverse(list.unique(reports))
-    |> error.Errors,
-  ))
+  })
 }

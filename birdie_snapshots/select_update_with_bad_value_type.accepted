@@ -1,7 +1,0 @@
----
-version: 1.4.0
-title: select_update_with_bad_value_type
-file: ./test/sb_test.gleam
-test_name: select_field_update_test
----
-BadValue(Null)

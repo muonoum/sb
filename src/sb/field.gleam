@@ -5,7 +5,6 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/set.{type Set}
-import sb/collect
 import sb/condition.{type Condition}
 import sb/error.{type Error}
 import sb/filter.{type Filter}
@@ -137,15 +136,13 @@ fn kind_decoder(
   dict: Dict(String, Dynamic),
   filters: Dict(String, Dict(String, Dynamic)),
 ) -> Result(#(String, Field), Report(Error)) {
-  use <- collect.run
-
-  use kind <- collect.require({
+  use kind <- result.try({
     use kind_keys <- result.try(kind.keys(kind))
     error.unknown_keys(dict, [field_keys, kind_keys])
     |> result.try(kind.decoder(kind, _))
   })
 
-  use id <- collect.try(zero: "", value: {
+  use id <- result.try({
     case dict.get(dict, "id") {
       Error(Nil) -> error.missing_property("id")
 
@@ -155,7 +152,7 @@ fn kind_decoder(
     }
   })
 
-  use label <- collect.try(zero: None, value: {
+  use label <- result.try({
     case dict.get(dict, "label") {
       Error(Nil) -> Ok(None)
 
@@ -166,7 +163,7 @@ fn kind_decoder(
     }
   })
 
-  use description <- collect.try(zero: None, value: {
+  use description <- result.try({
     case dict.get(dict, "description") {
       Error(Nil) -> Ok(None)
 
@@ -177,7 +174,7 @@ fn kind_decoder(
     }
   })
 
-  use disabled <- collect.try(zero: condition.false(), value: {
+  use disabled <- result.try({
     case dict.get(dict, "disabled") {
       Error(Nil) -> Ok(condition.false())
 
@@ -187,7 +184,7 @@ fn kind_decoder(
     }
   })
 
-  use hidden <- collect.try(zero: condition.false(), value: {
+  use hidden <- result.try({
     case dict.get(dict, "hidden") {
       Error(Nil) -> Ok(condition.false())
 
@@ -197,7 +194,7 @@ fn kind_decoder(
     }
   })
 
-  use ignored <- collect.try(zero: condition.false(), value: {
+  use ignored <- result.try({
     case dict.get(dict, "ignored") {
       Error(Nil) -> Ok(condition.false())
 
@@ -207,7 +204,7 @@ fn kind_decoder(
     }
   })
 
-  use optional <- collect.try(zero: condition.false(), value: {
+  use optional <- result.try({
     case dict.get(dict, "optional") {
       Error(Nil) -> Ok(condition.false())
 
@@ -217,7 +214,7 @@ fn kind_decoder(
     }
   })
 
-  use filters <- collect.try(zero: [], value: {
+  use filters <- result.try({
     case dict.get(dict, "filters") {
       Error(Nil) -> Ok([])
 
@@ -244,5 +241,5 @@ fn kind_decoder(
       filters:,
     )
 
-  collect.succeed(#(id, field))
+  Ok(#(id, field))
 }
