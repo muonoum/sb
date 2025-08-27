@@ -13,7 +13,7 @@ pub fn run(state: fn() -> State(v, e, List(Report(Error)))) -> Result(v, e) {
 }
 
 pub fn succeed(value: v) -> State(v, Report(Error), List(Report(Error))) {
-  use reports <- state.try(state.get())
+  use reports <- state.do(state.get())
   use <- bool.guard(reports == [], state.succeed(value))
   state.fail(collect(reports))
 }
@@ -22,8 +22,8 @@ pub fn require(
   result: Result(a, Report(Error)),
   then: fn(a) -> State(b, Report(Error), List(Report(Error))),
 ) -> State(b, Report(Error), List(Report(Error))) {
-  state.try(then:, with: {
-    use reports <- state.try(state.get())
+  state.do(then:, with: {
+    use reports <- state.do(state.get())
 
     case result {
       Error(report) -> state.fail(collect([report, ..reports]))
@@ -37,15 +37,15 @@ pub fn try(
   value result: Result(a, Report(Error)),
   then then: fn(a) -> State(b, Report(Error), List(Report(Error))),
 ) -> State(b, Report(Error), List(Report(Error))) {
-  state.try(then:, with: {
-    use reports <- state.try(state.get())
+  state.do(then:, with: {
+    use reports <- state.do(state.get())
 
     case result {
       Ok(value) -> state.succeed(value)
 
       Error(report) -> {
         let context = state.put([report, ..reports])
-        use _value <- state.try(context)
+        use _value <- state.do(context)
         state.succeed(zero)
       }
     }

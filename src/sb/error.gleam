@@ -3,7 +3,7 @@ import gleam/dict.{type Dict}
 import gleam/dynamic/decode
 import gleam/json
 import gleam/list
-import gleam/set
+import gleam/set.{type Set}
 import sb/parser
 import sb/report.{type Report}
 import sb/value.{type Value}
@@ -30,18 +30,6 @@ pub type Error {
   TextError(parser.Message(String))
 }
 
-pub fn missing_property(name: String) -> Result(v, Report(Error)) {
-  report.error(MissingProperty(name))
-}
-
-pub fn bad_property(
-  result: Result(v, List(decode.DecodeError)),
-  name: String,
-) -> Result(v, Report(Error)) {
-  report.map_error(result, DecodeError)
-  |> report.error_context(BadProperty(name))
-}
-
 pub fn unknown_keys(
   dict: Dict(String, v),
   known_keys: List(List(String)),
@@ -57,4 +45,19 @@ pub fn unknown_keys(
 
   use <- bool.guard(unknown_keys == [], Ok(dict))
   report.error(UnknownKeys(unknown_keys))
+}
+
+pub fn try_duplicate_ids(
+  result: Result(#(String, v), Report(Error)),
+  seen: Set(String),
+) -> #(Set(String), Result(#(String, v), Report(Error))) {
+  case result {
+    Error(report) -> #(seen, Error(report))
+
+    Ok(#(id, field)) ->
+      case set.contains(seen, id) {
+        True -> #(seen, report.error(DuplicateId(id)))
+        False -> #(set.insert(seen, id), Ok(#(id, field)))
+      }
+  }
 }

@@ -38,11 +38,12 @@ fn dict_decoder(
   filters: Dict(String, Dict(String, Dynamic)),
 ) -> Result(Filter, Report(Error)) {
   use kind <- result.try(case dict.get(dict, "kind") {
-    Error(Nil) -> error.missing_property("kind")
+    Error(Nil) -> report.error(error.MissingProperty("kind"))
 
     Ok(dynamic) ->
       decode.run(dynamic, decode.string)
-      |> error.bad_property("category")
+      |> report.map_error(error.DecodeError)
+      |> report.error_context(error.BadProperty("kind"))
   })
 
   case dict.get(filters, kind) {

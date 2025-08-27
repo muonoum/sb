@@ -174,7 +174,7 @@ pub fn decoder(
 fn data_decoder(dict: Dict(String, Dynamic)) -> Result(Kind, Report(Error)) {
   use source <- result.try({
     case dict.get(dict, "source") {
-      Error(Nil) -> error.missing_property("source")
+      Error(Nil) -> report.error(error.MissingProperty("source"))
       Ok(dynamic) -> Ok(source.decoder(dynamic))
     }
   })
@@ -205,13 +205,14 @@ fn select_decoder(dict: Dict(String, Dynamic)) -> Result(Kind, Report(Error)) {
 
       Ok(dynamic) ->
         decode.run(dynamic, decode.bool)
-        |> error.bad_property("multiple")
+        |> report.map_error(error.DecodeError)
+        |> report.error_context(error.BadProperty("multiple"))
     }
   })
 
   use options <- result.try({
     case dict.get(dict, "source") {
-      Error(Nil) -> error.missing_property("source")
+      Error(Nil) -> report.error(error.MissingProperty("source"))
 
       Ok(dynamic) ->
         options.decoder(dynamic)

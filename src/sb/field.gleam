@@ -118,11 +118,12 @@ fn dict_decoder(
   filters: Dict(String, Dict(String, Dynamic)),
 ) -> Result(#(String, Field), Report(Error)) {
   use kind <- result.try(case dict.get(dict, "kind") {
-    Error(Nil) -> error.missing_property("kind")
+    Error(Nil) -> report.error(error.MissingProperty("kind"))
 
     Ok(dynamic) ->
       decode.run(dynamic, decode.string)
-      |> error.bad_property("category")
+      |> report.map_error(error.DecodeError)
+      |> report.error_context(error.BadProperty("kind"))
   })
 
   case dict.get(fields, kind) {
@@ -144,11 +145,12 @@ fn kind_decoder(
 
   use id <- result.try({
     case dict.get(dict, "id") {
-      Error(Nil) -> error.missing_property("id")
+      Error(Nil) -> report.error(error.MissingProperty("id"))
 
       Ok(dynamic) ->
         decode.run(dynamic, decode.string)
-        |> error.bad_property("id")
+        |> report.map_error(error.DecodeError)
+        |> report.error_context(error.BadProperty("id"))
     }
   })
 
@@ -158,7 +160,8 @@ fn kind_decoder(
 
       Ok(dynamic) ->
         decode.run(dynamic, decode.string)
-        |> error.bad_property("label")
+        |> report.map_error(error.DecodeError)
+        |> report.error_context(error.BadProperty("label"))
         |> result.map(Some)
     }
   })
@@ -169,7 +172,8 @@ fn kind_decoder(
 
       Ok(dynamic) ->
         decode.run(dynamic, decode.string)
-        |> error.bad_property("description")
+        |> report.map_error(error.DecodeError)
+        |> report.error_context(error.BadProperty("description"))
         |> result.map(Some)
     }
   })
@@ -221,7 +225,8 @@ fn kind_decoder(
       Ok(dynamic) -> {
         use list <- result.try(
           decode.run(dynamic, decode.list(decode.dynamic))
-          |> error.bad_property("filters"),
+          |> report.map_error(error.DecodeError)
+          |> report.error_context(error.BadProperty("filters")),
         )
 
         list.try_map(list, filter.decoder(_, filters))

@@ -22,7 +22,15 @@ pub fn fail(error: e) -> State(v, e, c) {
   #(context, Error(error))
 }
 
-pub fn try(
+pub fn then(
+  with state: State(a, e, c),
+  then then: fn() -> State(b, e, c),
+) -> State(b, e, c) {
+  use _ <- do(state)
+  then()
+}
+
+pub fn do(
   with state: State(a, e, c),
   then then: fn(a) -> State(b, e, c),
 ) -> State(b, e, c) {
@@ -43,4 +51,9 @@ pub fn get() -> State(c, e, c) {
 pub fn put(context: c) -> State(Nil, e, c) {
   use _context <- State
   #(context, Ok(Nil))
+}
+
+pub fn update(with: fn(c) -> c) -> State(Nil, e, c) {
+  use context <- do(get())
+  put(with(context))
 }

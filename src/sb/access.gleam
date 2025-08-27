@@ -44,7 +44,8 @@ pub fn decoder(dynamic: Dynamic) -> Result(Access, Report(Error)) {
 
     Ok(dynamic) ->
       decode.run(dynamic, users_decoder())
-      |> error.bad_property("users")
+      |> report.map_error(error.DecodeError)
+      |> report.error_context(error.BadProperty("users"))
   })
 
   use groups <- result.try(case dict.get(dict, "groups") {
@@ -52,14 +53,16 @@ pub fn decoder(dynamic: Dynamic) -> Result(Access, Report(Error)) {
 
     Ok(dynamic) ->
       decode.run(dynamic, decode.list(decode.string))
-      |> error.bad_property("groups")
+      |> report.map_error(error.DecodeError)
+      |> report.error_context(error.BadProperty("groups"))
   })
 
   use keys <- result.try(case dict.get(dict, "keys") {
     Error(Nil) -> Ok([])
     Ok(dynamic) ->
       decode.run(dynamic, decode.list(decode.string))
-      |> error.bad_property("keys")
+      |> report.map_error(error.DecodeError)
+      |> report.error_context(error.BadProperty("keys"))
   })
 
   Ok(Access(users:, groups:, keys:))

@@ -121,21 +121,23 @@ pub fn decoder(
 
   use name <- result.try({
     case dict.get(dict, "name") {
-      Error(Nil) -> error.missing_property("name")
+      Error(Nil) -> report.error(error.MissingProperty("name"))
 
       Ok(dynamic) ->
         decode.run(dynamic, decode.string)
-        |> error.bad_property("name")
+        |> report.map_error(error.DecodeError)
+        |> report.error_context(error.BadProperty("name"))
     }
   })
 
   use category <- result.try({
     case dict.get(dict, "category") {
-      Error(Nil) -> error.missing_property("category")
+      Error(Nil) -> report.error(error.MissingProperty("category"))
 
       Ok(dynamic) ->
         decode.run(dynamic, decode.list(decode.string))
-        |> error.bad_property("category")
+        |> report.map_error(error.DecodeError)
+        |> report.error_context(error.BadProperty("category"))
     }
   })
 
@@ -148,7 +150,8 @@ pub fn decoder(
 
       Ok(dynamic) ->
         decode.run(dynamic, decode.string)
-        |> error.bad_property("id")
+        |> report.map_error(error.DecodeError)
+        |> report.error_context(error.BadProperty("id"))
     }
   })
 
@@ -158,7 +161,8 @@ pub fn decoder(
 
       Ok(dynamic) ->
         decode.run(dynamic, decode.string)
-        |> error.bad_property("summary")
+        |> report.map_error(error.DecodeError)
+        |> report.error_context(error.BadProperty("summary"))
         |> result.map(Some)
     }
   })
@@ -169,7 +173,8 @@ pub fn decoder(
 
       Ok(dynamic) ->
         decode.run(dynamic, decode.string)
-        |> error.bad_property("description")
+        |> report.map_error(error.DecodeError)
+        |> report.error_context(error.BadProperty("description"))
         |> result.map(Some)
     }
   })
@@ -180,7 +185,8 @@ pub fn decoder(
 
       Ok(dynamic) ->
         decode.run(dynamic, decode.list(decode.string))
-        |> error.bad_property("command")
+        |> report.map_error(error.DecodeError)
+        |> report.error_context(error.BadProperty("command"))
     }
   })
 
@@ -211,7 +217,8 @@ pub fn decoder(
       Ok(dynamic) -> {
         use list <- result.map(
           decode.run(dynamic, decode.list(decode.dynamic))
-          |> error.bad_property("fields"),
+          |> report.map_error(error.DecodeError)
+          |> report.error_context(error.BadProperty("fields")),
         )
 
         use <- extra.return(pair.second)

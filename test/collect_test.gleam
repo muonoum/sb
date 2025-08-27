@@ -5,8 +5,8 @@ import sb/report
 
 pub fn collect_test() {
   collect.run(fn() {
-    use a <- collect.try(zero: "", value: report.error(error.Message("a")))
-    use b <- collect.require(report.error(error.Message("b")))
+    use a <- collect.try(zero: "", value: Ok("a"))
+    use b <- collect.require(Ok([]))
     collect.succeed(#(a, b))
   })
   |> report.error_context(error.Message("c"))
