@@ -43,21 +43,26 @@ fn fail(
 }
 
 fn unwrap(
-  error: Error,
-  fail: fn(Report(Error)) -> State(v, e, c),
+  zero: v,
+  context: Context,
   result: Result(v, Report(Error)),
-) -> State(v, e, c) {
+) -> State(v, e, Context) {
   case result {
-    Error(report) -> fail(report.context(report, error))
     Ok(value) -> state.succeed(value)
+    Error(report) -> fail(report, zero, context)
   }
 }
 
-fn decode_dict(
-  decode: Result(Dict(String, Dynamic), Report(Error)),
+fn setup(
+  dynamic: Dynamic,
   then: fn() -> State(v, List(Report(Error)), Context),
 ) -> State(v, List(Report(Error)), Context) {
-  use dict <- ok(decode)
+  use dict <- ok(
+    decode.run(dynamic, decode.dict(decode.string, decode.dynamic))
+    |> report.map_error(error.DecodeError)
+    |> result.try(error.unknown_keys(_, [task_keys])),
+  )
+
   use #(_dict, reports) <- state.do(state.get())
   use <- state.then(state.put(#(dict, reports)))
   then()
@@ -85,12 +90,14 @@ fn required(
 ) -> State(b, List(Report(Error)), Context) {
   state.do(then:, with: {
     use #(dict, _) as context <- state.do(state.get())
-    let fail = fail(_, zero, context)
 
-    case dict.get(dict, name) {
-      Error(Nil) -> fail(report.new(error.MissingProperty(name)))
-      Ok(dynamic) -> unwrap(error.BadProperty(name), fail, decoder(dynamic))
-    }
+    unwrap(zero, context, case dict.get(dict, name) {
+      Error(Nil) -> report.error(error.MissingProperty(name))
+
+      Ok(dynamic) ->
+        decoder(dynamic)
+        |> report.error_context(error.BadProperty(name))
+    })
   })
 }
 
@@ -103,13 +110,13 @@ fn default(
 ) -> State(b, List(Report(Error)), Context) {
   state.do(then:, with: {
     use #(dict, _) as context <- state.do(state.get())
-    let fail = fail(_, zero, context)
 
-    unwrap(error.BadProperty(name), fail, {
-      case dict.get(dict, name) {
-        Error(Nil) -> default()
-        Ok(dynamic) -> decoder(dynamic)
-      }
+    unwrap(zero, context, case dict.get(dict, name) {
+      Error(Nil) -> default()
+
+      Ok(dynamic) ->
+        decoder(dynamic)
+        |> report.error_context(error.BadProperty(name))
     })
   })
 }
@@ -122,13 +129,13 @@ fn zero(
 ) -> State(b, List(Report(Error)), Context) {
   state.do(then:, with: {
     use #(dict, _) as context <- state.do(state.get())
-    let fail = fail(_, zero, context)
 
-    unwrap(error.BadProperty(name), fail, {
-      case dict.get(dict, name) {
-        Error(Nil) -> Ok(zero)
-        Ok(dynamic) -> decoder(dynamic)
-      }
+    unwrap(zero, context, case dict.get(dict, name) {
+      Error(Nil) -> Ok(zero)
+
+      Ok(dynamic) ->
+        decoder(dynamic)
+        |> report.error_context(error.BadProperty(name))
     })
   })
 }
@@ -143,11 +150,7 @@ fn task_decoder(
   fields: Dict(String, Dict(String, Dynamic)),
   filters: Dict(String, Dict(String, Dynamic)),
 ) -> State(Task, List(Report(Error)), Context) {
-  use <- decode_dict({
-    decode.run(dynamic, decode.dict(decode.string, decode.dynamic))
-    |> report.map_error(error.DecodeError)
-    |> result.try(error.unknown_keys(_, [task_keys]))
-  })
+  use <- setup(dynamic)
 
   use name <- required("name", "", decode(_, decode.string))
   use category <- required("category", [], decode(_, decode.list(decode.string)))
