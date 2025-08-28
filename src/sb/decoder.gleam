@@ -1,14 +1,14 @@
 import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
-import gleam/dynamic/decode.{type Decoder}
+import gleam/dynamic/decode
 import gleam/list
-import gleam/option
+import gleam/option.{type Option, None, Some}
 import gleam/pair
 import gleam/result
 import gleam/set
 import gleam/string
-import sb/access
+import sb/access.{type Access}
 import sb/dots
 import sb/error.{type Error}
 import sb/extra
@@ -18,13 +18,47 @@ import sb/state.{type State}
 import sb/task.{type Task, Task}
 import sb/yaml
 
-type Context =
-  #(Dict(String, Dynamic), List(Report(Error)))
+type Decoder(v) {
+  Decoder(zero: v, decoder: fn(Dynamic) -> Result(v, Report(Error)))
+}
 
-fn decode(dynamic: Dynamic, decoder: Decoder(v)) -> Result(v, Report(Error)) {
+fn decode_run(
+  dynamic: Dynamic,
+  decoder: decode.Decoder(v),
+) -> Result(v, Report(Error)) {
   decode.run(dynamic, decoder)
   |> report.map_error(error.DecodeError)
 }
+
+fn string_decoder() -> Decoder(String) {
+  Decoder(zero: "", decoder: decode_run(_, decode.string))
+}
+
+fn list_decoder(inner: decode.Decoder(v)) -> Decoder(List(v)) {
+  Decoder(zero: [], decoder: decode_run(_, decode.list(inner)))
+}
+
+fn optional_decoder(inner: decode.Decoder(v)) -> Decoder(Option(v)) {
+  Decoder(zero: None, decoder: decode_run(_, decode.map(inner, Some)))
+}
+
+fn access_decoder() -> Decoder(Access) {
+  Decoder(zero: access.none(), decoder: access.decoder)
+}
+
+fn pairs_decoder(
+  field_decoder: fn(Dynamic) -> Result(#(String, v), Report(Error)),
+) -> Decoder(List(Result(#(String, v), Report(Error)))) {
+  Decoder(zero: [], decoder: fn(dynamic) {
+    use list <- result.map(decode_run(dynamic, decode.list(decode.dynamic)))
+    use <- extra.return(pair.second)
+    use seen, dynamic <- list.map_fold(list, set.new())
+    error.try_duplicate_ids(field_decoder(dynamic), seen)
+  })
+}
+
+type Context =
+  #(Dict(String, Dynamic), List(Report(Error)))
 
 fn succeed(value: v) -> State(v, List(Report(Error)), Context) {
   use #(_, reports) <- state.do(state.get())
@@ -32,24 +66,46 @@ fn succeed(value: v) -> State(v, List(Report(Error)), Context) {
   state.fail(list.reverse(reports))
 }
 
-fn fail(
-  report: Report(Error),
-  zero: v,
-  context: Context,
-) -> State(v, e, Context) {
-  let #(dict, reports) = context
-  use <- state.then(state.put(#(dict, [report, ..reports])))
-  state.succeed(zero)
+fn ok(
+  result: Result(a, Report(Error)),
+  then: fn(a) -> State(b, List(Report(Error)), Context),
+) -> State(b, List(Report(Error)), Context) {
+  state.do(then:, with: {
+    case result {
+      Ok(value) -> state.succeed(value)
+
+      Error(report) -> {
+        use #(_dict, reports) <- state.do(state.get())
+        state.fail(list.reverse([report, ..reports]))
+      }
+    }
+  })
 }
 
-fn unwrap(
-  zero: v,
-  context: Context,
-  result: Result(v, Report(Error)),
-) -> State(v, e, Context) {
+fn decode_property(
+  name: String,
+  decoder: Decoder(v),
+  default: fn() -> Result(v, Report(Error)),
+) -> State(v, c, Context) {
+  use #(dict, _) as context <- state.do(state.get())
+  let Decoder(zero:, decoder:) = decoder
+
+  let result = case dict.get(dict, name) {
+    Error(Nil) -> default()
+
+    Ok(dynamic) ->
+      decoder(dynamic)
+      |> report.error_context(error.BadProperty(name))
+  }
+
   case result {
     Ok(value) -> state.succeed(value)
-    Error(report) -> fail(report, zero, context)
+
+    Error(report) -> {
+      let #(dict, reports) = context
+      use <- state.then(state.put(#(dict, [report, ..reports])))
+      state.succeed(zero)
+    }
   }
 }
 
@@ -68,75 +124,43 @@ fn setup(
   then()
 }
 
-fn ok(
-  result: Result(a, Report(Error)),
-  then: fn(a) -> State(b, List(Report(Error)), Context),
-) -> State(b, List(Report(Error)), Context) {
-  state.do(then:, with: {
-    use #(_dict, reports) <- state.do(state.get())
-
-    case result {
-      Error(report) -> state.fail(list.reverse([report, ..reports]))
-      Ok(value) -> state.succeed(value)
-    }
-  })
-}
-
 fn required(
   name: String,
-  zero: a,
-  decoder: fn(Dynamic) -> Result(a, Report(Error)),
+  decoder: Decoder(a),
   then: fn(a) -> State(b, List(Report(Error)), Context),
 ) -> State(b, List(Report(Error)), Context) {
   state.do(then:, with: {
-    use #(dict, _) as context <- state.do(state.get())
-
-    unwrap(zero, context, case dict.get(dict, name) {
-      Error(Nil) -> report.error(error.MissingProperty(name))
-
-      Ok(dynamic) ->
-        decoder(dynamic)
-        |> report.error_context(error.BadProperty(name))
-    })
+    use <- decode_property(name, decoder)
+    report.error(error.MissingProperty(name))
   })
 }
 
 fn default(
   name: String,
-  zero: a,
-  decoder: fn(Dynamic) -> Result(a, Report(Error)),
+  decoder: Decoder(a),
+  default: Result(a, Report(Error)),
+  then: fn(a) -> State(b, List(Report(Error)), Context),
+) -> State(b, List(Report(Error)), Context) {
+  lazy_default(name, decoder, fn() { default }, then)
+}
+
+fn lazy_default(
+  name: String,
+  decoder: Decoder(a),
   default: fn() -> Result(a, Report(Error)),
   then: fn(a) -> State(b, List(Report(Error)), Context),
 ) -> State(b, List(Report(Error)), Context) {
-  state.do(then:, with: {
-    use #(dict, _) as context <- state.do(state.get())
-
-    unwrap(zero, context, case dict.get(dict, name) {
-      Error(Nil) -> default()
-
-      Ok(dynamic) ->
-        decoder(dynamic)
-        |> report.error_context(error.BadProperty(name))
-    })
-  })
+  state.do(then:, with: decode_property(name, decoder, default))
 }
 
 fn zero(
   name: String,
-  zero: a,
-  decoder: fn(Dynamic) -> Result(a, Report(Error)),
+  decoder: Decoder(a),
   then: fn(a) -> State(b, List(Report(Error)), Context),
 ) -> State(b, List(Report(Error)), Context) {
   state.do(then:, with: {
-    use #(dict, _) as context <- state.do(state.get())
-
-    unwrap(zero, context, case dict.get(dict, name) {
-      Error(Nil) -> Ok(zero)
-
-      Ok(dynamic) ->
-        decoder(dynamic)
-        |> report.error_context(error.BadProperty(name))
-    })
+    use <- decode_property(name, decoder)
+    Ok(decoder.zero)
   })
 }
 
@@ -152,33 +176,15 @@ fn task_decoder(
 ) -> State(Task, List(Report(Error)), Context) {
   use <- setup(dynamic)
 
-  use name <- required("name", "", decode(_, decode.string))
-  use category <- required("category", [], decode(_, decode.list(decode.string)))
-
-  use id <- default("id", "", decode(_, decode.string), fn() {
-    let category = string.join(list.map(category, into_id), "-")
-    Ok(string.join([category, into_id(name)], "-"))
-  })
-
-  use summary <- zero("summary", option.None, {
-    decode(_, decode.map(decode.string, option.Some))
-  })
-
-  use description <- zero("description", option.None, {
-    decode(_, decode.map(decode.string, option.Some))
-  })
-
-  use command <- zero("command", [], decode(_, decode.list(decode.string)))
-  use runners <- zero("runners", access.none(), access.decoder)
-  use approvers <- zero("approvers", access.none(), access.decoder)
-
-  use fields <- zero("fields", [], fn(dynamic) {
-    use list <- result.map(decode(dynamic, decode.list(decode.dynamic)))
-    use <- extra.return(pair.second)
-    use seen, dynamic <- list.map_fold(list, set.new())
-    field.decoder(dynamic, fields, filters)
-    |> error.try_duplicate_ids(seen)
-  })
+  use name <- required("name", string_decoder())
+  use category <- required("category", list_decoder(decode.string))
+  use id <- default("id", string_decoder(), make_id(category, name))
+  use summary <- zero("summary", optional_decoder(decode.string))
+  use description <- zero("description", optional_decoder(decode.string))
+  use command <- zero("command", list_decoder(decode.string))
+  use runners <- zero("runners", access_decoder())
+  use approvers <- zero("approvers", access_decoder())
+  use fields <- zero("fields", pairs_decoder(field.decoder(_, fields, filters)))
 
   succeed(Task(
     id:,
@@ -202,6 +208,11 @@ fn task_decoder(
 }
 
 const valid_id = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+
+fn make_id(category, name) {
+  let category = string.join(list.map(category, into_id), "-")
+  Ok(string.join([category, into_id(name)], "-"))
+}
 
 fn into_id(from: String) -> String {
   build_id(from, into: "")
