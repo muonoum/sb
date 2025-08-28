@@ -22,7 +22,7 @@ type Decoder(v) {
   Decoder(zero: v, decoder: fn(Dynamic) -> Result(v, Report(Error)))
 }
 
-fn decode_run(
+fn run_decoder(
   dynamic: Dynamic,
   decoder: decode.Decoder(v),
 ) -> Result(v, Report(Error)) {
@@ -31,15 +31,15 @@ fn decode_run(
 }
 
 fn string_decoder() -> Decoder(String) {
-  Decoder(zero: "", decoder: decode_run(_, decode.string))
+  Decoder(zero: "", decoder: run_decoder(_, decode.string))
 }
 
 fn list_decoder(inner: decode.Decoder(v)) -> Decoder(List(v)) {
-  Decoder(zero: [], decoder: decode_run(_, decode.list(inner)))
+  Decoder(zero: [], decoder: run_decoder(_, decode.list(inner)))
 }
 
 fn optional_decoder(inner: decode.Decoder(v)) -> Decoder(Option(v)) {
-  Decoder(zero: None, decoder: decode_run(_, decode.map(inner, Some)))
+  Decoder(zero: None, decoder: run_decoder(_, decode.map(inner, Some)))
 }
 
 fn access_decoder() -> Decoder(Access) {
@@ -50,7 +50,7 @@ fn pairs_decoder(
   field_decoder: fn(Dynamic) -> Result(#(String, v), Report(Error)),
 ) -> Decoder(List(Result(#(String, v), Report(Error)))) {
   Decoder(zero: [], decoder: fn(dynamic) {
-    use list <- result.map(decode_run(dynamic, decode.list(decode.dynamic)))
+    use list <- result.map(run_decoder(dynamic, decode.list(decode.dynamic)))
     use <- extra.return(pair.second)
     use seen, dynamic <- list.map_fold(list, set.new())
     error.try_duplicate_ids(field_decoder(dynamic), seen)
@@ -109,7 +109,7 @@ fn decode_property(
   }
 }
 
-fn setup(
+fn load_properties(
   dynamic: Dynamic,
   then: fn() -> State(v, List(Report(Error)), Context),
 ) -> State(v, List(Report(Error)), Context) {
@@ -170,12 +170,9 @@ const task_keys = [
 ]
 
 fn task_decoder(
-  dynamic: Dynamic,
   fields: Dict(String, Dict(String, Dynamic)),
   filters: Dict(String, Dict(String, Dynamic)),
 ) -> State(Task, List(Report(Error)), Context) {
-  use <- setup(dynamic)
-
   use name <- required("name", string_decoder())
   use category <- required("category", list_decoder(decode.string))
   use id <- default("id", string_decoder(), make_id(category, name))
@@ -239,7 +236,9 @@ fn load_task(path: String) -> Dynamic {
 
 pub fn main() {
   let dynamic = load_task("test_data/task1.yaml")
-  let decoder = task_decoder(dynamic, dict.new(), dict.new())
-  let context = #(dict.new(), [])
-  state.run(decoder, context) |> echo
+
+  echo state.run(with: #(dict.new(), []), state: {
+    use <- load_properties(dynamic)
+    task_decoder(dict.new(), dict.new())
+  })
 }
