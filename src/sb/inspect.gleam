@@ -42,7 +42,7 @@ pub fn inspect_scope(scope: Scope) -> String {
 
 pub fn inspect_fields(fields: dict.Dict(String, Field)) -> List(String) {
   use #(id, field) <- list.map(dict.to_list(fields))
-  ansi.green(id) <> " " <> inspect_kind(field.kind(field))
+  ansi.green(id) <> " " <> inspect_kind(field.kind)
 }
 
 fn inspect_kind(kind: Kind) -> String {

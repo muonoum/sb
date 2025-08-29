@@ -20,7 +20,8 @@ const field_keys = [
   "optional", "filters",
 ]
 
-pub opaque type Field {
+// pub opaque type Field {
+pub type Field {
   Field(
     kind: Kind,
     label: Option(String),

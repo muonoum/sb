@@ -1,12 +1,12 @@
+import extra/dots
+import extra/yaml
 import gleam/dict
 import gleam/dynamic/decode
 import gleeunit
 import gleeunit/should
 import pprint
-import sb/dots
 import sb/inspect
 import sb/task.{type Task}
-import sb/yaml
 
 pub fn main() -> Nil {
   gleeunit.main()

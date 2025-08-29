@@ -1,10 +1,10 @@
+import extra
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/list
 import gleam/pair
 import gleam/string
-import sb/extra
 
 pub fn split(data: Dynamic) -> Dynamic {
   case decode_list(data) {

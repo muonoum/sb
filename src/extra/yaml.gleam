@@ -1,7 +1,7 @@
 import exception
+import extra
 import gleam/dynamic.{type Dynamic}
 import gleam/result
-import sb/extra
 
 @external(erlang, "glue", "yamerl_decode_file")
 pub fn yamerl_decode_file(path: String) -> Dynamic

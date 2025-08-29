@@ -1,3 +1,4 @@
+import extra
 import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
@@ -10,7 +11,6 @@ import gleam/set.{type Set}
 import gleam/string
 import sb/access.{type Access}
 import sb/error.{type Error}
-import sb/extra
 import sb/field.{type Field}
 import sb/handlers.{type Handlers}
 import sb/report.{type Report}
