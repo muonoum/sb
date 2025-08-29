@@ -10,12 +10,16 @@ import gleam/pair
 import gleam/result
 import gleam/string
 import sb/access
+import sb/condition
 import sb/dekode
 import sb/error.{type Error}
 import sb/field.{Field}
+import sb/kind
 import sb/props
 import sb/report.{type Report}
+import sb/reset
 import sb/task.{type Task, Task}
+import sb/value
 
 pub fn main() {
   let dynamic = load_task("test_data/task1.yaml")
@@ -72,19 +76,70 @@ fn field_decoder() {
   use label <- props.zero("label", dekode.optional(decode.string))
   use description <- props.zero("description", dekode.optional(decode.string))
 
+  use disabled <- props.zero("disabled", condition_decoder())
+  use hidden <- props.zero("hidden", condition_decoder())
+  use ignored <- props.zero("ignored", condition_decoder())
+  use optional <- props.zero("optional", condition_decoder())
+
   let field =
     Field(
-      kind: todo,
+      kind: kind.Text(""),
       label:,
       description:,
-      disabled: todo,
-      hidden: todo,
-      ignored: todo,
-      optional: todo,
-      filters: todo,
+      disabled: reset.new(disabled, condition.refs),
+      hidden: reset.new(hidden, condition.refs),
+      ignored: reset.new(ignored, condition.refs),
+      optional: reset.new(optional, condition.refs),
+      filters: [],
     )
 
   dekode.succeed(#(id, field))
+}
+
+fn condition_decoder() -> dekode.Decoder(condition.Condition) {
+  dekode.Decoder(zero: condition.false(), decoder: fn(dynamic) {
+    use <- extra.return(report.map_error(_, error.Collected))
+
+    case decode.run(dynamic, decode.bool) {
+      Ok(bool) -> Ok(condition.resolved(bool))
+
+      Error(_) ->
+        props.decode(dynamic, [["when", "unless"]], {
+          use dict <- props.get()
+
+          case dict.to_list(dict) {
+            [#("when", dynamic)] ->
+              case decode.run(dynamic, decode.string) {
+                Ok(id) -> dekode.succeed(condition.defined(id))
+                Error(_) -> {
+                  let dict =
+                    decode.run(
+                      dynamic,
+                      decode.dict(decode.string, decode.dynamic),
+                    )
+
+                  case result.map(dict, dict.to_list) {
+                    Ok([#(id, dynamic)]) ->
+                      case decode.run(dynamic, value.decoder()) {
+                        Ok(value) -> dekode.succeed(condition.equal(id, value))
+
+                        Error(error) ->
+                          dekode.fail(report.new(error.DecodeError(error)))
+                      }
+
+                    Ok(..) -> todo
+                    Error(_) -> todo
+                  }
+                }
+              }
+
+            [#("unless", dynamic)] -> todo
+            [#(_unknown, _)] -> todo
+            _bad -> todo
+          }
+        })
+    }
+  })
 }
 
 fn task_decoder(

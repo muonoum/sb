@@ -15,6 +15,22 @@ pub opaque type Condition {
   NotEqual(String, Value)
 }
 
+pub fn defined(id: String) -> Condition {
+  Defined(id)
+}
+
+pub fn not_defined(id: String) -> Condition {
+  NotDefined(id)
+}
+
+pub fn equal(id: String, value: Value) -> Condition {
+  Equal(id, value)
+}
+
+pub fn not_equal(id: String, value: Value) -> Condition {
+  NotEqual(id, value)
+}
+
 pub fn resolved(state: Bool) -> Condition {
   Resolved(state)
 }

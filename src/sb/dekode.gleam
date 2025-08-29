@@ -89,6 +89,13 @@ pub fn succeed(value: v) -> State(v, List(Report(Error)), Context(ctx)) {
   state.fail(list.reverse(reports))
 }
 
+pub fn fail(
+  report: Report(Error),
+) -> State(v, List(Report(Error)), Context(ctx)) {
+  use Context(_, reports) <- state.do(state.get())
+  state.fail(list.reverse([report, ..reports]))
+}
+
 pub fn required(
   result: Result(a, Report(Error)),
   then: fn(a) -> State(b, List(report.Report(Error)), Context(ctx)),
@@ -98,6 +105,7 @@ pub fn required(
       Ok(value) -> state.succeed(value)
 
       Error(report) -> {
+        // fail(report)
         use Context(_, reports) <- state.do(state.get())
         state.fail(list.reverse([report, ..reports]))
       }

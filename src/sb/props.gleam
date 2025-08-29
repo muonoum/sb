@@ -10,6 +10,13 @@ import sb/report.{type Report}
 pub type Context =
   Dict(String, Dynamic)
 
+pub fn get(
+  then: fn(Context) -> State(v, e, dekode.Context(Context)),
+) -> State(v, e, dekode.Context(Context)) {
+  use dict <- dekode.get()
+  then(dict)
+}
+
 pub fn decode(
   dynamic: Dynamic,
   keys: List(List(String)),
