@@ -22,7 +22,7 @@ import sb/kind.{type Kind}
 import sb/options.{type Options}
 import sb/props.{type Props}
 import sb/report.{type Report}
-import sb/reset.{type Reset}
+import sb/reset
 import sb/source.{type Source}
 import sb/task.{type Task, Task}
 import sb/text
@@ -392,77 +392,39 @@ fn command_decoder(_dynamic: Dynamic) -> Result(Source, Report(Error)) {
   todo as "decode command"
 }
 
-// TODO: string -> props
 fn fetch_decoder(dynamic: Dynamic) -> Result(Source, Report(Error)) {
-  use <- report.with_error_context(error.BadKind("fetch"))
+  case text.decoder(dynamic) {
+    Ok(uri) ->
+      Ok(source.Fetch(method: http.Get, uri:, headers: [], body: option.None))
 
-  case dynamic |> decode.run(decode.dict(decode.string, decode.dynamic)) {
-    Error(..) -> {
-      use uri <- result.try(
-        text.decoder(dynamic)
-        |> report.error_context(error.BadProperty("url")),
-      )
+    Error(..) ->
+      props.decode(dynamic, {
+        use uri <- props.field("url", text.decoder)
 
-      Ok(source.Fetch(
-        method: http.Get,
-        uri: uri,
-        headers: [],
-        body: option.None,
-      ))
-    }
-
-    Ok(dict) -> {
-      use uri <- result.try({
-        dict.get(dict, "url")
-        |> report.replace_error(error.MissingProperty("url"))
-        |> result.try(fn(dynamic) {
-          text.decoder(dynamic)
-          |> report.error_context(error.BadProperty("url"))
+        use body <- props.default_field("body", Ok(None), {
+          props.decode(_, state.map(source_decoder(), Some))
         })
+
+        use method <- props.default_field("method", Ok(http.Get), fn(dynamic) {
+          dynamic
+          |> props.run_decoder(decode.string)
+          |> result.map(string.uppercase)
+          |> result.try(fn(string) {
+            http.parse_method(string)
+            |> report.replace_error(error.BadProperty("method"))
+          })
+        })
+
+        use headers <- props.default_field("headers", Ok([]), fn(dynamic) {
+          dynamic
+          |> decode.run(decode.dict(decode.string, decode.string))
+          |> report.map_error(error.DecodeError)
+          |> report.error_context(error.BadProperty("headers"))
+          |> result.map(dict.to_list)
+        })
+
+        props.succeed(source.Fetch(method:, uri:, headers:, body:))
       })
-
-      use body <- result.try({
-        case dict.get(dict, "body") {
-          Error(Nil) -> Ok(option.None)
-
-          Ok(dynamic) ->
-            props.decode(dynamic, source_decoder())
-            |> report.error_context(error.BadProperty("body"))
-            |> result.map(option.Some)
-        }
-      })
-
-      use method <- result.try({
-        case dict.get(dict, "method") {
-          Error(Nil) -> Ok(http.Get)
-
-          Ok(dynamic) ->
-            decode.run(dynamic, decode.string)
-            |> report.map_error(error.DecodeError)
-            |> report.error_context(error.BadProperty("method"))
-            |> result.map(string.uppercase)
-            |> result.try(fn(string) {
-              http.parse_method(string)
-              |> report.replace_error(error.BadProperty("method"))
-            })
-        }
-      })
-
-      use headers <- result.try({
-        case dict.get(dict, "headers") {
-          Error(Nil) -> Ok([])
-
-          Ok(dynamic) ->
-            dynamic
-            |> decode.run(decode.dict(decode.string, decode.string))
-            |> report.map_error(error.DecodeError)
-            |> report.error_context(error.BadProperty("headers"))
-            |> result.map(dict.to_list)
-        }
-      })
-
-      Ok(source.Fetch(method:, uri:, headers:, body:))
-    }
   }
 }
 
