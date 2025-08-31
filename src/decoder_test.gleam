@@ -46,8 +46,8 @@ fn task_decoder(
   use summary <- props.zero("summary", props.optional(props.string()))
   use description <- props.zero("description", props.optional(props.string()))
   use command <- props.zero("command", props.list(props.string()))
-  use runners <- props.zero("runners", access.access_dekoder())
-  use approvers <- props.zero("approvers", access.access_dekoder())
+  // use runners <- props.zero("runners", access.access_dekoder())
+  // use approvers <- props.zero("approvers", access.access_dekoder())
 
   // use fields <- props.zero(
   //   "fields",
@@ -79,8 +79,8 @@ fn task_decoder(
     summary:,
     description:,
     command:,
-    runners:,
-    approvers:,
+    runners: access.none(),
+    approvers: access.none(),
     layout: {
       use result <- list.map(fields)
       use #(id, _field) <- result.map(result)

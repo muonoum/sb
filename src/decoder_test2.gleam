@@ -26,6 +26,9 @@ import sb/task.{type Task, Task}
 type State(v) =
   state.State(v, Report(Error), Dict(String, Dynamic))
 
+type Decoder(v) =
+  fn(Dynamic) -> Result(v, Report(Error))
+
 const task_keys = [
   "id", "name", "category", "summary", "description", "command", "runners",
   "approvers", "layout", "summary_fields", "fields",
@@ -258,7 +261,7 @@ fn decode_dict(dynamic: Dynamic, decoder: State(v)) -> Result(v, Report(Error)) 
 }
 
 // fn decode_list(
-//   decoder: fn(Dynamic) -> Result(v, Report(Error)),
+//   decoder: Decoder(v),
 // ) -> fn(Dynamic) -> Result(List(v), Report(Error)) {
 //   fn(dynamic) {
 //     run_decoder(dynamic, decode.list(decode.dynamic))
@@ -281,7 +284,7 @@ fn decode_succeed(value: v) -> State(v) {
 
 fn decode_field(
   name: String,
-  decoder: fn(Dynamic) -> Result(a, Report(Error)),
+  decoder: Decoder(a),
   next: fn(a) -> State(b),
 ) -> State(b) {
   let error = report.error(error.MissingProperty(name))
@@ -291,7 +294,7 @@ fn decode_field(
 fn decode_default_field(
   name: String,
   default: Result(a, Report(Error)),
-  decoder: fn(Dynamic) -> Result(a, Report(Error)),
+  decoder: Decoder(a),
   next: fn(a) -> State(b),
 ) -> State(b) {
   use dict <- state.with(state.get())
