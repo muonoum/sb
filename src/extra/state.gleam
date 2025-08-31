@@ -68,6 +68,7 @@ pub fn update(mapper: fn(context) -> context) {
 pub fn map(state: State(a, _, _), mapper: fn(a) -> b) -> State(b, _, _) {
   use context <- State
   let #(context, result) = state.run(context)
+
   case result {
     Ok(value) -> #(context, Ok(mapper(value)))
     Error(error) -> #(context, Error(error))
@@ -77,6 +78,7 @@ pub fn map(state: State(a, _, _), mapper: fn(a) -> b) -> State(b, _, _) {
 pub fn map_error(state: State(_, a, _), mapper: fn(a) -> b) -> State(_, b, _) {
   use context <- State
   let #(context, result) = state.run(context)
+
   case result {
     Ok(value) -> #(context, Ok(value))
     Error(error) -> #(context, Error(mapper(error)))
@@ -89,8 +91,42 @@ pub fn try(
 ) -> State(b, _, _) {
   use context <- State
   let #(context, result) = state.run(context)
+
   case result {
     Ok(value) -> step(mapper(value), context)
     Error(error) -> #(context, Error(error))
+  }
+}
+
+pub fn replace(state: State(_, _, _), value: v) -> State(v, _, _) {
+  use context <- State
+  let #(context, result) = state.run(context)
+
+  case result {
+    Ok(_value) -> #(context, Ok(value))
+    Error(error) -> #(context, Error(error))
+  }
+}
+
+pub fn replace_error(state: State(_, _, _), error: e) -> State(_, e, _) {
+  use context <- State
+  let #(context, result) = state.run(context)
+
+  case result {
+    Ok(value) -> #(context, value)
+    Error(_error) -> #(context, Error(error))
+  }
+}
+
+pub fn attempt(
+  state: State(v, e, c),
+  catch catch: fn(c, e) -> State(v, e, c),
+) -> State(v, e, c) {
+  use context1 <- State
+  let #(context2, result) = state.run(context1)
+
+  case result {
+    Ok(value) -> #(context2, Ok(value))
+    Error(error) -> step(catch(context2, error), context1)
   }
 }

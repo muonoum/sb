@@ -11,6 +11,7 @@ pub type Props(v) =
 pub type Decoder(v) =
   fn(Dynamic) -> Result(v, Report(Error))
 
+// TODO: Hører ikke hjemme her?
 pub fn run_decoder(decoder: decode.Decoder(v)) -> Decoder(v) {
   fn(dynamic) {
     decode.run(dynamic, decoder)
@@ -23,6 +24,13 @@ pub fn decode(dynamic: Dynamic, decoder: Props(v)) -> Result(v, Report(Error)) {
     use <- load(dynamic)
     decoder
   })
+}
+
+pub fn check_unknown_keys(keys: List(String)) -> Props(Nil) {
+  use dict <- state.with(state.get())
+  error.unknown_keys(dict, keys)
+  |> state.from_result
+  |> state.replace(Nil)
 }
 
 pub fn load(dynamic: Dynamic, next: fn() -> Props(v)) -> Props(v) {
