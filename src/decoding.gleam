@@ -317,12 +317,8 @@ fn kind_decoder(fields: Fields) -> Props(Kind) {
 }
 
 fn data_decoder() -> Props(Kind) {
-  // use source <- props.field("source", props.decode(_, source_decoder()))
-  // let reset = reset.try_new(Ok(source), source.refs)
   use source <- props.field("source", props.decode(_, source_decoder()))
-  // let reset = reset.try_new(Ok(source), source.refs)
-  // props.succeed(kind.Data(reset))
-  props.succeed(kind.Data(source))
+  props.succeed(kind.Data(reset.try_new(Ok(source), source.refs)))
 }
 
 fn text_decoder() -> Props(Kind) {
@@ -355,10 +351,9 @@ fn select_decoder() -> Props(Kind) {
 
 // SOURCE
 
-fn source_decoder() -> Props(Reset(Result(Source, Report(Error)))) {
+fn source_decoder() -> Props(Source) {
   use dict <- state.with(state.get())
-  use <- extra.return(state.succeed)
-  use <- extra.return(reset.try_new(_, source.refs))
+  use <- extra.return(state.from_result)
 
   case dict.to_list(dict) {
     [#("literal", dynamic)] -> literal_decoder(dynamic)
@@ -397,6 +392,7 @@ fn command_decoder(_dynamic: Dynamic) -> Result(Source, Report(Error)) {
   todo as "decode command"
 }
 
+// TODO: string -> props
 fn fetch_decoder(dynamic: Dynamic) -> Result(Source, Report(Error)) {
   use <- report.with_error_context(error.BadKind("fetch"))
 
@@ -425,14 +421,13 @@ fn fetch_decoder(dynamic: Dynamic) -> Result(Source, Report(Error)) {
         })
       })
 
-      // TODO
-      use _body <- result.try({
+      use body <- result.try({
         case dict.get(dict, "body") {
           Error(Nil) -> Ok(option.None)
 
           Ok(dynamic) ->
             props.decode(dynamic, source_decoder())
-            |> report.error_context(error.BadProperty("url"))
+            |> report.error_context(error.BadProperty("body"))
             |> result.map(option.Some)
         }
       })
@@ -466,9 +461,7 @@ fn fetch_decoder(dynamic: Dynamic) -> Result(Source, Report(Error)) {
         }
       })
 
-      // TODO
-      // Ok(source.Fetch(method:, uri:, headers:, body:))
-      Ok(source.Fetch(method:, uri:, headers:, body: None))
+      Ok(source.Fetch(method:, uri:, headers:, body:))
     }
   }
 }
@@ -480,6 +473,13 @@ fn options_decoder() -> Props(Options) {
 
   case dict.to_list(dict) {
     [#("groups", _dynamic)] -> todo as "source groups"
-    _else -> state.map(source_decoder(), options.SingleSource)
+
+    _else -> {
+      source_decoder()
+      |> state.map(Ok)
+      |> state.attempt(fn(_ctx, report) { state.succeed(Error(report)) })
+      |> state.map(reset.try_new(_, source.refs))
+      |> state.map(options.SingleSource)
+    }
   }
 }

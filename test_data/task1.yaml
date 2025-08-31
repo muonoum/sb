@@ -10,3 +10,9 @@ fields:
 
   - id: b
     kind: mega
+
+  - id: c
+    kind: select
+    source.fetch:
+      url: asdf
+      body.literal: 10
