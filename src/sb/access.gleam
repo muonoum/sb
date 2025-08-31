@@ -7,11 +7,13 @@ import sb/report.{type Report}
 
 const access_keys = ["users", "groups", "keys"]
 
-pub opaque type Access {
+// pub opaque type Access {
+pub type Access {
   Access(users: Users, groups: List(String), keys: List(String))
 }
 
-pub opaque type Users {
+// pub opaque type Users {
+pub type Users {
   Everyone
   Users(List(String))
 }
