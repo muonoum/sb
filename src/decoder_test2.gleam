@@ -43,7 +43,24 @@ const field_keys = [
 
 pub fn main() {
   let dynamic = load_task("test_data/task1.yaml")
-  let decoder = task_decoder(dict.new(), dict.new())
+
+  let custom_fields =
+    dict.from_list([
+      #(
+        "mega",
+        dict.from_list([
+          #("kind", dynamic.string("data")),
+          #(
+            "source",
+            dynamic.properties([
+              #(dynamic.string("reference"), dynamic.string("a")),
+            ]),
+          ),
+        ]),
+      ),
+    ])
+
+  let decoder = task_decoder(custom_fields, dict.new())
   echo decode_dict(dynamic, decoder)
 }
 

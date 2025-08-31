@@ -15,15 +15,26 @@ import sb/scope.{type Scope}
 import sb/source.{type Source}
 import sb/value.{type Value}
 
+pub const data_keys = ["source"]
+
+pub const text_keys = ["default", "placeholder"]
+
+pub const textarea_keys = ["default", "placeholder"]
+
+pub const radio_keys = ["default", "layout", "source"]
+
+pub const checkbox_keys = ["default", "layout", "source"]
+
+pub const select_keys = ["default", "multiple", "placeholder", "source"]
+
 pub fn keys(name: String) -> Result(List(String), Report(Error)) {
   case name {
-    "data" -> Ok(["source"])
-    "markdown" -> Ok(["source"])
-    "text" -> Ok(["default", "placeholder"])
-    "textarea" -> Ok(["default", "placeholder"])
-    "radio" -> Ok(["default", "layout", "source"])
-    "checkbox" -> Ok(["default", "layout", "source"])
-    "select" -> Ok(["default", "multiple", "placeholder", "source"])
+    "data" -> Ok(data_keys)
+    "text" -> Ok(text_keys)
+    "textarea" -> Ok(textarea_keys)
+    "radio" -> Ok(radio_keys)
+    "checkbox" -> Ok(checkbox_keys)
+    "select" -> Ok(select_keys)
     _unknown -> report.error(error.UnknownKind(name))
   }
 }

@@ -9,5 +9,5 @@ fields:
     source.literal: [a, b, c]
 
   - id: b
-    kind: data
-    source.reference: a
+    kind: mega
+    # source.reference: a
