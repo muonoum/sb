@@ -14,20 +14,28 @@ import gleam/set
 import gleam/string
 import sb/access.{type Access}
 import sb/condition.{type Condition}
-import sb/error.{type Error}
+import sb/error
 import sb/field.{type Field, Field}
+import sb/inspect
 import sb/kind.{type Kind}
-import sb/options
-import sb/report.{type Report}
+import sb/options.{type Options}
+import sb/propz.{type Props} as props
+import sb/report
 import sb/reset
-import sb/source
+import sb/source.{type Source}
 import sb/task.{type Task, Task}
+import sb/value
 
-type State(v) =
-  state.State(v, Report(Error), Dict(String, Dynamic))
+type Custom =
+  Dict(String, Dynamic)
 
-type Decoder(v) =
-  fn(Dynamic) -> Result(v, Report(Error))
+type Fields {
+  Fields(Dict(String, Custom))
+}
+
+type Filters {
+  Filters(Dict(String, Custom))
+}
 
 const task_keys = [
   "id", "name", "category", "summary", "description", "command", "runners",
@@ -45,23 +53,28 @@ pub fn main() {
   let dynamic = load_task("test_data/task1.yaml")
 
   let custom_fields =
-    dict.from_list([
-      #(
-        "mega",
-        dict.from_list([
-          #("kind", dynamic.string("data")),
-          #(
-            "source",
-            dynamic.properties([
-              #(dynamic.string("reference"), dynamic.string("a")),
-            ]),
-          ),
-        ]),
-      ),
-    ])
+    Fields(
+      dict.from_list([
+        #(
+          "mega",
+          dict.from_list([
+            #("kind", dynamic.string("data")),
+            #(
+              "source",
+              dynamic.properties([
+                #(dynamic.string("reference"), dynamic.string("a")),
+              ]),
+            ),
+          ]),
+        ),
+      ]),
+    )
 
-  let decoder = task_decoder(custom_fields, dict.new())
-  echo decode_dict(dynamic, decoder)
+  let custom_filters = Filters(dict.new())
+
+  let decoder = task_decoder(custom_fields, custom_filters)
+  let assert Ok(task) = props.decode(dynamic, decoder)
+  inspect.inspect_task(echo task)
 }
 
 fn load_task(path: String) -> Dynamic {
@@ -70,68 +83,57 @@ fn load_task(path: String) -> Dynamic {
   dots.split(doc)
 }
 
-fn from_result(result: Result(v, Report(Error))) -> State(v) {
-  case result {
-    Error(error) -> state.fail(error)
-    Ok(value) -> state.succeed(value)
-  }
-}
-
-fn check_keys(keys: List(String)) -> State(Nil) {
+fn check_keys(keys: List(String)) -> Props(_) {
   use dict <- state.with(state.get())
-
-  case error.unknown_keys(dict, keys) {
-    Error(report) -> state.fail(report)
-    Ok(_dict) -> state.succeed(Nil)
-  }
+  error.unknown_keys(dict, keys)
+  |> state.from_result
 }
 
-fn task_decoder(
-  fields: Dict(String, Dict(String, Dynamic)),
-  filters: Dict(String, Dict(String, Dynamic)),
-) -> State(Task) {
+// TASK
+
+fn task_decoder(fields: Fields, filters: Filters) -> Props(Task) {
   use <- state.do(check_keys(task_keys))
 
-  use name <- decode_field("name", decode_run(decode.string))
+  use name <- props.field("name", props.run_decoder(decode.string))
 
-  use category <- decode_field("category", {
-    decode_run(decode.list(decode.string))
+  use category <- props.field("category", {
+    props.run_decoder(decode.list(decode.string))
   })
 
-  use id <- decode_default_field("id", make_id(category, name), {
-    decode_run(decode.string)
+  use id <- props.default_field("id", make_id(category, name), {
+    props.run_decoder(decode.string)
   })
 
-  use summary <- decode_default_field("summary", Ok(None), {
-    decode_run(decode.map(decode.string, Some))
+  use summary <- props.default_field("summary", Ok(None), {
+    props.run_decoder(decode.map(decode.string, Some))
   })
 
-  use description <- decode_default_field("description", Ok(None), {
-    decode_run(decode.map(decode.string, Some))
+  use description <- props.default_field("description", Ok(None), {
+    props.run_decoder(decode.map(decode.string, Some))
   })
 
-  use command <- decode_default_field("command", Ok([]), {
-    decode_run(decode.list(decode.string))
+  use command <- props.default_field("command", Ok([]), {
+    props.run_decoder(decode.list(decode.string))
   })
 
-  use runners <- decode_default_field("runners", Ok(access.none()), {
-    decode_dict(_, access_decoder())
+  use runners <- props.default_field("runners", Ok(access.none()), {
+    props.decode(_, access_decoder())
   })
 
-  use approvers <- decode_default_field("approvers", Ok(access.none()), {
-    decode_dict(_, access_decoder())
+  use approvers <- props.default_field("approvers", Ok(access.none()), {
+    props.decode(_, access_decoder())
   })
 
-  use fields <- decode_default_field("fields", Ok([]), fn(dynamic) {
-    let list_decoder = decode_run(decode.list(decode.dynamic))
+  use fields <- props.default_field("fields", Ok([]), fn(dynamic) {
+    let list_decoder = props.run_decoder(decode.list(decode.dynamic))
     use list <- result.map(list_decoder(dynamic))
     use <- extra.return(pair.second)
     use seen, dynamic <- list.map_fold(list, set.new())
-    decode_dict(dynamic, field_decoder(fields, filters))
+    props.decode(dynamic, field_decoder(fields, filters))
     |> error.try_duplicate_ids(seen)
   })
 
-  decode_succeed(Task(
+  props.succeed(Task(
     id:,
     name:,
     category:,
@@ -150,246 +152,6 @@ fn task_decoder(
       |> pair.first
     }),
   ))
-}
-
-pub fn access_decoder() -> State(Access) {
-  use <- state.do(check_keys(access_keys))
-
-  use users <- decode_default_field("users", Ok(access.Users([])), {
-    decode_run(users_decoder())
-  })
-
-  use groups <- decode_default_field("groups", Ok([]), {
-    decode_run(decode.list(decode.string))
-  })
-
-  use keys <- decode_default_field("keys", Ok([]), {
-    decode_run(decode.list(decode.string))
-  })
-
-  decode_succeed(access.Access(users:, groups:, keys:))
-}
-
-fn users_decoder() -> decode.Decoder(access.Users) {
-  decode.one_of(decode.then(decode.string, user_decoder), [
-    decode.list(decode.string) |> decode.map(access.Users),
-  ])
-}
-
-fn user_decoder(string: String) -> decode.Decoder(access.Users) {
-  case string {
-    "everyone" -> decode.success(access.Everyone)
-    _string -> decode.failure(access.Everyone, "'everyone' or a list of users")
-  }
-}
-
-fn kind_decoder(fields: Dict(String, Dict(String, Dynamic))) -> State(Kind) {
-  use kind <- decode_field("kind", decode_run(decode.string))
-
-  case dict.get(fields, kind) {
-    Ok(custom) -> {
-      use <- state.do(state.update(dict.merge(_, custom)))
-      kind_decoder(fields)
-    }
-
-    Error(Nil) -> {
-      use <- state.do(
-        from_result(kind.keys(kind))
-        |> state.map(list.append(field_keys, _))
-        |> state.try(check_keys),
-      )
-
-      case kind {
-        "data" -> data_decoder()
-        "text" -> text_decoder()
-        "textarea" -> textarea_decoder()
-        "radio" -> radio_decoder()
-        "checkbox" -> checkbox_decoder()
-        "select" -> select_decoder()
-        unknown -> state.fail(report.new(error.UnknownKind(unknown)))
-      }
-    }
-  }
-}
-
-fn data_decoder() -> State(Kind) {
-  use source <- decode_field("source", source.decoder)
-  let reset = reset.try_new(Ok(source), source.refs)
-  decode_succeed(kind.Data(reset))
-}
-
-fn text_decoder() -> State(Kind) {
-  decode_succeed(kind.Text(""))
-}
-
-fn textarea_decoder() -> State(Kind) {
-  decode_succeed(kind.Textarea(""))
-}
-
-fn radio_decoder() -> State(Kind) {
-  use options <- decode_field("source", options.decoder)
-  decode_succeed(kind.Select(None, options:))
-}
-
-fn checkbox_decoder() -> State(Kind) {
-  use options <- decode_field("source", options.decoder)
-  decode_succeed(kind.MultiSelect([], options:))
-}
-
-fn select_decoder() -> State(Kind) {
-  use multiple <- decode_default_field("multiple", Ok(False), {
-    decode_run(decode.bool)
-  })
-
-  use options <- decode_field("source", options.decoder)
-  use <- bool.guard(multiple, decode_succeed(kind.MultiSelect([], options:)))
-  decode_succeed(kind.Select(None, options:))
-}
-
-fn field_decoder(
-  fields: Dict(String, Dict(String, Dynamic)),
-  _filters: Dict(String, Dict(String, Dynamic)),
-) -> State(#(String, Field)) {
-  use id <- decode_field("id", decode_run(decode.string))
-
-  use <- extra.return(
-    state.map_error(_, report.context(_, error.FieldContext(id))),
-  )
-
-  use kind <- state.with(kind_decoder(fields))
-
-  use label <- decode_default_field("label", Ok(None), {
-    decode_run(decode.map(decode.string, Some))
-  })
-
-  use description <- decode_default_field("description", Ok(None), {
-    decode_run(decode.map(decode.string, Some))
-  })
-
-  use disabled <- decode_default_field(
-    "disabled",
-    Ok(condition.false()),
-    condition.decoder,
-  )
-
-  use hidden <- decode_default_field(
-    "hidden",
-    Ok(condition.false()),
-    condition_decoder,
-  )
-
-  use ignored <- decode_default_field(
-    "ignored",
-    Ok(condition.false()),
-    condition_decoder,
-  )
-
-  use optional <- decode_default_field(
-    "optional",
-    Ok(condition.false()),
-    condition_decoder,
-  )
-
-  decode_succeed(#(
-    id,
-    Field(
-      kind:,
-      label:,
-      description:,
-      disabled: reset.new(disabled, condition.refs),
-      hidden: reset.new(hidden, condition.refs),
-      ignored: reset.new(ignored, condition.refs),
-      optional: reset.new(optional, condition.refs),
-      filters: [],
-    ),
-  ))
-}
-
-fn condition_decoder(dynamic) {
-  case decode.run(dynamic, decode.bool) {
-    Ok(bool) -> Ok(condition.resolved(bool))
-    Error(..) -> decode_dict(dynamic, condition_kind_decoder())
-  }
-}
-
-fn condition_kind_decoder() -> State(Condition) {
-  use dict <- state.with(state.get())
-
-  case dict.to_list(dict) {
-    [#("when", _dynamic)] -> state.succeed(condition.false())
-    [#("unless", _dynamic)] -> state.succeed(condition.false())
-    [#(_unknown, _)] -> todo
-    _bad -> todo
-  }
-}
-
-fn decode_run(
-  decoder: decode.Decoder(v),
-) -> fn(Dynamic) -> Result(v, Report(Error)) {
-  fn(dynamic) {
-    decode.run(dynamic, decoder)
-    |> report.map_error(error.DecodeError)
-  }
-}
-
-fn decode_dict(dynamic: Dynamic, decoder: State(v)) -> Result(v, Report(Error)) {
-  state.run(context: dict.new(), state: {
-    use <- load_dict(dynamic)
-    decoder
-  })
-}
-
-// fn decode_list(
-//   decoder: Decoder(v),
-// ) -> fn(Dynamic) -> Result(List(v), Report(Error)) {
-//   fn(dynamic) {
-//     decode_run(dynamic, decode.list(decode.dynamic))
-//     |> result.try(list.try_map(_, decoder))
-//   }
-// }
-
-fn load_dict(dynamic: Dynamic, next: fn() -> State(v)) -> State(v) {
-  let decoder = decode_run(decode.dict(decode.string, decode.dynamic))
-
-  case decoder(dynamic) {
-    Error(report) -> state.fail(report)
-    Ok(dict) -> state.do(state.put(dict), next)
-  }
-}
-
-fn decode_succeed(value: v) -> State(v) {
-  state.succeed(value)
-}
-
-fn decode_field(
-  name: String,
-  decoder: Decoder(a),
-  next: fn(a) -> State(b),
-) -> State(b) {
-  let error = report.error(error.MissingProperty(name))
-  decode_default_field(name, error, decoder, next)
-}
-
-fn decode_default_field(
-  name: String,
-  default: Result(a, Report(Error)),
-  decoder: Decoder(a),
-  next: fn(a) -> State(b),
-) -> State(b) {
-  use dict <- state.with(state.get())
-
-  let result = case dict.get(dict, name) {
-    Error(Nil) -> default
-
-    Ok(dynamic) ->
-      decoder(dynamic)
-      |> report.error_context(error.BadProperty(name))
-  }
-
-  case result {
-    Error(report) -> state.fail(report)
-    Ok(value) -> state.with(state.succeed(value), next)
-  }
 }
 
 const valid_id = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
@@ -412,6 +174,229 @@ fn build_id(from: String, into result: String) -> String {
         True -> build_id(rest, result <> string.lowercase(grapheme))
         False -> build_id(rest, result <> "-")
       }
+    }
+  }
+}
+
+// ACCESS
+
+pub fn access_decoder() -> Props(Access) {
+  use <- state.do(check_keys(access_keys))
+
+  use users <- props.default_field("users", Ok(access.Users([])), {
+    props.run_decoder(users_decoder())
+  })
+
+  use groups <- props.default_field("groups", Ok([]), {
+    props.run_decoder(decode.list(decode.string))
+  })
+
+  use keys <- props.default_field("keys", Ok([]), {
+    props.run_decoder(decode.list(decode.string))
+  })
+
+  props.succeed(access.Access(users:, groups:, keys:))
+}
+
+fn users_decoder() -> decode.Decoder(access.Users) {
+  decode.one_of(decode.then(decode.string, user_decoder), [
+    decode.list(decode.string) |> decode.map(access.Users),
+  ])
+}
+
+fn user_decoder(string: String) -> decode.Decoder(access.Users) {
+  case string {
+    "everyone" -> decode.success(access.Everyone)
+    _string -> decode.failure(access.Everyone, "'everyone' or a list of users")
+  }
+}
+
+// FIELD
+
+fn field_decoder(fields: Fields, _filters: Filters) -> Props(#(String, Field)) {
+  use id <- props.field("id", props.run_decoder(decode.string))
+
+  use <- extra.return(
+    state.map_error(_, report.context(_, error.FieldContext(id))),
+  )
+
+  use kind <- state.with(kind_decoder(fields))
+
+  use label <- props.default_field("label", Ok(None), {
+    props.run_decoder(decode.map(decode.string, Some))
+  })
+
+  use description <- props.default_field("description", Ok(None), {
+    props.run_decoder(decode.map(decode.string, Some))
+  })
+
+  use disabled <- props.default_field(
+    "disabled",
+    Ok(condition.false()),
+    condition.decoder,
+  )
+
+  use hidden <- props.default_field(
+    "hidden",
+    Ok(condition.false()),
+    condition_decoder,
+  )
+
+  use ignored <- props.default_field(
+    "ignored",
+    Ok(condition.false()),
+    condition_decoder,
+  )
+
+  use optional <- props.default_field(
+    "optional",
+    Ok(condition.false()),
+    condition_decoder,
+  )
+
+  props.succeed(#(
+    id,
+    Field(
+      kind:,
+      label:,
+      description:,
+      disabled: reset.new(disabled, condition.refs),
+      hidden: reset.new(hidden, condition.refs),
+      ignored: reset.new(ignored, condition.refs),
+      optional: reset.new(optional, condition.refs),
+      filters: [],
+    ),
+  ))
+}
+
+// CONDITION
+
+fn condition_decoder(dynamic) {
+  case decode.run(dynamic, decode.bool) {
+    Ok(bool) -> Ok(condition.resolved(bool))
+    Error(..) -> props.decode(dynamic, condition_kind_decoder())
+  }
+}
+
+fn condition_kind_decoder() -> Props(Condition) {
+  use dict <- state.with(state.get())
+
+  case dict.to_list(dict) {
+    [#("when", _dynamic)] -> todo
+    [#("unless", _dynamic)] -> todo
+    [#(_unknown, _)] -> todo
+    _bad -> todo
+  }
+}
+
+// KIND
+
+fn kind_decoder(fields: Fields) -> Props(Kind) {
+  use kind <- props.field("kind", props.run_decoder(decode.string))
+  let Fields(custom_fields) = fields
+
+  case dict.get(custom_fields, kind) {
+    Ok(custom) -> {
+      use <- state.do(state.update(dict.merge(_, custom)))
+      kind_decoder(fields)
+    }
+
+    Error(Nil) -> {
+      use <- state.do(
+        state.from_result(kind.keys(kind))
+        |> state.map(list.append(field_keys, _))
+        |> state.try(check_keys),
+      )
+
+      case kind {
+        "data" -> data_decoder()
+        "text" -> text_decoder()
+        "textarea" -> textarea_decoder()
+        "radio" -> radio_decoder()
+        "checkbox" -> checkbox_decoder()
+        "select" -> select_decoder()
+        unknown -> state.fail(report.new(error.UnknownKind(unknown)))
+      }
+    }
+  }
+}
+
+fn data_decoder() -> Props(Kind) {
+  use source <- props.field("source", props.decode(_, source_decoder()))
+  let reset = reset.try_new(Ok(source), source.refs)
+  props.succeed(kind.Data(reset))
+}
+
+fn text_decoder() -> Props(Kind) {
+  props.succeed(kind.Text(""))
+}
+
+fn textarea_decoder() -> Props(Kind) {
+  props.succeed(kind.Textarea(""))
+}
+
+fn radio_decoder() -> Props(Kind) {
+  use options <- props.field("source", props.decode(_, options_decoder()))
+  props.succeed(kind.Select(None, options:))
+}
+
+fn checkbox_decoder() -> Props(Kind) {
+  use options <- props.field("source", props.decode(_, options_decoder()))
+  props.succeed(kind.MultiSelect([], options:))
+}
+
+fn select_decoder() -> Props(Kind) {
+  use multiple <- props.default_field("multiple", Ok(False), {
+    props.run_decoder(decode.bool)
+  })
+
+  use options <- props.field("source", props.decode(_, options_decoder()))
+  use <- bool.guard(multiple, props.succeed(kind.MultiSelect([], options:)))
+  props.succeed(kind.Select(None, options:))
+}
+
+// SOURCE
+
+fn source_decoder() -> Props(Source) {
+  use dict <- state.with(state.get())
+
+  case dict.to_list(dict) {
+    [#("literal", dynamic)] ->
+      dynamic
+      |> props.run_decoder(value.decoder())
+      |> report.error_context(error.BadKind("literal"))
+      |> result.map(source.Literal)
+      |> state.from_result
+
+    [#("reference", dynamic)] ->
+      dynamic
+      |> props.run_decoder(decode.string)
+      |> report.error_context(error.BadKind("reference"))
+      |> result.map(source.Reference)
+      |> state.from_result
+
+    [#("template", _dynamic)] -> todo
+    [#("fetch", _dynamic)] -> todo
+    [#("command", _dynamic)] -> todo
+    [#(name, _)] -> state.fail(report.new(error.UnknownKind(name)))
+    _bad -> todo
+  }
+}
+
+// OPTIONS
+
+fn options_decoder() -> Props(Options) {
+  use dict <- state.with(state.get())
+
+  case dict.to_list(dict) {
+    [#("groups", _dynamic)] -> todo
+
+    _else -> {
+      // TODO: Ikke feil her, ta vare på result
+      source_decoder()
+      |> state.map(Ok)
+      |> state.map(reset.try_new(_, source.refs))
+      |> state.map(options.SingleSource)
     }
   }
 }

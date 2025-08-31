@@ -15,7 +15,8 @@ import sb/scope.{type Scope}
 import sb/source.{type Source}
 import sb/value.{type Value}
 
-pub opaque type Options {
+// pub opaque type Options {
+pub type Options {
   SingleSource(Reset(Result(Source, Report(Error))))
   SourceGroups(List(Group))
 }

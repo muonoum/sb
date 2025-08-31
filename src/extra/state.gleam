@@ -4,6 +4,13 @@ pub type State(v, e, c) {
   State(run: fn(c) -> #(c, Result(v, e)))
 }
 
+pub fn from_result(result: Result(v, e)) -> State(v, e, _) {
+  case result {
+    Error(error) -> fail(error)
+    Ok(value) -> succeed(value)
+  }
+}
+
 pub fn run(state state: State(v, e, c), context context: c) -> Result(v, e) {
   pair.second(step(state, context))
 }
