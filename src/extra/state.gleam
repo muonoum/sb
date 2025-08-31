@@ -22,15 +22,15 @@ pub fn fail(error: e) -> State(v, e, c) {
   #(context, Error(error))
 }
 
-pub fn then(
+pub fn do(
   with state: State(a, e, c),
   then then: fn() -> State(b, e, c),
 ) -> State(b, e, c) {
-  use _ <- do(state)
+  use _ <- with(state)
   then()
 }
 
-pub fn do(
+pub fn with(
   with state: State(a, e, c),
   then then: fn(a) -> State(b, e, c),
 ) -> State(b, e, c) {
@@ -53,7 +53,11 @@ pub fn put(context: c) -> State(Nil, e, c) {
   #(context, Ok(Nil))
 }
 
-pub fn update(with: fn(c) -> c) -> State(Nil, e, c) {
-  use context <- do(get())
-  put(with(context))
+pub fn map_error(state: State(_, a, _), mapper: fn(a) -> b) -> State(_, b, _) {
+  use context <- State
+  let #(context, result) = state.run(context)
+  case result {
+    Ok(value) -> #(context, Ok(value))
+    Error(error) -> #(context, Error(mapper(error)))
+  }
 }

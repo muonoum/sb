@@ -57,7 +57,7 @@ fn kind_decoder(
   dict: Dict(String, Dynamic),
 ) -> Result(Filter, Report(Error)) {
   use keys <- result.try(keys(kind))
-  use _dict <- result.try(error.unknown_keys(dict, [keys]))
+  use _dict <- result.try(error.unknown_keys(dict, keys))
 
   case kind {
     "succeed" -> Ok(Succeed)

@@ -140,7 +140,7 @@ fn kind_decoder(
 ) -> Result(#(String, Field), Report(Error)) {
   use kind <- result.try({
     use kind_keys <- result.try(kind.keys(kind))
-    error.unknown_keys(dict, [field_keys, kind_keys])
+    error.unknown_keys(dict, list.append(field_keys, kind_keys))
     |> result.try(kind.decoder(kind, _))
   })
 

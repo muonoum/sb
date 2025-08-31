@@ -116,7 +116,7 @@ pub fn decoder(
   use dict <- result.try(
     decode.run(dynamic, decode.dict(decode.string, decode.dynamic))
     |> report.map_error(error.DecodeError)
-    |> result.try(error.unknown_keys(_, [task_keys])),
+    |> result.try(error.unknown_keys(_, task_keys)),
   )
 
   use name <- result.try({

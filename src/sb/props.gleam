@@ -1,67 +1,128 @@
-import extra/state.{type State}
+import extra/state
+import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
+import gleam/list
+import gleam/option.{type Option, None, Some}
 import gleam/result
-import sb/dekode.{type Decoder}
 import sb/error.{type Error}
 import sb/report.{type Report}
 
-pub type Context =
-  Dict(String, Dynamic)
+pub type Decoder(v) {
+  Decoder(zero: v, decode: fn(Dynamic) -> Result(v, Report(Error)))
+}
 
-pub fn get(
-  then: fn(Context) -> State(v, e, dekode.Context(Context)),
-) -> State(v, e, dekode.Context(Context)) {
-  use dict <- dekode.get()
-  then(dict)
+pub fn run_decoder(
+  dynamic: Dynamic,
+  decoder: decode.Decoder(v),
+) -> Result(v, Report(Error)) {
+  decode.run(dynamic, decoder)
+  |> report.map_error(error.DecodeError)
+}
+
+pub fn string() -> Decoder(String) {
+  Decoder(zero: "", decode: run_decoder(_, decode.string))
+}
+
+pub fn list(inner: Decoder(v)) -> Decoder(List(v)) {
+  Decoder(zero: [], decode: fn(dynamic) {
+    run_decoder(dynamic, decode.list(decode.dynamic))
+    |> result.try(list.try_map(_, inner.decode))
+  })
+}
+
+pub fn optional(inner: Decoder(v)) -> Decoder(Option(v)) {
+  Decoder(zero: None, decode: fn(dynamic) {
+    use value <- result.try({
+      run_decoder(dynamic, decode.optional(decode.dynamic))
+    })
+
+    case option.map(value, inner.decode) {
+      Some(Error(report)) -> Error(report)
+      Some(Ok(value)) -> Ok(Some(value))
+      None -> Ok(None)
+    }
+  })
+}
+
+type State(v) =
+  state.State(v, List(Report(Error)), Context)
+
+pub type Context {
+  Context(Dict(String, Dynamic), reports: List(Report(Error)))
+}
+
+pub fn succeed(value: v) -> State(v) {
+  use Context(_, reports) <- state.with(state.get())
+  use <- bool.guard(reports == [], state.succeed(value))
+  state.fail(list.reverse(reports))
+}
+
+pub fn fail(report: Report(Error)) -> State(_) {
+  use Context(_, reports) <- state.with(state.get())
+  state.fail(list.reverse([report, ..reports]))
 }
 
 pub fn decode(
   dynamic: Dynamic,
-  keys: List(List(String)),
-  decoder: State(v, List(Report(Error)), dekode.Context(Context)),
-) -> Result(v, List(Report(Error))) {
-  dekode.Context(dict.new(), reports: [])
+  keys: List(String),
+  decoder: State(v),
+) -> Result(v, _) {
+  Context(dict.new(), reports: [])
   |> state.run(context: _, state: {
     use <- load(dynamic, keys)
     decoder
   })
 }
 
-pub fn load(
+fn load(
   dynamic: Dynamic,
-  keys: List(List(String)),
-  then: fn() -> State(v, List(Report(Error)), dekode.Context(Context)),
-) -> State(v, List(Report(Error)), dekode.Context(Context)) {
-  decode.run(dynamic, decode.dict(decode.string, decode.dynamic))
-  |> report.map_error(error.DecodeError)
-  |> result.try(error.unknown_keys(_, keys))
-  |> dekode.required(dekode.put(_, then))
+  keys: List(String),
+  next: fn() -> State(v),
+) -> State(v) {
+  let result = run_decoder(dynamic, decode.dict(decode.string, decode.dynamic))
+
+  case result {
+    Error(report) -> fail(report)
+
+    Ok(dict) -> {
+      use Context(_, reports) <- state.with(state.get())
+
+      let context = case error.unknown_keys(dict, keys) {
+        Error(report) -> Context(dict, reports: [report, ..reports])
+        Ok(dict) -> Context(dict, reports:)
+      }
+
+      state.put(context)
+      |> state.do(next)
+    }
+  }
 }
 
-pub fn property(
-  name: String,
+fn property(
+  key: String,
   decoder: Decoder(v),
-  default: fn() -> Result(v, Report(Error)),
-) -> State(v, c, dekode.Context(Context)) {
-  use dict <- dekode.get()
-  let dekode.Decoder(zero:, decoder:) = decoder
+  default: fn() -> Result(v, _),
+) -> State(v) {
+  use Context(dict, ..) <- state.with(state.get())
 
-  let result = case dict.get(dict, name) {
+  let result = case dict.get(dict, key) {
     Error(Nil) -> default()
 
     Ok(dynamic) ->
-      decoder(dynamic)
-      |> report.error_context(error.BadProperty(name))
+      decoder.decode(dynamic)
+      |> report.error_context(error.BadProperty(key))
   }
 
   case result {
     Ok(value) -> state.succeed(value)
 
     Error(report) -> {
-      use <- dekode.report(report)
-      state.succeed(zero)
+      use Context(dict, reports) <- state.with(state.get())
+      let ctx = Context(dict, reports: [report, ..reports])
+      use <- state.do(state.put(ctx))
+      state.succeed(decoder.zero)
     }
   }
 }
@@ -69,9 +130,9 @@ pub fn property(
 pub fn required(
   name: String,
   decoder: Decoder(a),
-  then: fn(a) -> State(b, e, dekode.Context(Context)),
-) -> State(b, e, dekode.Context(Context)) {
-  state.do(then:, with: {
+  then: fn(a) -> State(b),
+) -> State(b) {
+  state.with(then:, with: {
     use <- property(name, decoder)
     report.error(error.MissingProperty(name))
   })
@@ -80,9 +141,9 @@ pub fn required(
 pub fn zero(
   name: String,
   decoder: Decoder(a),
-  then: fn(a) -> State(b, List(Report(Error)), dekode.Context(Context)),
-) -> State(b, List(Report(Error)), dekode.Context(Context)) {
-  state.do(then:, with: {
+  then: fn(a) -> State(v),
+) -> State(v) {
+  state.with(then:, with: {
     use <- property(name, decoder)
     Ok(decoder.zero)
   })
@@ -91,17 +152,23 @@ pub fn zero(
 pub fn default(
   name: String,
   decoder: Decoder(a),
-  default: Result(a, Report(Error)),
-  then: fn(a) -> State(b, e, dekode.Context(Context)),
-) -> State(b, e, dekode.Context(Context)) {
-  lazy_default(name, decoder, fn() { default }, then)
+  default: Result(a, _),
+  then: fn(a) -> State(v),
+) -> State(v) {
+  state.with(then:, with: {
+    use <- property(name, decoder)
+    default
+  })
 }
 
-fn lazy_default(
+pub fn lazy_default(
   name: String,
   decoder: Decoder(a),
-  default: fn() -> Result(a, Report(Error)),
-  then: fn(a) -> State(b, e, dekode.Context(Context)),
-) -> State(b, e, dekode.Context(Context)) {
-  state.do(with: property(name, decoder, default), then:)
+  default: fn() -> Result(a, _),
+  then: fn(a) -> State(v),
+) -> State(v) {
+  state.with(then:, with: {
+    use <- property(name, decoder)
+    default()
+  })
 }

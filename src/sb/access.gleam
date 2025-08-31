@@ -5,13 +5,13 @@ import gleam/result
 import sb/error.{type Error}
 import sb/report.{type Report}
 
-// pub opaque type Access {
-pub type Access {
+const access_keys = ["users", "groups", "keys"]
+
+pub opaque type Access {
   Access(users: Users, groups: List(String), keys: List(String))
 }
 
-// pub opaque type Users {
-pub type Users {
+pub opaque type Users {
   Everyone
   Users(List(String))
 }
@@ -32,13 +32,11 @@ pub fn none() -> Access {
   Access(users: Users([]), groups: [], keys: [])
 }
 
-const access_keys = ["users", "groups", "keys"]
-
 pub fn decoder(dynamic: Dynamic) -> Result(Access, Report(Error)) {
   use dict <- result.try(
     decode.run(dynamic, decode.dict(decode.string, decode.dynamic))
     |> report.map_error(error.DecodeError)
-    |> result.try(error.unknown_keys(_, [access_keys])),
+    |> result.try(error.unknown_keys(_, access_keys)),
   )
 
   use users <- result.try(case dict.get(dict, "users") {
