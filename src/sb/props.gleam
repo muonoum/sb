@@ -2,22 +2,12 @@ import extra/state.{type State}
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
+import sb/decoder.{type Decoder}
 import sb/error.{type Error}
 import sb/report.{type Report}
 
 pub type Props(v) =
   State(v, Report(Error), Dict(String, Dynamic))
-
-pub type Decoder(v) =
-  fn(Dynamic) -> Result(v, Report(Error))
-
-// TODO: Hører ikke hjemme her?
-pub fn run_decoder(decoder: decode.Decoder(v)) -> Decoder(v) {
-  fn(dynamic) {
-    decode.run(dynamic, decoder)
-    |> report.map_error(error.DecodeError)
-  }
-}
 
 pub fn decode(dynamic: Dynamic, decoder: Props(v)) -> Result(v, Report(Error)) {
   state.run(context: dict.new(), state: {
@@ -34,9 +24,11 @@ pub fn check_unknown_keys(keys: List(String)) -> Props(Nil) {
 }
 
 pub fn load(dynamic: Dynamic, next: fn() -> Props(v)) -> Props(v) {
-  let decoder = run_decoder(decode.dict(decode.string, decode.dynamic))
+  let result =
+    decode.run(dynamic, decode.dict(decode.string, decode.dynamic))
+    |> report.map_error(error.DecodeError)
 
-  case decoder(dynamic) {
+  case result {
     Error(report) -> state.fail(report)
     Ok(dict) -> state.do(state.put(dict), next)
   }

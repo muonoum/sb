@@ -28,13 +28,6 @@ pub fn error_context(
   }
 }
 
-pub fn with_error_context(
-  context: issue,
-  result: fn() -> Result(value, Report(issue)),
-) -> Result(value, Report(issue)) {
-  error_context(result(), context)
-}
-
 pub fn map_error(
   result: Result(value, error),
   map: fn(error) -> issue,
