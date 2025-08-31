@@ -7,7 +7,8 @@ import sb/report.{type Report}
 import sb/scope.{type Scope}
 import sb/value.{type Value}
 
-pub opaque type Condition {
+// pub opaque type Condition {
+pub type Condition {
   Resolved(Bool)
   Defined(String)
   Equal(String, Value)

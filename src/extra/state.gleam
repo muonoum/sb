@@ -53,11 +53,37 @@ pub fn put(context: c) -> State(Nil, e, c) {
   #(context, Ok(Nil))
 }
 
+pub fn update(mapper: fn(context) -> context) {
+  use context <- with(get())
+  put(mapper(context))
+}
+
+pub fn map(state: State(a, _, _), mapper: fn(a) -> b) -> State(b, _, _) {
+  use context <- State
+  let #(context, result) = state.run(context)
+  case result {
+    Ok(value) -> #(context, Ok(mapper(value)))
+    Error(error) -> #(context, Error(error))
+  }
+}
+
 pub fn map_error(state: State(_, a, _), mapper: fn(a) -> b) -> State(_, b, _) {
   use context <- State
   let #(context, result) = state.run(context)
   case result {
     Ok(value) -> #(context, Ok(value))
     Error(error) -> #(context, Error(mapper(error)))
+  }
+}
+
+pub fn try(
+  state: State(a, _, _),
+  mapper: fn(a) -> State(b, _, _),
+) -> State(b, _, _) {
+  use context <- State
+  let #(context, result) = state.run(context)
+  case result {
+    Ok(value) -> step(mapper(value), context)
+    Error(error) -> #(context, Error(error))
   }
 }

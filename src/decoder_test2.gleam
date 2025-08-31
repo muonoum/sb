@@ -13,7 +13,7 @@ import gleam/result
 import gleam/set
 import gleam/string
 import sb/access.{type Access}
-import sb/condition
+import sb/condition.{type Condition}
 import sb/error.{type Error}
 import sb/field.{type Field, Field}
 import sb/kind.{type Kind}
@@ -75,26 +75,26 @@ fn task_decoder(
 ) -> State(Task) {
   use <- state.do(check_keys(task_keys))
 
-  use name <- decode_field("name", decode_run(_, decode.string))
+  use name <- decode_field("name", decode_run(decode.string))
 
   use category <- decode_field("category", {
-    decode_run(_, decode.list(decode.string))
+    decode_run(decode.list(decode.string))
   })
 
   use id <- decode_default_field("id", make_id(category, name), {
-    decode_run(_, decode.string)
+    decode_run(decode.string)
   })
 
   use summary <- decode_default_field("summary", Ok(None), {
-    decode_run(_, decode.map(decode.string, Some))
+    decode_run(decode.map(decode.string, Some))
   })
 
   use description <- decode_default_field("description", Ok(None), {
-    decode_run(_, decode.map(decode.string, Some))
+    decode_run(decode.map(decode.string, Some))
   })
 
   use command <- decode_default_field("command", Ok([]), {
-    decode_run(_, decode.list(decode.string))
+    decode_run(decode.list(decode.string))
   })
 
   use runners <- decode_default_field("runners", Ok(access.none()), {
@@ -106,7 +106,8 @@ fn task_decoder(
   })
 
   use fields <- decode_default_field("fields", Ok([]), fn(dynamic) {
-    use list <- result.map(decode_run(dynamic, decode.list(decode.dynamic)))
+    let list_decoder = decode_run(decode.list(decode.dynamic))
+    use list <- result.map(list_decoder(dynamic))
     use <- extra.return(pair.second)
     use seen, dynamic <- list.map_fold(list, set.new())
     decode_dict(dynamic, field_decoder(fields, filters))
@@ -138,15 +139,15 @@ pub fn access_decoder() -> State(Access) {
   use <- state.do(check_keys(access_keys))
 
   use users <- decode_default_field("users", Ok(access.Users([])), {
-    decode_run(_, users_decoder())
+    decode_run(users_decoder())
   })
 
   use groups <- decode_default_field("groups", Ok([]), {
-    decode_run(_, decode.list(decode.string))
+    decode_run(decode.list(decode.string))
   })
 
   use keys <- decode_default_field("keys", Ok([]), {
-    decode_run(_, decode.list(decode.string))
+    decode_run(decode.list(decode.string))
   })
 
   decode_succeed(access.Access(users:, groups:, keys:))
@@ -165,19 +166,32 @@ fn user_decoder(string: String) -> decode.Decoder(access.Users) {
   }
 }
 
-fn kind_decoder() -> State(Kind) {
-  use kind <- decode_field("kind", decode_run(_, decode.string))
-  use kind_keys <- state.with(from_result(kind.keys(kind)))
-  use <- state.do(check_keys(list.append(field_keys, kind_keys)))
+fn kind_decoder(fields: Dict(String, Dict(String, Dynamic))) -> State(Kind) {
+  use kind <- decode_field("kind", decode_run(decode.string))
 
-  case kind {
-    "data" -> data_decoder()
-    "text" -> text_decoder()
-    "textarea" -> textarea_decoder()
-    "radio" -> radio_decoder()
-    "checkbox" -> checkbox_decoder()
-    "select" -> select_decoder()
-    unknown -> state.fail(report.new(error.UnknownKind(unknown)))
+  case dict.get(fields, kind) {
+    Ok(custom) -> {
+      use <- state.do(state.update(dict.merge(_, custom)))
+      kind_decoder(fields)
+    }
+
+    Error(Nil) -> {
+      use <- state.do(
+        from_result(kind.keys(kind))
+        |> state.map(list.append(field_keys, _))
+        |> state.try(check_keys),
+      )
+
+      case kind {
+        "data" -> data_decoder()
+        "text" -> text_decoder()
+        "textarea" -> textarea_decoder()
+        "radio" -> radio_decoder()
+        "checkbox" -> checkbox_decoder()
+        "select" -> select_decoder()
+        unknown -> state.fail(report.new(error.UnknownKind(unknown)))
+      }
+    }
   }
 }
 
@@ -207,7 +221,7 @@ fn checkbox_decoder() -> State(Kind) {
 
 fn select_decoder() -> State(Kind) {
   use multiple <- decode_default_field("multiple", Ok(False), {
-    decode_run(_, decode.bool)
+    decode_run(decode.bool)
   })
 
   use options <- decode_field("source", options.decoder)
@@ -216,23 +230,23 @@ fn select_decoder() -> State(Kind) {
 }
 
 fn field_decoder(
-  _fields: Dict(String, Dict(String, Dynamic)),
+  fields: Dict(String, Dict(String, Dynamic)),
   _filters: Dict(String, Dict(String, Dynamic)),
 ) -> State(#(String, Field)) {
-  use id <- decode_field("id", decode_run(_, decode.string))
+  use id <- decode_field("id", decode_run(decode.string))
 
   use <- extra.return(
     state.map_error(_, report.context(_, error.FieldContext(id))),
   )
 
-  use kind <- state.with(kind_decoder())
+  use kind <- state.with(kind_decoder(fields))
 
   use label <- decode_default_field("label", Ok(None), {
-    decode_run(_, decode.map(decode.string, Some))
+    decode_run(decode.map(decode.string, Some))
   })
 
   use description <- decode_default_field("description", Ok(None), {
-    decode_run(_, decode.map(decode.string, Some))
+    decode_run(decode.map(decode.string, Some))
   })
 
   use disabled <- decode_default_field(
@@ -244,19 +258,19 @@ fn field_decoder(
   use hidden <- decode_default_field(
     "hidden",
     Ok(condition.false()),
-    condition.decoder,
+    condition_decoder,
   )
 
   use ignored <- decode_default_field(
     "ignored",
     Ok(condition.false()),
-    condition.decoder,
+    condition_decoder,
   )
 
   use optional <- decode_default_field(
     "optional",
     Ok(condition.false()),
-    condition.decoder,
+    condition_decoder,
   )
 
   decode_succeed(#(
@@ -274,12 +288,31 @@ fn field_decoder(
   ))
 }
 
+fn condition_decoder(dynamic) {
+  case decode.run(dynamic, decode.bool) {
+    Ok(bool) -> Ok(condition.resolved(bool))
+    Error(..) -> decode_dict(dynamic, condition_kind_decoder())
+  }
+}
+
+fn condition_kind_decoder() -> State(Condition) {
+  use dict <- state.with(state.get())
+
+  case dict.to_list(dict) {
+    [#("when", _dynamic)] -> state.succeed(condition.false())
+    [#("unless", _dynamic)] -> state.succeed(condition.false())
+    [#(_unknown, _)] -> todo
+    _bad -> todo
+  }
+}
+
 fn decode_run(
-  dynamic: Dynamic,
   decoder: decode.Decoder(v),
-) -> Result(v, Report(Error)) {
-  decode.run(dynamic, decoder)
-  |> report.map_error(error.DecodeError)
+) -> fn(Dynamic) -> Result(v, Report(Error)) {
+  fn(dynamic) {
+    decode.run(dynamic, decoder)
+    |> report.map_error(error.DecodeError)
+  }
 }
 
 fn decode_dict(dynamic: Dynamic, decoder: State(v)) -> Result(v, Report(Error)) {
@@ -299,9 +332,9 @@ fn decode_dict(dynamic: Dynamic, decoder: State(v)) -> Result(v, Report(Error)) 
 // }
 
 fn load_dict(dynamic: Dynamic, next: fn() -> State(v)) -> State(v) {
-  let result = decode_run(dynamic, decode.dict(decode.string, decode.dynamic))
+  let decoder = decode_run(decode.dict(decode.string, decode.dynamic))
 
-  case result {
+  case decoder(dynamic) {
     Error(report) -> state.fail(report)
     Ok(dict) -> state.do(state.put(dict), next)
   }
