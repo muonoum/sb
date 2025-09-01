@@ -161,15 +161,8 @@ pub fn decoder(fields: custom.Fields, filters: custom.Filters) -> Props(Task) {
     command:,
     runners:,
     approvers:,
-    layout: {
-      use result <- list.map(fields)
-      use #(id, _field) <- result.map(result)
-      id
-    },
-    fields: dict.from_list({
-      result.partition(fields)
-      |> pair.first
-    }),
+    layout: list.map(fields, result.map(_, pair.first)),
+    fields: dict.from_list(pair.first(result.partition(fields))),
   ))
 }
 
