@@ -27,7 +27,7 @@ import sb/reset
 import sb/source.{type Source}
 import sb/task.{type Task, Task}
 import sb/text
-import sb/value
+import sb/value.{type Value}
 
 type Custom =
   Dict(String, Dynamic)
@@ -91,26 +91,26 @@ fn load_task(path: String) -> Dynamic {
 fn task_decoder(fields: Fields, filters: Filters) -> Props(Task) {
   use <- state.do(props.check_unknown_keys(task_keys))
 
-  use name <- props.field("name", decoder.run(decode.string))
+  use name <- props.field("name", decoder.new(decode.string))
 
   use category <- props.field("category", {
-    decoder.run(decode.list(decode.string))
+    decoder.new(decode.list(decode.string))
   })
 
   use id <- props.default_field("id", make_id(category, name), {
-    decoder.run(decode.string)
+    decoder.new(decode.string)
   })
 
   use summary <- props.default_field("summary", Ok(None), {
-    decoder.run(decode.map(decode.string, Some))
+    decoder.new(decode.map(decode.string, Some))
   })
 
   use description <- props.default_field("description", Ok(None), {
-    decoder.run(decode.map(decode.string, Some))
+    decoder.new(decode.map(decode.string, Some))
   })
 
   use command <- props.default_field("command", Ok([]), {
-    decoder.run(decode.list(decode.string))
+    decoder.new(decode.list(decode.string))
   })
 
   use runners <- props.default_field("runners", Ok(access.none()), {
@@ -122,7 +122,7 @@ fn task_decoder(fields: Fields, filters: Filters) -> Props(Task) {
   })
 
   use fields <- props.default_field("fields", Ok([]), fn(dynamic) {
-    let list_decoder = decoder.run(decode.list(decode.dynamic))
+    let list_decoder = decoder.new(decode.list(decode.dynamic))
     use list <- result.map(list_decoder(dynamic))
     use <- extra.return(pair.second)
     use seen, dynamic <- list.map_fold(list, set.new())
@@ -181,15 +181,15 @@ pub fn access_decoder() -> Props(Access) {
   use <- state.do(props.check_unknown_keys(access_keys))
 
   use users <- props.default_field("users", Ok(access.Users([])), {
-    decoder.run(users_decoder())
+    decoder.new(users_decoder())
   })
 
   use groups <- props.default_field("groups", Ok([]), {
-    decoder.run(decode.list(decode.string))
+    decoder.new(decode.list(decode.string))
   })
 
   use keys <- props.default_field("keys", Ok([]), {
-    decoder.run(decode.list(decode.string))
+    decoder.new(decode.list(decode.string))
   })
 
   props.succeed(access.Access(users:, groups:, keys:))
@@ -211,7 +211,7 @@ fn user_decoder(string: String) -> decode.Decoder(access.Users) {
 // FIELD
 
 fn field_decoder(fields: Fields, _filters: Filters) -> Props(#(String, Field)) {
-  use id <- props.field("id", decoder.run(decode.string))
+  use id <- props.field("id", decoder.new(decode.string))
 
   use <- extra.return(
     state.map_error(_, report.context(_, error.FieldContext(id))),
@@ -220,11 +220,11 @@ fn field_decoder(fields: Fields, _filters: Filters) -> Props(#(String, Field)) {
   use kind <- state.with(kind_decoder(fields))
 
   use label <- props.default_field("label", Ok(None), {
-    decoder.run(decode.map(decode.string, Some))
+    decoder.new(decode.map(decode.string, Some))
   })
 
   use description <- props.default_field("description", Ok(None), {
-    decoder.run(decode.map(decode.string, Some))
+    decoder.new(decode.map(decode.string, Some))
   })
 
   use disabled <- props.default_field(
@@ -269,7 +269,7 @@ fn field_decoder(fields: Fields, _filters: Filters) -> Props(#(String, Field)) {
 // CONDITION
 
 fn condition_decoder(dynamic: Dynamic) -> Result(Condition, Report(Error)) {
-  case dynamic |> decoder.run(decode.bool) {
+  case decoder.run(dynamic, decode.bool) {
     Ok(bool) -> Ok(condition.resolved(bool))
     Error(..) -> props.decode(dynamic, condition_kind_decoder())
   }
@@ -288,33 +288,36 @@ fn condition_kind_decoder() -> Props(Condition) {
   }
 }
 
-fn when_unless_decoder(dynamic: Dynamic, defined, equal) -> Props(Condition) {
+fn when_unless_decoder(
+  dynamic: Dynamic,
+  defined: fn(String) -> Condition,
+  equal: fn(String, Value) -> Condition,
+) -> Props(Condition) {
   use <- extra.return(state.from_result)
 
-  case dynamic |> decoder.run(decode.string) {
-    Ok(id) -> Ok(defined(id))
+  use <- result.lazy_or(
+    decoder.run(dynamic, decode.string)
+    |> result.map(defined),
+  )
 
-    Error(..) ->
-      props.decode(dynamic, {
-        use dict <- state.with(state.get())
+  use <- extra.return(props.decode(dynamic, _))
+  use dict <- state.with(state.get())
 
-        case dict.to_list(dict) {
-          [#(id, dynamic)] ->
-            case dynamic |> decoder.run(value.decoder()) {
-              Error(error) -> props.fail(error)
-              Ok(value) -> props.succeed(equal(id, value))
-            }
+  case dict.to_list(dict) {
+    [#(id, dynamic)] ->
+      case decoder.run(dynamic, value.decoder()) {
+        Error(error) -> props.fail(error)
+        Ok(value) -> props.succeed(equal(id, value))
+      }
 
-          _bad -> todo as "bad condition"
-        }
-      })
+    _bad -> todo as "bad condition"
   }
 }
 
 // KIND
 
 fn kind_decoder(fields: Fields) -> Props(Kind) {
-  use kind <- props.field("kind", decoder.run(decode.string))
+  use kind <- props.field("kind", decoder.new(decode.string))
 
   case dict.get(fields.custom, kind) {
     Ok(custom) -> {
@@ -367,7 +370,7 @@ fn checkbox_decoder() -> Props(Kind) {
 
 fn select_decoder() -> Props(Kind) {
   use multiple <- props.default_field("multiple", Ok(False), {
-    decoder.run(decode.bool)
+    decoder.new(decode.bool)
   })
 
   use options <- props.field("source", props.decode(_, options_decoder()))
@@ -412,15 +415,13 @@ fn source_decoder() -> Props(Source) {
 
 fn literal_decoder(dynamic: Dynamic) -> Result(Source, Report(Error)) {
   use <- extra.return(report.error_context(_, error.BadKind("literal")))
-  dynamic
-  |> decoder.run(value.decoder())
+  decoder.run(dynamic, value.decoder())
   |> result.map(source.Literal)
 }
 
 fn reference_decoder(dynamic: Dynamic) -> Result(Source, Report(Error)) {
   use <- extra.return(report.error_context(_, error.BadKind("reference")))
-  dynamic
-  |> decoder.run(decode.string)
+  decoder.run(dynamic, decode.string)
   |> result.map(source.Reference)
 }
 
@@ -457,8 +458,7 @@ fn fetch_decoder(dynamic: Dynamic) -> Result(Source, Report(Error)) {
   })
 
   use method <- props.default_field("method", Ok(http.Get), fn(dynamic) {
-    dynamic
-    |> decoder.run(decode.string)
+    decoder.run(dynamic, decode.string)
     |> result.try(fn(string) {
       http.parse_method(string.uppercase(string))
       |> report.replace_error(error.BadProperty("method"))
@@ -466,8 +466,7 @@ fn fetch_decoder(dynamic: Dynamic) -> Result(Source, Report(Error)) {
   })
 
   use headers <- props.default_field("headers", Ok([]), fn(dynamic) {
-    dynamic
-    |> decoder.run(decode.dict(decode.string, decode.string))
+    decoder.run(dynamic, decode.dict(decode.string, decode.string))
     |> report.error_context(error.BadProperty("headers"))
     |> result.map(dict.to_list)
   })
