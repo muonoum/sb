@@ -31,7 +31,7 @@ pub fn none() -> Access {
 }
 
 pub fn decoder() -> Props(Access) {
-  use <- state.do(props.check_unknown_keys(access_keys))
+  use <- state.do(props.check_keys(access_keys))
 
   use users <- props.default_field("users", Ok(Users([])), {
     decoder.new(users_decoder())

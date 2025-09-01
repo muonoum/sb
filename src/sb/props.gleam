@@ -21,7 +21,7 @@ pub fn decode(dynamic: Dynamic, decoder: Props(v)) -> Result(v, Report(Error)) {
   })
 }
 
-pub fn check_unknown_keys(keys: List(String)) -> Props(Nil) {
+pub fn check_keys(keys: List(String)) -> Props(Nil) {
   use dict <- state.with(state.get())
   state.from_result(error.unknown_keys(dict, keys))
   |> state.replace(Nil)

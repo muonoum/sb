@@ -118,7 +118,7 @@ pub fn decoder(
   use kind <- state.with(
     kind.decoder(fields, fn(kind_keys) {
       list.append(field_keys, kind_keys)
-      |> props.check_unknown_keys
+      |> props.check_keys
     }),
   )
 

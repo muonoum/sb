@@ -112,7 +112,7 @@ pub fn update(
 }
 
 pub fn decoder(fields: custom.Fields, filters: custom.Filters) -> Props(Task) {
-  use <- state.do(props.check_unknown_keys(task_keys))
+  use <- state.do(props.check_keys(task_keys))
 
   use name <- props.field("name", decoder.new(decode.string))
 

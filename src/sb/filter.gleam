@@ -40,8 +40,7 @@ pub fn decoder(filters: custom.Filters) -> Props(Filter) {
   })
 
   case name {
-    "succeed" ->
-      state.do(props.check_unknown_keys(succeed_keys), succeed_decoder)
+    "succeed" -> state.do(props.check_keys(succeed_keys), succeed_decoder)
 
     _unknown -> todo as "unknown filter"
   }
