@@ -7,6 +7,7 @@ fields:
   - id: a
     kind: select
     source.literal: [a, b, c]
+    optional.when: 10
 
   - id: b
     kind: mega

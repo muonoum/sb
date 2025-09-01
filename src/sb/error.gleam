@@ -27,6 +27,7 @@ pub type Error {
   BadProperty(String)
   BadSource
   BadValue(Value)
+  BadCondition
 
   DecodeError(List(decode.DecodeError))
   JsonError(json.DecodeError)

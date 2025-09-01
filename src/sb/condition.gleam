@@ -121,6 +121,7 @@ fn condition_decoder(
 ) -> Props(Condition) {
   use <- extra.return(state.from_result)
 
+  // TODO: optional.when: 10 -- må dekodes som value
   use <- result.lazy_or(
     decoder.run(dynamic, decode.string)
     |> result.map(defined),
