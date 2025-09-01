@@ -122,8 +122,7 @@ fn task_decoder(fields: Fields, filters: Filters) -> Props(Task) {
   })
 
   use fields <- props.default_field("fields", Ok([]), fn(dynamic) {
-    let list_decoder = decoder.new(decode.list(decode.dynamic))
-    use list <- result.map(list_decoder(dynamic))
+    use list <- result.map(decoder.run(dynamic, decode.list(decode.dynamic)))
     use <- extra.return(pair.second)
     use seen, dynamic <- list.map_fold(list, set.new())
     props.decode(dynamic, field_decoder(fields, filters))
@@ -389,7 +388,7 @@ fn options_decoder() -> Props(Options) {
     _else -> {
       source_decoder()
       |> state.map(Ok)
-      |> state.attempt(fn(_ctx, report) { props.succeed(Error(report)) })
+      |> state.attempt(state.catch_error)
       |> state.map(reset.try_new(_, source.refs))
       |> state.map(options.SingleSource)
     }

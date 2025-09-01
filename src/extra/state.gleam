@@ -1,46 +1,49 @@
 import gleam/pair
 
-pub type State(v, e, c) {
-  State(run: fn(c) -> #(c, Result(v, e)))
+pub type State(v, err, ctx) {
+  State(run: fn(ctx) -> #(ctx, Result(v, err)))
 }
 
-pub fn from_result(result: Result(v, e)) -> State(v, e, _) {
+pub fn from_result(result: Result(v, err)) -> State(v, err, _) {
   case result {
     Error(error) -> fail(error)
     Ok(value) -> succeed(value)
   }
 }
 
-pub fn run(state state: State(v, e, c), context context: c) -> Result(v, e) {
+pub fn run(
+  state state: State(v, err, ctx),
+  context context: ctx,
+) -> Result(v, err) {
   pair.second(step(state, context))
 }
 
-pub fn step(state: State(v, e, c), context: c) -> #(c, Result(v, e)) {
+pub fn step(state: State(v, err, ctx), context: ctx) -> #(ctx, Result(v, err)) {
   state.run(context)
 }
 
-pub fn succeed(value: v) -> State(v, e, c) {
+pub fn succeed(value: v) -> State(v, err, ctx) {
   use context <- State
   #(context, Ok(value))
 }
 
-pub fn fail(error: e) -> State(v, e, c) {
+pub fn fail(error: err) -> State(v, err, ctx) {
   use context <- State
   #(context, Error(error))
 }
 
 pub fn do(
-  with state: State(a, e, c),
-  then then: fn() -> State(b, e, c),
-) -> State(b, e, c) {
+  with state: State(a, err, ctx),
+  then then: fn() -> State(b, err, ctx),
+) -> State(b, err, ctx) {
   use _ <- with(state)
   then()
 }
 
 pub fn with(
-  with state: State(a, e, c),
-  then then: fn(a) -> State(b, e, c),
-) -> State(b, e, c) {
+  with state: State(a, err, ctx),
+  then then: fn(a) -> State(b, err, ctx),
+) -> State(b, err, ctx) {
   use context <- State
   let #(context, result) = state.run(context)
 
@@ -50,17 +53,17 @@ pub fn with(
   }
 }
 
-pub fn get() -> State(c, e, c) {
+pub fn get() -> State(ctx, err, ctx) {
   use context <- State
   #(context, Ok(context))
 }
 
-pub fn put(context: c) -> State(Nil, e, c) {
+pub fn put(context: ctx) -> State(Nil, err, ctx) {
   use _context <- State
   #(context, Ok(Nil))
 }
 
-pub fn update(mapper: fn(context) -> context) {
+pub fn update(mapper: fn(ctx) -> ctx) {
   use context <- with(get())
   put(mapper(context))
 }
@@ -108,7 +111,7 @@ pub fn replace(state: State(_, _, _), value: v) -> State(v, _, _) {
   }
 }
 
-pub fn replace_error(state: State(_, _, _), error: e) -> State(_, e, _) {
+pub fn replace_error(state: State(_, _, _), error: err) -> State(_, err, _) {
   use context <- State
   let #(context, result) = state.run(context)
 
@@ -119,9 +122,9 @@ pub fn replace_error(state: State(_, _, _), error: e) -> State(_, e, _) {
 }
 
 pub fn attempt(
-  state: State(v, e, c),
-  catch catch: fn(c, e) -> State(v, e, c),
-) -> State(v, e, c) {
+  state: State(_, err, ctx),
+  catch catch: fn(ctx, err) -> State(_, err, ctx),
+) -> State(_, err, ctx) {
   use context1 <- State
   let #(context2, result) = state.run(context1)
 
@@ -129,4 +132,8 @@ pub fn attempt(
     Ok(value) -> #(context2, Ok(value))
     Error(error) -> step(catch(context2, error), context1)
   }
+}
+
+pub fn catch_error(_ctx: _, error: err) -> State(Result(_, err), err, _) {
+  succeed(Error(error))
 }
