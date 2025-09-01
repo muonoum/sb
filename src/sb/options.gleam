@@ -1,7 +1,6 @@
+import extra/state
 import gleam/bool
 import gleam/dict
-import gleam/dynamic.{type Dynamic}
-import gleam/dynamic/decode
 import gleam/list
 import gleam/option.{None}
 import gleam/result
@@ -9,14 +8,14 @@ import gleam/set.{type Set}
 import sb/choice.{type Choice}
 import sb/error.{type Error}
 import sb/handlers
+import sb/props.{type Props}
 import sb/report.{type Report}
 import sb/reset.{type Reset}
 import sb/scope.{type Scope}
 import sb/source.{type Source}
 import sb/value.{type Value}
 
-// pub opaque type Options {
-pub type Options {
+pub opaque type Options {
   SingleSource(Reset(Result(Source, Report(Error))))
   SourceGroups(List(Group))
 }
@@ -127,19 +126,16 @@ fn select_object(
   Ok(choice.new(value.String(have), value))
 }
 
-pub fn decoder(dynamic: Dynamic) {
-  use dict <- result.try(
-    dynamic
-    |> decode.run(decode.dict(decode.string, decode.dynamic))
-    |> report.map_error(error.DecodeError),
-  )
+pub fn decoder() -> Props(Options) {
+  use dict <- state.with(state.get())
 
   case dict.to_list(dict) {
-    [#("groups", _dynamic)] -> todo
+    [#("groups", _dynamic)] -> todo as "source groups"
 
-    _else -> {
-      let source = source.decoder(dynamic)
-      Ok(SingleSource(reset.try_new(source, source.refs)))
-    }
+    _else ->
+      state.map(source.decoder(), Ok)
+      |> state.attempt(state.catch_error)
+      |> state.map(reset.try_new(_, source.refs))
+      |> state.map(SingleSource)
   }
 }

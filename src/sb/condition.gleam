@@ -1,14 +1,17 @@
-import gleam/dict.{type Dict}
+import extra
+import extra/state
+import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/result
+import sb/decoder
 import sb/error.{type Error}
+import sb/props.{type Props}
 import sb/report.{type Report}
 import sb/scope.{type Scope}
 import sb/value.{type Value}
 
-// pub opaque type Condition {
-pub type Condition {
+pub opaque type Condition {
   Resolved(Bool)
   Defined(String)
   Equal(String, Value)
@@ -94,24 +97,20 @@ pub fn evaluate(condition: Condition, scope: Scope) -> Condition {
 }
 
 pub fn decoder(dynamic: Dynamic) -> Result(Condition, Report(Error)) {
-  case decode.run(dynamic, decode.bool) {
+  case decoder.run(dynamic, decode.bool) {
     Ok(bool) -> Ok(Resolved(bool))
-
-    Error(..) ->
-      decode.run(dynamic, decode.dict(decode.string, decode.dynamic))
-      |> result.try(kind_decoder)
-      |> report.map_error(error.DecodeError)
+    Error(..) -> props.decode(dynamic, condition_kind_decoder())
   }
 }
 
-fn kind_decoder(
-  dict: Dict(String, Dynamic),
-) -> Result(Condition, List(decode.DecodeError)) {
+fn condition_kind_decoder() -> Props(Condition) {
+  use dict <- state.with(state.get())
+
   case dict.to_list(dict) {
     [#("when", dynamic)] -> condition_decoder(dynamic, Defined, Equal)
     [#("unless", dynamic)] -> condition_decoder(dynamic, NotDefined, NotEqual)
-    [#(_unknown, _)] -> todo
-    _bad -> todo
+    [#(_unknown, _)] -> todo as "unknown condition"
+    _bad -> todo as "bad condition"
   }
 }
 
@@ -119,25 +118,24 @@ fn condition_decoder(
   dynamic: Dynamic,
   defined: fn(String) -> Condition,
   equal: fn(String, Value) -> Condition,
-) -> Result(Condition, List(decode.DecodeError)) {
-  case decode.run(dynamic, decode.string) {
-    Ok(id) -> Ok(defined(id))
+) -> Props(Condition) {
+  use <- extra.return(state.from_result)
 
-    Error(..) -> {
-      use dict <- result.try(decode.run(
-        dynamic,
-        decode.dict(decode.string, decode.dynamic),
-      ))
+  use <- result.lazy_or(
+    decoder.run(dynamic, decode.string)
+    |> result.map(defined),
+  )
 
-      case dict.to_list(dict) {
-        [#(id, dynamic)] ->
-          case decode.run(dynamic, value.decoder()) {
-            Error(error) -> Error(error)
-            Ok(value) -> Ok(equal(id, value))
-          }
+  use <- extra.return(props.decode(dynamic, _))
+  use dict <- state.with(state.get())
 
-        _bad -> todo
+  case dict.to_list(dict) {
+    [#(id, dynamic)] ->
+      case decoder.run(dynamic, value.decoder()) {
+        Error(error) -> props.fail(error)
+        Ok(value) -> props.succeed(equal(id, value))
       }
-    }
+
+    _bad -> todo as "bad condition"
   }
 }

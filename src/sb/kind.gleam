@@ -1,14 +1,19 @@
-import gleam/dict.{type Dict}
-import gleam/dynamic.{type Dynamic}
+import extra
+import extra/state
+import gleam/bool
+import gleam/dict
 import gleam/dynamic/decode
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/set.{type Set}
 import sb/choice.{type Choice}
+import sb/custom
+import sb/decoder
 import sb/error.{type Error}
 import sb/handlers.{type Handlers}
 import sb/options.{type Options}
+import sb/props.{type Props}
 import sb/report.{type Report}
 import sb/reset.{type Reset}
 import sb/scope.{type Scope}
@@ -26,18 +31,6 @@ pub const radio_keys = ["default", "layout", "source"]
 pub const checkbox_keys = ["default", "layout", "source"]
 
 pub const select_keys = ["default", "multiple", "placeholder", "source"]
-
-pub fn keys(name: String) -> Result(List(String), Report(Error)) {
-  case name {
-    "data" -> Ok(data_keys)
-    "text" -> Ok(text_keys)
-    "textarea" -> Ok(textarea_keys)
-    "radio" -> Ok(radio_keys)
-    "checkbox" -> Ok(checkbox_keys)
-    "select" -> Ok(select_keys)
-    _unknown -> report.error(error.UnknownKind(name))
-  }
-}
 
 pub type Kind {
   Text(String)
@@ -168,71 +161,72 @@ pub fn value(kind: Kind) -> Option(Result(Value, Report(Error))) {
 }
 
 pub fn decoder(
-  kind: String,
-  dict: Dict(String, Dynamic),
-) -> Result(Kind, Report(Error)) {
-  case kind {
-    "data" -> data_decoder(dict)
-    "text" -> text_decoder(dict)
-    "textarea" -> textarea_decoder(dict)
-    "radio" -> radio_decoder(dict)
-    "checkbox" -> checkbox_decoder(dict)
-    "select" -> select_decoder(dict)
-    unknown -> report.error(error.UnknownKind(unknown))
+  fields: custom.Fields,
+  check_keys: fn(List(String)) -> Props(Nil),
+) -> Props(Kind) {
+  use name <- props.field("kind", decoder.new(decode.string))
+
+  use <- result.lazy_unwrap({
+    use custom <- result.map(dict.get(fields.custom, name))
+    use <- state.do(state.update(dict.merge(_, custom)))
+    decoder(fields, check_keys)
+  })
+
+  let decoder = fn(decoder, check_keys) {
+    kind_decoder(decoder, name, check_keys)
+  }
+
+  case name {
+    "data" -> decoder(data_decoder(), check_keys(data_keys))
+    "text" -> decoder(text_decoder(), check_keys(text_keys))
+    "textarea" -> decoder(textarea_decoder(), check_keys(textarea_keys))
+    "radio" -> decoder(radio_decoder(), check_keys(radio_keys))
+    "checkbox" -> decoder(checkbox_decoder(), check_keys(checkbox_keys))
+    "select" -> decoder(select_decoder(), check_keys(select_keys))
+    unknown -> props.fail(report.new(error.UnknownKind(unknown)))
   }
 }
 
-fn data_decoder(dict: Dict(String, Dynamic)) -> Result(Kind, Report(Error)) {
-  use source <- result.try({
-    case dict.get(dict, "source") {
-      Error(Nil) -> report.error(error.MissingProperty("source"))
-      Ok(dynamic) -> Ok(source.decoder(dynamic))
-    }
+fn kind_decoder(
+  decoder: Props(kind),
+  name: String,
+  check_keys: Props(Nil),
+) -> Props(kind) {
+  let context = report.context(_, error.BadKind(name))
+  use <- extra.return(state.map_error(_, context))
+  use <- state.do(check_keys)
+  decoder
+}
+
+fn data_decoder() -> Props(Kind) {
+  use source <- props.field("source", props.decode(_, source.decoder()))
+  props.succeed(Data(reset.try_new(Ok(source), source.refs)))
+}
+
+fn text_decoder() -> Props(Kind) {
+  props.succeed(Text(""))
+}
+
+fn textarea_decoder() -> Props(Kind) {
+  props.succeed(Textarea(""))
+}
+
+fn radio_decoder() -> Props(Kind) {
+  use options <- props.field("source", props.decode(_, options.decoder()))
+  props.succeed(Select(None, options:))
+}
+
+fn checkbox_decoder() -> Props(Kind) {
+  use options <- props.field("source", props.decode(_, options.decoder()))
+  props.succeed(MultiSelect([], options:))
+}
+
+fn select_decoder() -> Props(Kind) {
+  use multiple <- props.default_field("multiple", Ok(False), {
+    decoder.new(decode.bool)
   })
 
-  Ok(Data(source: reset.try_new(source, source.refs)))
-}
-
-fn text_decoder(_dict: Dict(String, Dynamic)) -> Result(Kind, Report(Error)) {
-  todo
-}
-
-fn textarea_decoder(_dict: Dict(String, Dynamic)) -> Result(Kind, Report(Error)) {
-  todo
-}
-
-fn radio_decoder(_dict: Dict(String, Dynamic)) -> Result(Kind, Report(Error)) {
-  todo
-}
-
-fn checkbox_decoder(_dict: Dict(String, Dynamic)) -> Result(Kind, Report(Error)) {
-  todo
-}
-
-fn select_decoder(dict: Dict(String, Dynamic)) -> Result(Kind, Report(Error)) {
-  use multiple <- result.try({
-    case dict.get(dict, "multiple") {
-      Error(Nil) -> Ok(False)
-
-      Ok(dynamic) ->
-        decode.run(dynamic, decode.bool)
-        |> report.map_error(error.DecodeError)
-        |> report.error_context(error.BadProperty("multiple"))
-    }
-  })
-
-  use options <- result.try({
-    case dict.get(dict, "source") {
-      Error(Nil) -> report.error(error.MissingProperty("source"))
-
-      Ok(dynamic) ->
-        options.decoder(dynamic)
-        |> report.error_context(error.BadProperty("source"))
-    }
-  })
-
-  Ok(case multiple {
-    False -> Select(None, options:)
-    True -> MultiSelect([], options:)
-  })
+  use options <- props.field("source", props.decode(_, options.decoder()))
+  use <- bool.guard(multiple, props.succeed(MultiSelect([], options:)))
+  props.succeed(Select(None, options:))
 }

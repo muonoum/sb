@@ -1,7 +1,7 @@
 import extra
+import extra/state
 import gleam/bool
 import gleam/dict.{type Dict}
-import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -10,9 +10,12 @@ import gleam/result
 import gleam/set.{type Set}
 import gleam/string
 import sb/access.{type Access}
+import sb/custom
+import sb/decoder
 import sb/error.{type Error}
 import sb/field.{type Field}
 import sb/handlers.{type Handlers}
+import sb/props.{type Props}
 import sb/report.{type Report}
 import sb/scope.{type Scope}
 import sb/value.{type Value}
@@ -108,135 +111,48 @@ pub fn update(
   Ok(Task(..task, fields: dict.insert(task.fields, id, field)))
 }
 
-pub fn decoder(
-  dynamic: Dynamic,
-  fields: Dict(String, Dict(String, Dynamic)),
-  filters: Dict(String, Dict(String, Dynamic)),
-) -> Result(Task, Report(Error)) {
-  use dict <- result.try(
-    decode.run(dynamic, decode.dict(decode.string, decode.dynamic))
-    |> report.map_error(error.DecodeError)
-    |> result.try(error.unknown_keys(_, task_keys)),
-  )
+pub fn decoder(fields: custom.Fields, filters: custom.Filters) -> Props(Task) {
+  use <- state.do(props.check_unknown_keys(task_keys))
 
-  use name <- result.try({
-    case dict.get(dict, "name") {
-      Error(Nil) -> report.error(error.MissingProperty("name"))
+  use name <- props.field("name", decoder.new(decode.string))
 
-      Ok(dynamic) ->
-        decode.run(dynamic, decode.string)
-        |> report.map_error(error.DecodeError)
-        |> report.error_context(error.BadProperty("name"))
-    }
+  use category <- props.field("category", {
+    decoder.new(decode.list(decode.string))
   })
 
-  use category <- result.try({
-    case dict.get(dict, "category") {
-      Error(Nil) -> report.error(error.MissingProperty("category"))
-
-      Ok(dynamic) ->
-        decode.run(dynamic, decode.list(decode.string))
-        |> report.map_error(error.DecodeError)
-        |> report.error_context(error.BadProperty("category"))
-    }
+  use id <- props.default_field("id", make_id(category, name), {
+    decoder.new(decode.string)
   })
 
-  use id <- result.try({
-    case dict.get(dict, "id") {
-      Error(Nil) -> {
-        let category = string.join(list.map(category, into_id), "-")
-        Ok(string.join([category, into_id(name)], "-"))
-      }
-
-      Ok(dynamic) ->
-        decode.run(dynamic, decode.string)
-        |> report.map_error(error.DecodeError)
-        |> report.error_context(error.BadProperty("id"))
-    }
+  use summary <- props.default_field("summary", Ok(None), {
+    decoder.new(decode.map(decode.string, Some))
   })
 
-  use summary <- result.try({
-    case dict.get(dict, "summary") {
-      Error(Nil) -> Ok(None)
-
-      Ok(dynamic) ->
-        decode.run(dynamic, decode.string)
-        |> report.map_error(error.DecodeError)
-        |> report.error_context(error.BadProperty("summary"))
-        |> result.map(Some)
-    }
+  use description <- props.default_field("description", Ok(None), {
+    decoder.new(decode.map(decode.string, Some))
   })
 
-  use description <- result.try({
-    case dict.get(dict, "description") {
-      Error(Nil) -> Ok(None)
-
-      Ok(dynamic) ->
-        decode.run(dynamic, decode.string)
-        |> report.map_error(error.DecodeError)
-        |> report.error_context(error.BadProperty("description"))
-        |> result.map(Some)
-    }
+  use command <- props.default_field("command", Ok([]), {
+    decoder.new(decode.list(decode.string))
   })
 
-  use command <- result.try({
-    case dict.get(dict, "command") {
-      Error(Nil) -> Ok([])
-
-      Ok(dynamic) ->
-        decode.run(dynamic, decode.list(decode.string))
-        |> report.map_error(error.DecodeError)
-        |> report.error_context(error.BadProperty("command"))
-    }
+  use runners <- props.default_field("runners", Ok(access.none()), {
+    props.decode(_, access.decoder())
   })
 
-  use runners <- result.try({
-    case dict.get(dict, "runners") {
-      Error(Nil) -> Ok(access.none())
-
-      Ok(dynamic) ->
-        access.decoder(dynamic)
-        |> report.error_context(error.BadProperty("runners"))
-    }
+  use approvers <- props.default_field("approvers", Ok(access.none()), {
+    props.decode(_, access.decoder())
   })
 
-  use approvers <- result.try({
-    case dict.get(dict, "approvers") {
-      Error(Nil) -> Ok(access.none())
-
-      Ok(dynamic) ->
-        access.decoder(dynamic)
-        |> report.error_context(error.BadProperty("approvers"))
-    }
+  use fields <- props.default_field("fields", Ok([]), fn(dynamic) {
+    use list <- result.map(decoder.run(dynamic, decode.list(decode.dynamic)))
+    use <- extra.return(pair.second)
+    use seen, dynamic <- list.map_fold(list, set.new())
+    props.decode(dynamic, field.decoder(fields, filters))
+    |> error.try_duplicate_ids(seen)
   })
 
-  use field_results <- result.try({
-    case dict.get(dict, "fields") {
-      Error(Nil) -> Ok([])
-
-      Ok(dynamic) -> {
-        use list <- result.map(
-          decode.run(dynamic, decode.list(decode.dynamic))
-          |> report.map_error(error.DecodeError)
-          |> report.error_context(error.BadProperty("fields")),
-        )
-
-        use <- extra.return(pair.second)
-        use seen, dynamic <- list.map_fold(list, set.new())
-        case field.decoder(dynamic, fields, filters) {
-          Error(report) -> #(seen, Error(report))
-
-          Ok(#(id, field)) ->
-            case set.contains(seen, id) {
-              True -> #(seen, report.error(error.DuplicateId(id)))
-              False -> #(set.insert(seen, id), Ok(#(id, field)))
-            }
-        }
-      }
-    }
-  })
-
-  Ok(Task(
+  props.succeed(Task(
     id:,
     name:,
     category:,
@@ -246,12 +162,12 @@ pub fn decoder(
     runners:,
     approvers:,
     layout: {
-      use result <- list.map(field_results)
+      use result <- list.map(fields)
       use #(id, _field) <- result.map(result)
       id
     },
     fields: dict.from_list({
-      result.partition(field_results)
+      result.partition(fields)
       |> pair.first
     }),
   ))
@@ -259,11 +175,16 @@ pub fn decoder(
 
 const valid_id = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 
-fn into_id(from: String) {
+fn make_id(category, name) {
+  let category = string.join(list.map(category, into_id), "-")
+  Ok(string.join([category, into_id(name)], "-"))
+}
+
+fn into_id(from: String) -> String {
   build_id(from, into: "")
 }
 
-fn build_id(from: String, into result: String) {
+fn build_id(from: String, into result: String) -> String {
   case string.pop_grapheme(from) {
     Error(Nil) -> result
 

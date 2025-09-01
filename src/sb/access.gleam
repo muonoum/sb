@@ -1,19 +1,15 @@
-import gleam/dict
-import gleam/dynamic.{type Dynamic}
+import extra/state
 import gleam/dynamic/decode.{type Decoder}
-import gleam/result
-import sb/error.{type Error}
-import sb/report.{type Report}
+import sb/decoder
+import sb/props.{type Props}
 
 const access_keys = ["users", "groups", "keys"]
 
-// pub opaque type Access {
-pub type Access {
+pub opaque type Access {
   Access(users: Users, groups: List(String), keys: List(String))
 }
 
-// pub opaque type Users {
-pub type Users {
+pub opaque type Users {
   Everyone
   Users(List(String))
 }
@@ -34,40 +30,22 @@ pub fn none() -> Access {
   Access(users: Users([]), groups: [], keys: [])
 }
 
-pub fn decoder(dynamic: Dynamic) -> Result(Access, Report(Error)) {
-  use dict <- result.try(
-    decode.run(dynamic, decode.dict(decode.string, decode.dynamic))
-    |> report.map_error(error.DecodeError)
-    |> result.try(error.unknown_keys(_, access_keys)),
-  )
+pub fn decoder() -> Props(Access) {
+  use <- state.do(props.check_unknown_keys(access_keys))
 
-  use users <- result.try(case dict.get(dict, "users") {
-    Error(Nil) -> Ok(Users([]))
-
-    Ok(dynamic) ->
-      decode.run(dynamic, users_decoder())
-      |> report.map_error(error.DecodeError)
-      |> report.error_context(error.BadProperty("users"))
+  use users <- props.default_field("users", Ok(Users([])), {
+    decoder.new(users_decoder())
   })
 
-  use groups <- result.try(case dict.get(dict, "groups") {
-    Error(Nil) -> Ok([])
-
-    Ok(dynamic) ->
-      decode.run(dynamic, decode.list(decode.string))
-      |> report.map_error(error.DecodeError)
-      |> report.error_context(error.BadProperty("groups"))
+  use groups <- props.default_field("groups", Ok([]), {
+    decoder.new(decode.list(decode.string))
   })
 
-  use keys <- result.try(case dict.get(dict, "keys") {
-    Error(Nil) -> Ok([])
-    Ok(dynamic) ->
-      decode.run(dynamic, decode.list(decode.string))
-      |> report.map_error(error.DecodeError)
-      |> report.error_context(error.BadProperty("keys"))
+  use keys <- props.default_field("keys", Ok([]), {
+    decoder.new(decode.list(decode.string))
   })
 
-  Ok(Access(users:, groups:, keys:))
+  props.succeed(Access(users:, groups:, keys:))
 }
 
 fn users_decoder() -> Decoder(Users) {

@@ -6,6 +6,11 @@ import sb/decoder.{type Decoder}
 import sb/error.{type Error}
 import sb/report.{type Report}
 
+pub type PropertyDecoder(v) {
+  RequiredDecoder(decode: Decoder(v))
+  DefaultDecoder(default: fn() -> v, decode: Decoder(v))
+}
+
 pub type Props(v) =
   State(v, Report(Error), Dict(String, Dynamic))
 

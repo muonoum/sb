@@ -1,3 +1,5 @@
+import extra
+import extra/state
 import gleam/bytes_tree.{type BytesTree}
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
@@ -9,9 +11,12 @@ import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
+import gleam/string
 import gleam/uri
+import sb/decoder
 import sb/error.{type Error}
 import sb/handlers.{type Handlers}
+import sb/props.{type Props}
 import sb/report.{type Report}
 import sb/scope.{type Scope}
 import sb/text.{type Text}
@@ -175,30 +180,75 @@ pub fn parse_json(
   |> report.map_error(error.JsonError)
 }
 
-pub fn decoder(dynamic: Dynamic) {
-  use dict <- result.try(
-    dynamic
-    |> decode.run(decode.dict(decode.string, decode.dynamic))
-    |> report.map_error(error.DecodeError),
-  )
+pub fn decoder() -> Props(Source) {
+  use dict <- state.with(state.get())
+  use <- extra.return(state.from_result)
 
   case dict.to_list(dict) {
-    [#("literal", dynamic)] ->
-      decode.run(dynamic, value.decoder())
-      |> report.map_error(error.DecodeError)
-      |> report.error_context(error.BadKind("literal"))
-      |> result.map(Literal)
-
-    [#("reference", dynamic)] ->
-      decode.run(dynamic, decode.string)
-      |> report.map_error(error.DecodeError)
-      |> report.error_context(error.BadKind("reference"))
-      |> result.map(Reference)
-
-    [#("template", _dynamic)] -> todo
-    [#("fetch", _dynamic)] -> todo
-    [#("command", _dynamic)] -> todo
+    [#("literal", dynamic)] -> literal_decoder(dynamic)
+    [#("reference", dynamic)] -> reference_decoder(dynamic)
+    [#("template", dynamic)] -> template_decoder(dynamic)
+    [#("command", dynamic)] -> command_decoder(dynamic)
+    [#("fetch", dynamic)] -> fetch_decoder(dynamic)
     [#(name, _)] -> report.error(error.UnknownKind(name))
-    _bad -> todo
+    _bad -> report.error(error.BadSource)
   }
+}
+
+fn literal_decoder(dynamic: Dynamic) -> Result(Source, Report(Error)) {
+  use <- extra.return(report.error_context(_, error.BadKind("literal")))
+  result.map(decoder.run(dynamic, value.decoder()), Literal)
+}
+
+fn reference_decoder(dynamic: Dynamic) -> Result(Source, Report(Error)) {
+  use <- extra.return(report.error_context(_, error.BadKind("reference")))
+  result.map(decoder.run(dynamic, decode.string), Reference)
+}
+
+fn template_decoder(dynamic: Dynamic) -> Result(Source, Report(Error)) {
+  use <- extra.return(report.error_context(_, error.BadKind("template")))
+  result.map(text.decoder(dynamic), Template)
+}
+
+fn command_decoder(_dynamic: Dynamic) -> Result(Source, Report(Error)) {
+  use <- extra.return(report.error_context(_, error.BadKind("command")))
+  todo as "decode command"
+}
+
+fn fetch_decoder(dynamic: Dynamic) -> Result(Source, Report(Error)) {
+  use <- extra.return(report.error_context(_, error.BadKind("fetch")))
+
+  use <- result.lazy_or(
+    text.decoder(dynamic)
+    |> result.map(Fetch(
+      method: http.Get,
+      uri: _,
+      headers: [],
+      body: option.None,
+    )),
+  )
+
+  use <- extra.return(props.decode(dynamic, _))
+
+  use uri <- props.field("url", text.decoder)
+
+  use body <- props.default_field("body", Ok(None), {
+    props.decode(_, state.map(decoder(), Some))
+  })
+
+  use method <- props.default_field("method", Ok(http.Get), fn(dynamic) {
+    decoder.run(dynamic, decode.string)
+    |> result.try(fn(string) {
+      http.parse_method(string.uppercase(string))
+      |> report.replace_error(error.BadProperty("method"))
+    })
+  })
+
+  use headers <- props.default_field("headers", Ok([]), fn(dynamic) {
+    decoder.run(dynamic, decode.dict(decode.string, decode.string))
+    |> report.error_context(error.BadProperty("headers"))
+    |> result.map(dict.to_list)
+  })
+
+  props.succeed(Fetch(method:, uri:, headers:, body:))
 }

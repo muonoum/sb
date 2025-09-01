@@ -1,15 +1,18 @@
-import gleam/dict.{type Dict}
-import gleam/dynamic.{type Dynamic}
+import extra
+import extra/state
 import gleam/dynamic/decode
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/set.{type Set}
 import sb/condition.{type Condition}
+import sb/custom
+import sb/decoder
 import sb/error.{type Error}
 import sb/filter.{type Filter}
 import sb/handlers.{type Handlers}
 import sb/kind.{type Kind}
+import sb/props.{type Props}
 import sb/report.{type Report}
 import sb/reset.{type Reset}
 import sb/scope.{type Scope}
@@ -20,8 +23,7 @@ const field_keys = [
   "optional", "filters",
 ]
 
-// pub opaque type Field {
-pub type Field {
+pub opaque type Field {
   Field(
     kind: Kind,
     label: Option(String),
@@ -104,138 +106,56 @@ pub fn value(field: Field) -> Option(Result(Value, Report(Error))) {
 }
 
 pub fn decoder(
-  dynamic: Dynamic,
-  fields: Dict(String, Dict(String, Dynamic)),
-  filters: Dict(String, Dict(String, Dynamic)),
-) -> Result(#(String, Field), Report(Error)) {
-  decode.run(dynamic, decode.dict(decode.string, decode.dynamic))
-  |> report.map_error(error.DecodeError)
-  |> result.try(dict_decoder(_, fields, filters))
-}
+  fields: custom.Fields,
+  _filters: custom.Filters,
+) -> Props(#(String, Field)) {
+  use id <- props.field("id", decoder.new(decode.string))
 
-fn dict_decoder(
-  dict: Dict(String, Dynamic),
-  fields: Dict(String, Dict(String, Dynamic)),
-  filters: Dict(String, Dict(String, Dynamic)),
-) -> Result(#(String, Field), Report(Error)) {
-  use kind <- result.try(case dict.get(dict, "kind") {
-    Error(Nil) -> report.error(error.MissingProperty("kind"))
+  use <- extra.return(
+    state.map_error(_, report.context(_, error.FieldContext(id))),
+  )
 
-    Ok(dynamic) ->
-      decode.run(dynamic, decode.string)
-      |> report.map_error(error.DecodeError)
-      |> report.error_context(error.BadProperty("kind"))
+  use kind <- state.with(
+    kind.decoder(fields, fn(kind_keys) {
+      list.append(field_keys, kind_keys)
+      |> props.check_unknown_keys
+    }),
+  )
+
+  use label <- props.default_field("label", Ok(None), {
+    decoder.new(decode.map(decode.string, Some))
   })
 
-  case dict.get(fields, kind) {
-    Ok(custom) -> dict_decoder(dict.merge(dict, custom), fields, filters)
-    Error(Nil) -> kind_decoder(kind, dict, filters)
-  }
-}
-
-fn kind_decoder(
-  kind: String,
-  dict: Dict(String, Dynamic),
-  filters: Dict(String, Dict(String, Dynamic)),
-) -> Result(#(String, Field), Report(Error)) {
-  use kind <- result.try({
-    use kind_keys <- result.try(kind.keys(kind))
-    error.unknown_keys(dict, list.append(field_keys, kind_keys))
-    |> result.try(kind.decoder(kind, _))
+  use description <- props.default_field("description", Ok(None), {
+    decoder.new(decode.map(decode.string, Some))
   })
 
-  use id <- result.try({
-    case dict.get(dict, "id") {
-      Error(Nil) -> report.error(error.MissingProperty("id"))
+  use disabled <- props.default_field(
+    "disabled",
+    Ok(condition.false()),
+    condition.decoder,
+  )
 
-      Ok(dynamic) ->
-        decode.run(dynamic, decode.string)
-        |> report.map_error(error.DecodeError)
-        |> report.error_context(error.BadProperty("id"))
-    }
-  })
+  use hidden <- props.default_field(
+    "hidden",
+    Ok(condition.false()),
+    condition.decoder,
+  )
 
-  use label <- result.try({
-    case dict.get(dict, "label") {
-      Error(Nil) -> Ok(None)
+  use ignored <- props.default_field(
+    "ignored",
+    Ok(condition.false()),
+    condition.decoder,
+  )
 
-      Ok(dynamic) ->
-        decode.run(dynamic, decode.string)
-        |> report.map_error(error.DecodeError)
-        |> report.error_context(error.BadProperty("label"))
-        |> result.map(Some)
-    }
-  })
+  use optional <- props.default_field(
+    "optional",
+    Ok(condition.false()),
+    condition.decoder,
+  )
 
-  use description <- result.try({
-    case dict.get(dict, "description") {
-      Error(Nil) -> Ok(None)
-
-      Ok(dynamic) ->
-        decode.run(dynamic, decode.string)
-        |> report.map_error(error.DecodeError)
-        |> report.error_context(error.BadProperty("description"))
-        |> result.map(Some)
-    }
-  })
-
-  use disabled <- result.try({
-    case dict.get(dict, "disabled") {
-      Error(Nil) -> Ok(condition.false())
-
-      Ok(dynamic) ->
-        condition.decoder(dynamic)
-        |> report.error_context(error.BadProperty("disabled"))
-    }
-  })
-
-  use hidden <- result.try({
-    case dict.get(dict, "hidden") {
-      Error(Nil) -> Ok(condition.false())
-
-      Ok(dynamic) ->
-        condition.decoder(dynamic)
-        |> report.error_context(error.BadProperty("hidden"))
-    }
-  })
-
-  use ignored <- result.try({
-    case dict.get(dict, "ignored") {
-      Error(Nil) -> Ok(condition.false())
-
-      Ok(dynamic) ->
-        condition.decoder(dynamic)
-        |> report.error_context(error.BadProperty("ignored"))
-    }
-  })
-
-  use optional <- result.try({
-    case dict.get(dict, "optional") {
-      Error(Nil) -> Ok(condition.false())
-
-      Ok(dynamic) ->
-        condition.decoder(dynamic)
-        |> report.error_context(error.BadProperty("optional"))
-    }
-  })
-
-  use filters <- result.try({
-    case dict.get(dict, "filters") {
-      Error(Nil) -> Ok([])
-
-      Ok(dynamic) -> {
-        use list <- result.try(
-          decode.run(dynamic, decode.list(decode.dynamic))
-          |> report.map_error(error.DecodeError)
-          |> report.error_context(error.BadProperty("filters")),
-        )
-
-        list.try_map(list, filter.decoder(_, filters))
-      }
-    }
-  })
-
-  let field =
+  props.succeed(#(
+    id,
     Field(
       kind:,
       label:,
@@ -244,8 +164,7 @@ fn kind_decoder(
       hidden: reset.new(hidden, condition.refs),
       ignored: reset.new(ignored, condition.refs),
       optional: reset.new(optional, condition.refs),
-      filters:,
-    )
-
-  Ok(#(id, field))
+      filters: [],
+    ),
+  ))
 }
