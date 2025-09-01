@@ -165,6 +165,8 @@ pub fn decoder(
   check_keys: fn(List(String)) -> Props(Nil),
 ) -> Props(Kind) {
   use name <- props.field("kind", decoder.new(decode.string))
+  let context = report.context(_, error.BadKind(name))
+  use <- extra.return(state.map_error(_, context))
 
   use <- result.lazy_unwrap({
     use custom <- result.map(dict.get(fields.custom, name))
@@ -172,28 +174,18 @@ pub fn decoder(
     decoder(fields, check_keys)
   })
 
-  let decoder = fn(decoder, check_keys) {
-    kind_decoder(decoder, name, check_keys)
-  }
-
   case name {
-    "data" -> decoder(data_decoder(), check_keys(data_keys))
-    "text" -> decoder(text_decoder(), check_keys(text_keys))
-    "textarea" -> decoder(textarea_decoder(), check_keys(textarea_keys))
-    "radio" -> decoder(radio_decoder(), check_keys(radio_keys))
-    "checkbox" -> decoder(checkbox_decoder(), check_keys(checkbox_keys))
-    "select" -> decoder(select_decoder(), check_keys(select_keys))
+    "data" -> kind_decoder(data_decoder(), check_keys(data_keys))
+    "text" -> kind_decoder(text_decoder(), check_keys(text_keys))
+    "textarea" -> kind_decoder(textarea_decoder(), check_keys(textarea_keys))
+    "radio" -> kind_decoder(radio_decoder(), check_keys(radio_keys))
+    "checkbox" -> kind_decoder(checkbox_decoder(), check_keys(checkbox_keys))
+    "select" -> kind_decoder(select_decoder(), check_keys(select_keys))
     unknown -> props.fail(report.new(error.UnknownKind(unknown)))
   }
 }
 
-fn kind_decoder(
-  decoder: Props(kind),
-  name: String,
-  check_keys: Props(Nil),
-) -> Props(kind) {
-  let context = report.context(_, error.BadKind(name))
-  use <- extra.return(state.map_error(_, context))
+fn kind_decoder(decoder: Props(kind), check_keys: Props(Nil)) -> Props(kind) {
   use <- state.do(check_keys)
   decoder
 }
