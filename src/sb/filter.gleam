@@ -6,7 +6,7 @@ import gleam/result
 import sb/custom
 import sb/decoder
 import sb/error.{type Error}
-import sb/props
+import sb/props.{type Props}
 import sb/report.{type Report}
 import sb/value.{type Value}
 
@@ -28,7 +28,7 @@ pub fn evaluate(value: Value, filter: Filter) -> Result(Value, Report(Error)) {
   }
 }
 
-pub fn decoder(filters: custom.Filters) {
+pub fn decoder(filters: custom.Filters) -> Props(Filter) {
   use name <- props.field("kind", decoder.new(decode.string))
   let context = report.context(_, error.BadKind(name))
   use <- extra.return(state.map_error(_, context))
@@ -40,11 +40,13 @@ pub fn decoder(filters: custom.Filters) {
   })
 
   case name {
-    "succeed" -> {
-      use <- state.do(props.check_unknown_keys(succeed_keys))
-      props.succeed(Succeed)
-    }
+    "succeed" ->
+      state.do(props.check_unknown_keys(succeed_keys), succeed_decoder)
 
     _unknown -> todo as "unknown filter"
   }
+}
+
+fn succeed_decoder() -> Props(Filter) {
+  props.succeed(Succeed)
 }

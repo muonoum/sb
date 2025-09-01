@@ -175,19 +175,14 @@ pub fn decoder(
   })
 
   case name {
-    "data" -> kind_decoder(data_decoder(), check_keys(data_keys))
-    "text" -> kind_decoder(text_decoder(), check_keys(text_keys))
-    "textarea" -> kind_decoder(textarea_decoder(), check_keys(textarea_keys))
-    "radio" -> kind_decoder(radio_decoder(), check_keys(radio_keys))
-    "checkbox" -> kind_decoder(checkbox_decoder(), check_keys(checkbox_keys))
-    "select" -> kind_decoder(select_decoder(), check_keys(select_keys))
+    "data" -> state.do(check_keys(data_keys), data_decoder)
+    "text" -> state.do(check_keys(text_keys), text_decoder)
+    "textarea" -> state.do(check_keys(textarea_keys), textarea_decoder)
+    "radio" -> state.do(check_keys(radio_keys), radio_decoder)
+    "checkbox" -> state.do(check_keys(checkbox_keys), checkbox_decoder)
+    "select" -> state.do(check_keys(select_keys), select_decoder)
     unknown -> props.fail(report.new(error.UnknownKind(unknown)))
   }
-}
-
-fn kind_decoder(decoder: Props(kind), check_keys: Props(Nil)) -> Props(kind) {
-  use <- state.do(check_keys)
-  decoder
 }
 
 fn data_decoder() -> Props(Kind) {
