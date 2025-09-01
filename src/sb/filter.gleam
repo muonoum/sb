@@ -40,11 +40,12 @@ pub fn decoder(filters: custom.Filters) -> Props(Filter) {
   })
 
   case name {
-    "succeed" -> state.do(props.check_keys(succeed_keys), succeed_decoder)
+    "succeed" -> succeed_decoder()
     _unknown -> todo as "unknown filter"
   }
 }
 
 fn succeed_decoder() -> Props(Filter) {
+  use <- state.do(props.check_keys(succeed_keys))
   props.succeed(Succeed)
 }
