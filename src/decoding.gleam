@@ -318,29 +318,26 @@ fn when_unless_decoder(
 fn kind_decoder(fields: Fields) -> Props(Kind) {
   use kind <- props.field("kind", decoder.new(decode.string))
 
-  case dict.get(fields.custom, kind) {
-    Ok(custom) -> {
-      use <- state.do(state.update(dict.merge(_, custom)))
-      kind_decoder(fields)
-    }
+  use <- result.lazy_unwrap({
+    use custom <- result.map(dict.get(fields.custom, kind))
+    use <- state.do(state.update(dict.merge(_, custom)))
+    kind_decoder(fields)
+  })
 
-    Error(Nil) -> {
-      use <- state.do(
-        state.from_result(kind.keys(kind))
-        |> state.map(list.append(field_keys, _))
-        |> state.try(props.check_unknown_keys),
-      )
+  use <- state.do(
+    state.from_result(kind.keys(kind))
+    |> state.map(list.append(field_keys, _))
+    |> state.try(props.check_unknown_keys),
+  )
 
-      case kind {
-        "data" -> data_decoder()
-        "text" -> text_decoder()
-        "textarea" -> textarea_decoder()
-        "radio" -> radio_decoder()
-        "checkbox" -> checkbox_decoder()
-        "select" -> select_decoder()
-        unknown -> props.fail(report.new(error.UnknownKind(unknown)))
-      }
-    }
+  case kind {
+    "data" -> data_decoder()
+    "text" -> text_decoder()
+    "textarea" -> textarea_decoder()
+    "radio" -> radio_decoder()
+    "checkbox" -> checkbox_decoder()
+    "select" -> select_decoder()
+    unknown -> props.fail(report.new(error.UnknownKind(unknown)))
   }
 }
 
