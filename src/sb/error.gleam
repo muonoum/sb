@@ -15,10 +15,12 @@ pub type Error {
   DuplicateId(String)
   Message(String)
   Required
-  UnknownKeys(List(String))
-  UnknownKind(String)
+  Expected(Value)
 
   MissingProperty(String)
+
+  UnknownKeys(List(String))
+  UnknownKind(String)
 
   BadId(String)
   BadKind(String)
