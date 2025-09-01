@@ -107,8 +107,18 @@ fn kind_decoder() -> Props(Condition) {
   use dict <- state.with(state.get())
 
   case dict.to_list(dict) {
-    [#("when", dynamic)] -> condition_decoder(dynamic, Defined, Equal)
-    [#("unless", dynamic)] -> condition_decoder(dynamic, NotDefined, NotEqual)
+    [#("when", dynamic)] -> {
+      let context = report.context(_, error.BadCondition("when"))
+      use <- extra.return(state.map_error(_, context))
+      condition_decoder(dynamic, Defined, Equal)
+    }
+
+    [#("unless", dynamic)] -> {
+      let context = report.context(_, error.BadCondition("unless"))
+      use <- extra.return(state.map_error(_, context))
+      condition_decoder(dynamic, NotDefined, NotEqual)
+    }
+
     [#(_unknown, _)] -> todo as "unknown condition"
     _bad -> todo as "bad condition"
   }
