@@ -35,7 +35,6 @@ pub fn unknown_keys(
   dict: Dict(String, v),
   known_keys: List(String),
 ) -> Result(Dict(String, v), Report(Error)) {
-  use <- bool.guard(known_keys == [], Ok(dict))
   let defined_set = set.from_list(dict.keys(dict))
   let known_set = set.from_list(known_keys)
   let unknown_keys = set.to_list(set.difference(defined_set, known_set))

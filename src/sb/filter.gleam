@@ -1,18 +1,22 @@
-import gleam/dict.{type Dict}
-import gleam/dynamic.{type Dynamic}
+import extra
+import extra/state
+import gleam/dict
 import gleam/dynamic/decode
 import gleam/result
+import sb/custom
+import sb/decoder
 import sb/error.{type Error}
+import sb/props
 import sb/report.{type Report}
 import sb/value.{type Value}
 
-pub fn keys(name: String) -> Result(List(String), Report(Error)) {
-  case name {
-    "succeed" | "parse-integer" | "parse-float" -> Ok(["kind"])
-    "fail" -> Ok(["kind", "error-message"])
-    _unknown -> report.error(error.UnknownKind(name))
-  }
-}
+const succeed_keys = ["kind"]
+
+const parse_integer_keys = ["kind"]
+
+const parse_float_keys = ["kind"]
+
+const fail_keys = ["kind", "error-message"]
 
 pub type Filter {
   Succeed
@@ -24,43 +28,23 @@ pub fn evaluate(value: Value, filter: Filter) -> Result(Value, Report(Error)) {
   }
 }
 
-pub fn decoder(
-  dynamic: Dynamic,
-  filters: Dict(String, Dict(String, Dynamic)),
-) -> Result(Filter, Report(Error)) {
-  decode.run(dynamic, decode.dict(decode.string, decode.dynamic))
-  |> report.map_error(error.DecodeError)
-  |> result.try(dict_decoder(_, filters))
-}
+pub fn decoder(filters: custom.Filters) {
+  use name <- props.field("kind", decoder.new(decode.string))
+  let context = report.context(_, error.BadKind(name))
+  use <- extra.return(state.map_error(_, context))
 
-fn dict_decoder(
-  dict: Dict(String, Dynamic),
-  filters: Dict(String, Dict(String, Dynamic)),
-) -> Result(Filter, Report(Error)) {
-  use kind <- result.try(case dict.get(dict, "kind") {
-    Error(Nil) -> report.error(error.MissingProperty("kind"))
-
-    Ok(dynamic) ->
-      decode.run(dynamic, decode.string)
-      |> report.map_error(error.DecodeError)
-      |> report.error_context(error.BadProperty("kind"))
+  use <- result.lazy_unwrap({
+    use custom <- result.map(dict.get(filters.custom, name))
+    use <- state.do(state.update(dict.merge(_, custom)))
+    decoder(filters)
   })
 
-  case dict.get(filters, kind) {
-    Error(Nil) -> kind_decoder(kind, dict)
-    Ok(custom) -> dict_decoder(dict.merge(dict, custom), filters)
-  }
-}
+  case name {
+    "succeed" -> {
+      use <- state.do(props.check_unknown_keys(succeed_keys))
+      props.succeed(Succeed)
+    }
 
-fn kind_decoder(
-  kind: String,
-  dict: Dict(String, Dynamic),
-) -> Result(Filter, Report(Error)) {
-  use keys <- result.try(keys(kind))
-  use _dict <- result.try(error.unknown_keys(dict, keys))
-
-  case kind {
-    "succeed" -> Ok(Succeed)
-    unknown -> report.error(error.UnknownKind(unknown))
+    _unknown -> todo as "unknown filter"
   }
 }

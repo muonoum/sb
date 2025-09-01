@@ -99,11 +99,11 @@ pub fn evaluate(condition: Condition, scope: Scope) -> Condition {
 pub fn decoder(dynamic: Dynamic) -> Result(Condition, Report(Error)) {
   case decoder.run(dynamic, decode.bool) {
     Ok(bool) -> Ok(Resolved(bool))
-    Error(..) -> props.decode(dynamic, condition_kind_decoder())
+    Error(..) -> props.decode(dynamic, kind_decoder())
   }
 }
 
-fn condition_kind_decoder() -> Props(Condition) {
+fn kind_decoder() -> Props(Condition) {
   use dict <- state.with(state.get())
 
   case dict.to_list(dict) {

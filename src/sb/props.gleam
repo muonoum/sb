@@ -23,8 +23,7 @@ pub fn decode(dynamic: Dynamic, decoder: Props(v)) -> Result(v, Report(Error)) {
 
 pub fn check_unknown_keys(keys: List(String)) -> Props(Nil) {
   use dict <- state.with(state.get())
-  error.unknown_keys(dict, keys)
-  |> state.from_result
+  state.from_result(error.unknown_keys(dict, keys))
   |> state.replace(Nil)
 }
 
@@ -77,11 +76,3 @@ pub fn default_field(
     Ok(value) -> state.with(state.succeed(value), next)
   }
 }
-// fn decode_list(
-//   decoder: Decoder(v),
-// ) -> fn(Dynamic) -> Result(List(v), Report(Error)) {
-//   fn(dynamic) {
-//     decode_run(dynamic, decode.list(decode.dynamic))
-//     |> result.try(list.try_map(_, decoder))
-//   }
-// }

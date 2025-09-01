@@ -107,7 +107,7 @@ pub fn value(field: Field) -> Option(Result(Value, Report(Error))) {
 
 pub fn decoder(
   fields: custom.Fields,
-  _filters: custom.Filters,
+  filters: custom.Filters,
 ) -> Props(#(String, Field)) {
   use id <- props.field("id", decoder.new(decode.string))
 
@@ -154,6 +154,12 @@ pub fn decoder(
     condition.decoder,
   )
 
+  use filters <- props.default_field(
+    "filters",
+    Ok([]),
+    decoder.decode_list(props.decode(_, filter.decoder(filters))),
+  )
+
   props.succeed(#(
     id,
     Field(
@@ -164,7 +170,7 @@ pub fn decoder(
       hidden: reset.new(hidden, condition.refs),
       ignored: reset.new(ignored, condition.refs),
       optional: reset.new(optional, condition.refs),
-      filters: [],
+      filters:,
     ),
   ))
 }

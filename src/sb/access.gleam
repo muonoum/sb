@@ -49,7 +49,9 @@ pub fn decoder() -> Props(Access) {
 }
 
 fn users_decoder() -> Decoder(Users) {
-  decode.one_of(decode.then(decode.string, user_decoder), [
+  decode.string
+  |> decode.then(user_decoder)
+  |> decode.one_of([
     decode.list(decode.string) |> decode.map(Users),
   ])
 }
