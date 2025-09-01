@@ -152,7 +152,7 @@ pub fn decoder(fields: custom.Fields, filters: custom.Filters) -> Props(Task) {
     |> error.try_duplicate_ids(seen)
   })
 
-  props.succeed(Task(
+  state.succeed(Task(
     id:,
     name:,
     category:,

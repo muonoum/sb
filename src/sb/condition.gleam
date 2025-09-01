@@ -142,8 +142,8 @@ fn condition_decoder(
   case dict.to_list(dict) {
     [#(id, dynamic)] ->
       case decoder.run(dynamic, value.decoder()) {
-        Error(error) -> props.fail(error)
-        Ok(value) -> props.succeed(equal(id, value))
+        Error(error) -> state.fail(error)
+        Ok(value) -> state.succeed(equal(id, value))
       }
 
     _bad -> todo as "bad condition"

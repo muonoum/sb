@@ -160,7 +160,7 @@ pub fn decoder(
     decoder.decode_list(props.decode(_, filter.decoder(filters))),
   )
 
-  props.succeed(#(
+  state.succeed(#(
     id,
     Field(
       kind:,

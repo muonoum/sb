@@ -250,5 +250,5 @@ fn fetch_decoder(dynamic: Dynamic) -> Result(Source, Report(Error)) {
     |> result.map(dict.to_list)
   })
 
-  props.succeed(Fetch(method:, uri:, headers:, body:))
+  state.succeed(Fetch(method:, uri:, headers:, body:))
 }

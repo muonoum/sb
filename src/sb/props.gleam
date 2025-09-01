@@ -38,14 +38,6 @@ pub fn load(dynamic: Dynamic, next: fn() -> Props(v)) -> Props(v) {
   }
 }
 
-pub fn succeed(value: v) -> Props(v) {
-  state.succeed(value)
-}
-
-pub fn fail(report: Report(Error)) -> Props(v) {
-  state.fail(report)
-}
-
 pub fn field(
   name: String,
   decoder: Decoder(a),

@@ -45,7 +45,7 @@ pub fn decoder() -> Props(Access) {
     decoder.new(decode.list(decode.string))
   })
 
-  props.succeed(Access(users:, groups:, keys:))
+  state.succeed(Access(users:, groups:, keys:))
 }
 
 fn users_decoder() -> Decoder(Users) {

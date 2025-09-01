@@ -181,31 +181,31 @@ pub fn decoder(
     "radio" -> state.do(check_keys(radio_keys), radio_decoder)
     "checkbox" -> state.do(check_keys(checkbox_keys), checkbox_decoder)
     "select" -> state.do(check_keys(select_keys), select_decoder)
-    unknown -> props.fail(report.new(error.UnknownKind(unknown)))
+    unknown -> state.fail(report.new(error.UnknownKind(unknown)))
   }
 }
 
 fn data_decoder() -> Props(Kind) {
   use source <- props.field("source", props.decode(_, source.decoder()))
-  props.succeed(Data(reset.try_new(Ok(source), source.refs)))
+  state.succeed(Data(reset.try_new(Ok(source), source.refs)))
 }
 
 fn text_decoder() -> Props(Kind) {
-  props.succeed(Text(""))
+  state.succeed(Text(""))
 }
 
 fn textarea_decoder() -> Props(Kind) {
-  props.succeed(Textarea(""))
+  state.succeed(Textarea(""))
 }
 
 fn radio_decoder() -> Props(Kind) {
   use options <- props.field("source", props.decode(_, options.decoder()))
-  props.succeed(Select(None, options:))
+  state.succeed(Select(None, options:))
 }
 
 fn checkbox_decoder() -> Props(Kind) {
   use options <- props.field("source", props.decode(_, options.decoder()))
-  props.succeed(MultiSelect([], options:))
+  state.succeed(MultiSelect([], options:))
 }
 
 fn select_decoder() -> Props(Kind) {
@@ -214,6 +214,6 @@ fn select_decoder() -> Props(Kind) {
   })
 
   use options <- props.field("source", props.decode(_, options.decoder()))
-  use <- bool.guard(multiple, props.succeed(MultiSelect([], options:)))
-  props.succeed(Select(None, options:))
+  use <- bool.guard(multiple, state.succeed(MultiSelect([], options:)))
+  state.succeed(Select(None, options:))
 }
