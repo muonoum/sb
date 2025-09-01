@@ -279,10 +279,35 @@ fn condition_kind_decoder() -> Props(Condition) {
   use dict <- state.with(state.get())
 
   case dict.to_list(dict) {
-    [#("when", _dynamic)] -> todo as "when condition"
-    [#("unless", _dynamic)] -> todo as "unless condition"
+    [#("when", dynamic)] ->
+      when_unless_decoder(dynamic, condition.Defined, condition.Equal)
+    [#("unless", dynamic)] ->
+      when_unless_decoder(dynamic, condition.NotDefined, condition.NotEqual)
     [#(_unknown, _)] -> todo as "unknown condition"
     _bad -> todo as "bad condition"
+  }
+}
+
+fn when_unless_decoder(dynamic: Dynamic, defined, equal) -> Props(Condition) {
+  use <- extra.return(state.from_result)
+
+  case dynamic |> decoder.run(decode.string) {
+    Ok(id) -> Ok(defined(id))
+
+    Error(..) ->
+      props.decode(dynamic, {
+        use dict <- state.with(state.get())
+
+        case dict.to_list(dict) {
+          [#(id, dynamic)] ->
+            case dynamic |> decoder.run(value.decoder()) {
+              Error(error) -> props.fail(error)
+              Ok(value) -> props.succeed(equal(id, value))
+            }
+
+          _bad -> todo as "bad condition"
+        }
+      })
   }
 }
 
@@ -361,7 +386,7 @@ fn options_decoder() -> Props(Options) {
     _else -> {
       source_decoder()
       |> state.map(Ok)
-      |> state.attempt(fn(_ctx, report) { state.succeed(Error(report)) })
+      |> state.attempt(fn(_ctx, report) { props.succeed(Error(report)) })
       |> state.map(reset.try_new(_, source.refs))
       |> state.map(options.SingleSource)
     }
