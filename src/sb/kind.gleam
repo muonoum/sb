@@ -186,8 +186,8 @@ pub fn decoder(
 }
 
 fn data_decoder() -> Props(Kind) {
-  use source <- props.field("source", props.decode(_, source.decoder()))
-  state.succeed(Data(reset.try_new(Ok(source), source.refs)))
+  use source <- props.field("source", props.decode(_, source.reset_decoder()))
+  state.succeed(Data(source:))
 }
 
 fn text_decoder() -> Props(Kind) {

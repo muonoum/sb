@@ -158,7 +158,7 @@ pub fn decoder(
   use filters <- props.default_field(
     "filters",
     Ok([]),
-    decoder.decode_list(props.decode(_, filter.decoder(filters))),
+    decoder.list_decoder(props.decode(_, filter.decoder(filters))),
   )
 
   state.succeed(#(

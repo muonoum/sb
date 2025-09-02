@@ -18,6 +18,7 @@ import sb/error.{type Error}
 import sb/handlers.{type Handlers}
 import sb/props.{type Props}
 import sb/report.{type Report}
+import sb/reset.{type Reset}
 import sb/scope.{type Scope}
 import sb/text.{type Text}
 import sb/value.{type Value}
@@ -178,6 +179,12 @@ pub fn parse_json(
 ) -> Result(v, Report(Error)) {
   json.parse_bits(bits, decoder)
   |> report.map_error(error.JsonError)
+}
+
+pub fn reset_decoder() -> Props(Reset(Result(Source, Report(Error)))) {
+  state.map(decoder(), Ok)
+  |> state.attempt(state.catch_error)
+  |> state.map(reset.try_new(_, refs))
 }
 
 pub fn decoder() -> Props(Source) {

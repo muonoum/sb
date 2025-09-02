@@ -9,12 +9,15 @@ import sb/report.{type Report}
 pub type Http =
   fn(Request(Option(BytesTree))) -> Result(Response(BitArray), Report(Error))
 
+pub type Command =
+  fn(List(String)) -> Result(BitArray, Report(Error))
+
 pub type Handlers {
-  Handlers(http: Http)
+  Handlers(http: Http, command: Command)
 }
 
 pub fn empty() -> Handlers {
-  Handlers(http: empty_http())
+  Handlers(http: empty_http(), command: empty_command())
 }
 
 pub fn empty_http() -> Http {
@@ -24,4 +27,8 @@ pub fn empty_http() -> Http {
       |> response.set_body(bit_array.from_string("")),
     )
   }
+}
+
+pub fn empty_command() -> Command {
+  fn(_args) { Ok(bit_array.from_string("")) }
 }

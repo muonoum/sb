@@ -1,11 +1,13 @@
 import extra/state
 import gleam/bool
 import gleam/dict
+import gleam/dynamic/decode
 import gleam/list
 import gleam/option.{None}
 import gleam/result
 import gleam/set.{type Set}
 import sb/choice.{type Choice}
+import sb/decoder
 import sb/error.{type Error}
 import sb/handlers
 import sb/props.{type Props}
@@ -130,12 +132,19 @@ pub fn decoder() -> Props(Options) {
   use dict <- state.with(state.get())
 
   case dict.to_list(dict) {
-    [#("groups", _dynamic)] -> todo as "source groups"
+    [#("groups", dynamic)] -> {
+      case decoder.decode_list(dynamic, props.decode(_, group_decoder())) {
+        Error(report) -> state.fail(report)
+        Ok(groups) -> state.succeed(SourceGroups(groups))
+      }
+    }
 
-    _else ->
-      state.map(source.decoder(), Ok)
-      |> state.attempt(state.catch_error)
-      |> state.map(reset.try_new(_, source.refs))
-      |> state.map(SingleSource)
+    _else -> state.map(source.reset_decoder(), SingleSource)
   }
+}
+
+fn group_decoder() -> Props(Group) {
+  use label <- props.field("label", decoder.new(decode.string))
+  use source <- props.field("source", props.decode(_, source.reset_decoder()))
+  state.succeed(Group(label:, source:))
 }

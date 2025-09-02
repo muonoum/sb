@@ -22,11 +22,18 @@ pub fn run(
   dynamic |> new(decoder)
 }
 
-pub fn decode_list(
+pub fn list_decoder(
   decoder: Decoder(v),
 ) -> fn(Dynamic) -> Result(List(v), Report(Error)) {
   fn(dynamic) {
     run(dynamic, decode.list(decode.dynamic))
     |> result.try(list.try_map(_, decoder))
   }
+}
+
+pub fn decode_list(
+  dynamic: Dynamic,
+  decoder: Decoder(v),
+) -> Result(List(v), Report(Error)) {
+  dynamic |> list_decoder(decoder)
 }
