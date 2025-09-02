@@ -202,7 +202,7 @@ fn literal_decoder(dynamic: Dynamic) -> Result(Source, Report(Error)) {
 
 fn reference_decoder(dynamic: Dynamic) -> Result(Source, Report(Error)) {
   use <- extra.return(report.error_context(_, error.BadKind("reference")))
-  result.map(decoder.run(dynamic, decode.string), Reference)
+  result.map(text.id_decoder(dynamic), Reference)
 }
 
 fn template_decoder(dynamic: Dynamic) -> Result(Source, Report(Error)) {
@@ -237,11 +237,9 @@ fn fetch_decoder(dynamic: Dynamic) -> Result(Source, Report(Error)) {
   })
 
   use method <- props.default_field("method", Ok(http.Get), fn(dynamic) {
-    decoder.run(dynamic, decode.string)
-    |> result.try(fn(string) {
-      http.parse_method(string.uppercase(string))
-      |> report.replace_error(error.BadProperty("method"))
-    })
+    use string <- result.try(decoder.run(dynamic, decode.string))
+    http.parse_method(string.uppercase(string))
+    |> report.replace_error(error.BadProperty("method"))
   })
 
   use headers <- props.default_field("headers", Ok([]), fn(dynamic) {

@@ -16,6 +16,7 @@ import sb/props.{type Props}
 import sb/report.{type Report}
 import sb/reset.{type Reset}
 import sb/scope.{type Scope}
+import sb/text
 import sb/value.{type Value}
 
 const field_keys = [
@@ -109,7 +110,7 @@ pub fn decoder(
   fields: custom.Fields,
   filters: custom.Filters,
 ) -> Props(#(String, Field)) {
-  use id <- props.field("id", decoder.new(decode.string))
+  use id <- props.field("id", text.id_decoder)
 
   use <- extra.return(
     state.map_error(_, report.context(_, error.FieldContext(id))),

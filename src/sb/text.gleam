@@ -117,18 +117,14 @@ pub fn parse(source: String) -> Result(Text, Report(Error)) {
   }
 
   let reference = {
+    let id = {
+      use id <- p.keep(id_parser())
+      p.succeed(Reference(id))
+    }
+
     let placeholder = {
       use <- p.drop(p.grapheme("_"))
       p.succeed(Placeholder)
-    }
-
-    let id = {
-      let initial = lowercase()
-      let symbol = p.choice(p.grapheme("-"), p.grapheme("_"))
-      let subsequent = p.choice(symbol, alphanumeric())
-      use first <- p.keep(initial)
-      use rest <- p.keep(p.many(subsequent))
-      p.succeed(Reference(string.join([first, ..rest], "")))
     }
 
     p.choice(p.label(placeholder, "placeholder"), p.label(id, "id"))
@@ -146,9 +142,27 @@ pub fn parse(source: String) -> Result(Text, Report(Error)) {
   |> result.map(Text)
 }
 
+fn id_parser() {
+  let initial = alphanumeric()
+  let symbol = p.choice(p.grapheme("-"), p.grapheme("_"))
+  let subsequent = p.choice(symbol, alphanumeric())
+  use first <- p.keep(initial)
+  use rest <- p.keep(p.many(subsequent))
+  p.succeed(string.join([first, ..rest], ""))
+}
+
+pub fn id_decoder(dynamic: Dynamic) -> Result(String, Report(Error)) {
+  use string <- result.try(
+    decode.run(dynamic, decode.string)
+    |> report.map_error(error.DecodeError),
+  )
+
+  p.parse_string(string, id_parser())
+  |> report.map_error(error.TextError)
+}
+
 pub fn decoder(dynamic: Dynamic) -> Result(Text, Report(Error)) {
-  dynamic
-  |> decode.run(decode.string)
+  decode.run(dynamic, decode.string)
   |> report.map_error(error.DecodeError)
   |> result.try(parse)
 }

@@ -43,8 +43,8 @@ pub fn field(
   decoder: Decoder(a),
   next: fn(a) -> Props(b),
 ) -> Props(b) {
-  let error = report.error(error.MissingProperty(name))
-  default_field(name, error, decoder, next)
+  let default = report.error(error.MissingProperty(name))
+  default_field(name, default, decoder, next)
 }
 
 pub fn default_field(
