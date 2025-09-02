@@ -20,8 +20,14 @@ pub fn try_new(
   |> result.unwrap([])
 }
 
-pub fn map(reset: Reset(v), map: fn(v) -> v) -> Reset(v) {
-  Reset(..reset, value: map(reset.value))
+pub fn map(reset: Reset(v), mapper: fn(v) -> v) -> Reset(v) {
+  Reset(..reset, value: mapper(reset.value))
+}
+
+pub fn map2(reset: Reset(a), mapper: fn(a) -> b) -> Reset(b) {
+  Reset(..reset, value: mapper(reset.value), initial: fn() {
+    mapper(reset.initial())
+  })
 }
 
 pub fn unwrap(reset: Reset(v)) -> v {
@@ -36,10 +42,4 @@ pub fn changed(reset: Reset(v), refs: Set(String)) -> Bool {
 pub fn maybe(reset: Reset(v), refs: Set(String)) -> Reset(v) {
   use <- bool.guard(!changed(reset, refs), reset)
   Reset(..reset, value: reset.initial())
-}
-
-pub fn maybe2(reset: Reset(v), refs: Set(String)) -> #(Reset(v), Bool) {
-  let intersection = set.intersection(refs, reset.refs)
-  use <- bool.guard(set.is_empty(intersection), #(reset, False))
-  #(Reset(..reset, value: reset.initial()), True)
 }

@@ -1,5 +1,5 @@
 import extra
-import extra/state
+import extra/state.{type State}
 import gleam/bytes_tree.{type BytesTree}
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
@@ -181,7 +181,7 @@ pub fn parse_json(
   |> report.map_error(error.JsonError)
 }
 
-pub fn reset_decoder() -> Props(Reset(Result(Source, Report(Error)))) {
+pub fn reset_decoder() -> State(Reset(Result(Source, Report(Error))), _, _) {
   state.map(decoder(), Ok)
   |> state.attempt(state.catch_error)
   |> state.map(reset.try_new(_, refs))
