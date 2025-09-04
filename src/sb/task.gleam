@@ -18,6 +18,7 @@ import sb/props.{type Props}
 import sb/report.{type Report}
 import sb/scope.{type Scope}
 import sb/value.{type Value}
+import sb/zero
 
 const task_keys = [
   "id", "name", "category", "summary", "description", "command", "runners",
@@ -114,39 +115,39 @@ pub fn decoder(fields: custom.Fields, filters: custom.Filters) -> Props(Task) {
   use <- state.do(props.check_keys(task_keys))
 
   use name <- props.required("name", {
-    decoder.zero_string(decoder.from(decode.string))
+    zero.string(decoder.from(decode.string))
   })
 
   use category <- props.required("category", {
-    decoder.zero_list(decoder.from(decode.list(decode.string)))
+    zero.list(decoder.from(decode.list(decode.string)))
   })
 
   use id <- props.default("id", make_id(category, name), {
-    decoder.zero_string(decoder.from(decode.string))
+    zero.string(decoder.from(decode.string))
   })
 
   use summary <- props.zero("summary", {
-    decoder.zero_option(decoder.from(decode.map(decode.string, Some)))
+    zero.option(decoder.from(decode.map(decode.string, Some)))
   })
 
   use description <- props.zero("description", {
-    decoder.zero_option(decoder.from(decode.map(decode.string, Some)))
+    zero.option(decoder.from(decode.map(decode.string, Some)))
   })
 
   use command <- props.zero("command", {
-    decoder.zero_list(decoder.from(decode.list(decode.string)))
+    zero.list(decoder.from(decode.list(decode.string)))
   })
 
   use runners <- props.zero("runners", {
-    decoder.zero(props.decode(_, access.decoder()), access.none)
+    zero.new(props.decode(_, access.decoder()), access.none)
   })
 
   use approvers <- props.zero("approvers", {
-    decoder.zero(props.decode(_, access.decoder()), access.none)
+    zero.new(props.decode(_, access.decoder()), access.none)
   })
 
   use fields <- props.zero("fields", {
-    decoder.zero_list(field.unique_decoder(fields, filters))
+    zero.list(field.unique_decoder(fields, filters))
   })
 
   state.succeed(Task(

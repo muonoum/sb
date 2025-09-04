@@ -20,6 +20,7 @@ import sb/reset.{type Reset}
 import sb/scope.{type Scope}
 import sb/text
 import sb/value.{type Value}
+import sb/zero
 
 const field_keys = [
   "id", "kind", "label", "description", "disabled", "hidden", "ignored",
@@ -126,7 +127,7 @@ pub fn decoder(
   fields: custom.Fields,
   filters: custom.Filters,
 ) -> Props(#(String, Field)) {
-  use id <- props.required("id", decoder.zero_string(text.id_decoder))
+  use id <- props.required("id", zero.string(text.id_decoder))
 
   use <- extra.return(
     state.map_error(_, report.context(_, error.FieldContext(id))),
@@ -140,14 +141,14 @@ pub fn decoder(
   )
 
   use label <- props.zero("label", {
-    decoder.zero_option(decoder.from(decode.map(decode.string, Some)))
+    zero.option(decoder.from(decode.map(decode.string, Some)))
   })
 
   use description <- props.zero("description", {
-    decoder.zero_option(decoder.from(decode.map(decode.string, Some)))
+    zero.option(decoder.from(decode.map(decode.string, Some)))
   })
 
-  let condition = decoder.zero(condition.decoder, condition.false)
+  let condition = zero.new(condition.decoder, condition.false)
 
   use disabled <- props.zero("disabled", condition)
   use hidden <- props.zero("hidden", condition)
@@ -155,7 +156,7 @@ pub fn decoder(
   use optional <- props.zero("optional", condition)
 
   use filters <- props.zero("filters", {
-    decoder.zero_list(fn(dynamic) {
+    zero.list(fn(dynamic) {
       decoder.run(dynamic, decode.list(decode.dynamic))
       |> result.try(list.try_map(_, props.decode(_, filter.decoder(filters))))
     })

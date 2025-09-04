@@ -21,6 +21,7 @@ import sb/report.{type Report}
 import sb/scope.{type Scope}
 import sb/text.{type Text}
 import sb/value.{type Value}
+import sb/zero
 
 const fetch_keys = ["method", "url", "headers", "body"]
 
@@ -187,7 +188,7 @@ pub fn parse_json(
 }
 
 pub fn decoder() -> Props(Source) {
-  use dict <- props.get_dict()
+  use dict <- props.get()
   use <- extra.return(state.from_result)
   use <- extra.return(report.error_context(_, error.BadSource))
 
@@ -224,25 +225,20 @@ pub fn decoder() -> Props(Source) {
 fn fetch_decoder(dynamic: Dynamic) -> Result(Source, Report(Error)) {
   use <- result.lazy_or(
     text.decoder(dynamic)
-    |> result.map(Fetch(
-      method: http.Get,
-      uri: _,
-      headers: [],
-      body: option.None,
-    )),
+    |> result.map(Fetch(method: http.Get, uri: _, headers: [], body: None)),
   )
 
   use <- extra.return(props.decode(dynamic, _))
   use <- state.do(props.check_keys(fetch_keys))
 
-  use uri <- props.required("url", decoder.zero(text.decoder, text.zero))
+  use uri <- props.required("url", zero.new(text.decoder, text.zero))
 
   use body <- props.zero("body", {
-    decoder.zero_option(props.decode(_, state.map(decoder(), Some)))
+    zero.option(props.decode(_, state.map(decoder(), Some)))
   })
 
   use method <- props.zero("method", {
-    use <- decoder.zero(fn(dynamic) {
+    use <- zero.new(fn(dynamic) {
       use string <- result.try(decoder.run(dynamic, decode.string))
       http.parse_method(string.uppercase(string))
       |> report.replace_error(error.BadProperty("method"))
@@ -252,7 +248,7 @@ fn fetch_decoder(dynamic: Dynamic) -> Result(Source, Report(Error)) {
   })
 
   use headers <- props.zero("headers", {
-    decoder.zero_list(fn(dynamic) {
+    zero.list(fn(dynamic) {
       decoder.run(dynamic, decode.dict(decode.string, decode.string))
       |> report.error_context(error.BadProperty("headers"))
       |> result.map(dict.to_list)

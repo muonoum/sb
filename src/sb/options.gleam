@@ -3,19 +3,20 @@ import gleam/bool
 import gleam/dict
 import gleam/dynamic/decode
 import gleam/list
-import gleam/option.{None}
+import gleam/option.{type Option}
 import gleam/result
 import gleam/set.{type Set}
 import sb/choice.{type Choice}
 import sb/decoder
 import sb/error.{type Error}
-import sb/handlers
+import sb/handlers.{type Handlers}
 import sb/props.{type Props}
 import sb/report.{type Report}
 import sb/reset.{type Reset}
 import sb/scope.{type Scope}
 import sb/source.{type Source}
 import sb/value.{type Value}
+import sb/zero
 
 pub opaque type Options {
   SingleSource(Reset(Result(Source, Report(Error))))
@@ -64,13 +65,18 @@ pub fn reset(options: Options, refs: Set(String)) -> Options {
   }
 }
 
-pub fn evaluate(options: Options, scope: Scope) -> Options {
+pub fn evaluate(
+  options: Options,
+  scope: Scope,
+  search search: Option(String),
+  handlers handlers: Handlers,
+) -> Options {
   case options {
     SingleSource(source) ->
       SingleSource({
         use source <- reset.map(source)
         use source <- result.try(source)
-        source.evaluate(source, scope, search: None, handlers: handlers.empty())
+        source.evaluate(source, scope, search:, handlers:)
       })
 
     SourceGroups(groups) ->
@@ -81,12 +87,7 @@ pub fn evaluate(options: Options, scope: Scope) -> Options {
           use source <- reset.map(source)
           use source <- result.try(source)
 
-          source.evaluate(
-            source,
-            scope,
-            search: None,
-            handlers: handlers.empty(),
-          )
+          source.evaluate(source, scope, search:, handlers:)
         })
       })
   }
@@ -133,7 +134,7 @@ fn select_object(
 }
 
 pub fn decoder() -> Props(Options) {
-  use dict <- props.get_dict()
+  use dict <- props.get()
 
   case dict.to_list(dict) {
     [#("groups", dynamic)] ->
@@ -152,11 +153,11 @@ pub fn decoder() -> Props(Options) {
 
 fn group_decoder() -> Props(Group) {
   use label <- props.required("label", {
-    decoder.zero_string(decoder.from(decode.string))
+    zero.string(decoder.from(decode.string))
   })
 
   use source <- props.required("source", {
-    use <- decoder.zero(
+    use <- zero.new(
       props.decode(_, {
         state.map(source.decoder(), Ok)
         |> state.attempt(state.catch_error)

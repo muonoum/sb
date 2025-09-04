@@ -19,6 +19,7 @@ import sb/reset.{type Reset}
 import sb/scope.{type Scope}
 import sb/source.{type Source}
 import sb/value.{type Value}
+import sb/zero
 
 pub const data_keys = ["source"]
 
@@ -110,10 +111,16 @@ pub fn evaluate(
       })
 
     Select(selected, options:) ->
-      Select(selected, options: options.evaluate(options, scope))
+      Select(
+        selected,
+        options: options.evaluate(options, scope, search:, handlers:),
+      )
 
     MultiSelect(selected, options:) ->
-      MultiSelect(selected, options: options.evaluate(options, scope))
+      MultiSelect(
+        selected,
+        options: options.evaluate(options, scope, search:, handlers:),
+      )
   }
 }
 
@@ -165,12 +172,12 @@ pub fn decoder(
   check_keys: fn(List(String)) -> Props(Nil),
 ) -> Props(Kind) {
   use name <- props.required("kind", {
-    decoder.zero_string(decoder.from(decode.string))
+    zero.string(decoder.from(decode.string))
   })
 
   use <- result.lazy_unwrap({
     use custom <- result.map(dict.get(fields.custom, name))
-    use <- state.do(props.update_dict(dict.merge(_, custom)))
+    use <- state.do(props.merge(custom))
     decoder(fields, check_keys)
   })
 
@@ -191,7 +198,7 @@ fn data_decoder() -> Props(Kind) {
   )
 
   use source <- props.required("source", {
-    use <- decoder.zero(
+    use <- zero.new(
       props.decode(_, {
         state.map(source.decoder(), Ok)
         |> state.attempt(state.catch_error)
@@ -219,7 +226,7 @@ fn radio_decoder() -> Props(Kind) {
   )
 
   use options <- props.required("source", {
-    decoder.zero(props.decode(_, options.decoder()), options.zero)
+    zero.new(props.decode(_, options.decoder()), options.zero)
   })
 
   state.succeed(Select(None, options:))
@@ -231,7 +238,7 @@ fn checkbox_decoder() -> Props(Kind) {
   )
 
   use options <- props.required("source", {
-    decoder.zero(props.decode(_, options.decoder()), options.zero)
+    zero.new(props.decode(_, options.decoder()), options.zero)
   })
 
   state.succeed(MultiSelect([], options:))
@@ -243,11 +250,11 @@ fn select_decoder() -> Props(Kind) {
   )
 
   use multiple <- props.zero("multiple", {
-    decoder.zero_bool(decoder.from(decode.bool))
+    zero.bool(decoder.from(decode.bool))
   })
 
   use options <- props.required("source", {
-    decoder.zero(props.decode(_, options.decoder()), options.zero)
+    zero.new(props.decode(_, options.decoder()), options.zero)
   })
 
   use <- bool.guard(multiple, state.succeed(MultiSelect([], options:)))

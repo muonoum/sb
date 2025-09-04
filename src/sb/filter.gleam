@@ -12,6 +12,7 @@ import sb/error.{type Error}
 import sb/props.{type Props}
 import sb/report.{type Report}
 import sb/value.{type Value}
+import sb/zero
 
 const succeed_keys = ["kind"]
 
@@ -74,7 +75,7 @@ pub fn evaluate(value: Value, filter: Filter) -> Result(Value, Report(Error)) {
 
 pub fn decoder(filters: custom.Filters) -> Props(Filter) {
   use name <- props.required("kind", {
-    decoder.zero_string(decoder.from(decode.string))
+    zero.string(decoder.from(decode.string))
   })
 
   let context = report.context(_, error.BadKind(name))
@@ -82,7 +83,7 @@ pub fn decoder(filters: custom.Filters) -> Props(Filter) {
 
   use <- result.lazy_unwrap({
     use custom <- result.map(dict.get(filters.custom, name))
-    use <- state.do(props.update_dict(dict.merge(_, custom)))
+    use <- state.do(props.merge(custom))
     decoder(filters)
   })
 
@@ -105,7 +106,7 @@ fn fail_decoder() -> Props(Filter) {
   use <- state.do(props.check_keys(fail_keys))
 
   use error_message <- props.required("error-message", {
-    decoder.zero_string(decoder.from(decode.string))
+    zero.string(decoder.from(decode.string))
   })
 
   state.succeed(Fail(error_message:))
@@ -115,11 +116,11 @@ fn expect_decoder() -> Props(Filter) {
   use <- state.do(props.check_keys(expect_keys))
 
   use value <- props.required("value", {
-    decoder.zero(decoder.from(value.decoder()), value.zero)
+    zero.new(decoder.from(value.decoder()), value.zero)
   })
 
   use error_message <- props.zero("error-message", {
-    decoder.zero_option(decoder.from(decode.map(decode.string, Some)))
+    zero.option(decoder.from(decode.map(decode.string, Some)))
   })
 
   state.succeed(Expect(value:, error_message:))

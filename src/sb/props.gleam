@@ -5,9 +5,9 @@ import gleam/dynamic/decode
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/pair
-import sb/decoder.{type Zero}
 import sb/error.{type Error}
 import sb/report.{type Report}
+import sb/zero.{type Zero}
 
 pub opaque type Context {
   Context(dict: Dict(String, Dynamic), reports: List(Report(Error)))
@@ -16,16 +16,14 @@ pub opaque type Context {
 pub type Props(v) =
   State(v, Report(Error), Context)
 
-pub fn get_dict(then: fn(Dict(String, Dynamic)) -> Props(v)) -> Props(v) {
+pub fn get(then: fn(Dict(String, Dynamic)) -> Props(v)) -> Props(v) {
   use Context(dict:, ..) <- state.with(state.get())
   then(dict)
 }
 
-pub fn update_dict(
-  mapper: fn(Dict(String, Dynamic)) -> Dict(String, Dynamic),
-) -> Props(Nil) {
+pub fn merge(other: Dict(String, Dynamic)) -> Props(Nil) {
   use Context(dict:, reports:) <- state.update()
-  Context(dict: mapper(dict), reports:)
+  Context(dict: dict.merge(dict, other), reports:)
 }
 
 pub fn get_reports(then: fn(List(Report(Error))) -> Props(v)) -> Props(v) {
@@ -38,7 +36,8 @@ pub fn add_report(report: Report(Error)) -> Props(Nil) {
   Context(dict:, reports: [report, ..reports])
 }
 
-// TODO: error.Collected --> List(Report(Error))
+// TODO: List(Report(Error))
+// TODO: fail -> report + reports fra context
 pub fn decode(dynamic: Dynamic, decoder: Props(v)) -> Result(v, Report(Error)) {
   let context = Context(dict: dict.new(), reports: [])
 
@@ -49,7 +48,7 @@ pub fn decode(dynamic: Dynamic, decoder: Props(v)) -> Result(v, Report(Error)) {
 
     case reports {
       [] -> state.succeed(value)
-      reports -> state.fail(report.new(error.Collected(reports)))
+      reports -> state.fail(report.new(error.Collected(list.reverse(reports))))
     }
   })
 }
@@ -119,7 +118,7 @@ pub fn property(
   decoder: fn(Dynamic) -> Zero(v),
   zero: fn(v) -> Zero(v),
 ) -> Props(v) {
-  use dict <- get_dict()
+  use dict <- get()
 
   let result = case dict.get(dict, name) {
     Error(Nil) -> zero(pair.first(decoder(dynamic.nil())))
