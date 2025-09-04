@@ -1,8 +1,10 @@
 import extra
 import extra/state
+import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/pair
 import gleam/result
 import gleam/set.{type Set}
 import sb/condition.{type Condition}
@@ -106,11 +108,25 @@ pub fn value(field: Field) -> Option(Result(Value, Report(Error))) {
   }
 }
 
+pub fn unique_decoder(
+  fields: custom.Fields,
+  filters: custom.Filters,
+) -> fn(Dynamic) ->
+  Result(List(Result(#(String, Field), Report(Error))), Report(Error)) {
+  fn(dynamic: Dynamic) {
+    use list <- result.map(decoder.run(dynamic, decode.list(decode.dynamic)))
+    use <- extra.return(pair.second)
+    use seen, dynamic <- list.map_fold(list, set.new())
+    props.decode(dynamic, decoder(fields, filters))
+    |> error.try_duplicate_ids(seen)
+  }
+}
+
 pub fn decoder(
   fields: custom.Fields,
   filters: custom.Filters,
 ) -> Props(#(String, Field)) {
-  use id <- props.field("id", text.id_decoder)
+  use id <- props.required("id", decoder.zero_string(text.id_decoder))
 
   use <- extra.return(
     state.map_error(_, report.context(_, error.FieldContext(id))),
@@ -123,43 +139,27 @@ pub fn decoder(
     }),
   )
 
-  use label <- props.default_field("label", Ok(None), {
-    decoder.new(decode.map(decode.string, Some))
+  use label <- props.zero("label", {
+    decoder.zero_option(decoder.from(decode.map(decode.string, Some)))
   })
 
-  use description <- props.default_field("description", Ok(None), {
-    decoder.new(decode.map(decode.string, Some))
+  use description <- props.zero("description", {
+    decoder.zero_option(decoder.from(decode.map(decode.string, Some)))
   })
 
-  use disabled <- props.default_field(
-    "disabled",
-    Ok(condition.false()),
-    condition.decoder,
-  )
+  let condition = decoder.zero(condition.decoder, condition.false)
 
-  use hidden <- props.default_field(
-    "hidden",
-    Ok(condition.false()),
-    condition.decoder,
-  )
+  use disabled <- props.zero("disabled", condition)
+  use hidden <- props.zero("hidden", condition)
+  use ignored <- props.zero("ignored", condition)
+  use optional <- props.zero("optional", condition)
 
-  use ignored <- props.default_field(
-    "ignored",
-    Ok(condition.false()),
-    condition.decoder,
-  )
-
-  use optional <- props.default_field(
-    "optional",
-    Ok(condition.false()),
-    condition.decoder,
-  )
-
-  use filters <- props.default_field(
-    "filters",
-    Ok([]),
-    decoder.list_decoder(props.decode(_, filter.decoder(filters))),
-  )
+  use filters <- props.zero("filters", {
+    decoder.zero_list(fn(dynamic) {
+      decoder.run(dynamic, decode.list(decode.dynamic))
+      |> result.try(list.try_map(_, props.decode(_, filter.decoder(filters))))
+    })
+  })
 
   state.succeed(#(
     id,

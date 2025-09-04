@@ -164,13 +164,13 @@ pub fn decoder(
   fields: custom.Fields,
   check_keys: fn(List(String)) -> Props(Nil),
 ) -> Props(Kind) {
-  use name <- props.field("kind", decoder.new(decode.string))
-  let context = report.context(_, error.BadKind(name))
-  use <- extra.return(state.map_error(_, context))
+  use name <- props.required("kind", {
+    decoder.zero_string(decoder.from(decode.string))
+  })
 
   use <- result.lazy_unwrap({
     use custom <- result.map(dict.get(fields.custom, name))
-    use <- state.do(state.update(dict.merge(_, custom)))
+    use <- state.do(props.update_dict(dict.merge(_, custom)))
     decoder(fields, check_keys)
   })
 
@@ -186,7 +186,22 @@ pub fn decoder(
 }
 
 fn data_decoder() -> Props(Kind) {
-  use source <- props.field("source", props.decode(_, source.reset_decoder()))
+  use <- extra.return(
+    state.map_error(_, report.context(_, error.BadKind("data"))),
+  )
+
+  use source <- props.required("source", {
+    use <- decoder.zero(
+      props.decode(_, {
+        state.map(source.decoder(), Ok)
+        |> state.attempt(state.catch_error)
+        |> state.map(reset.try_new(_, source.refs))
+      }),
+    )
+
+    reset.try_new(Ok(source.zero()), source.refs)
+  })
+
   state.succeed(Data(source:))
 }
 
@@ -199,21 +214,42 @@ fn textarea_decoder() -> Props(Kind) {
 }
 
 fn radio_decoder() -> Props(Kind) {
-  use options <- props.field("source", props.decode(_, options.decoder()))
+  use <- extra.return(
+    state.map_error(_, report.context(_, error.BadKind("radio"))),
+  )
+
+  use options <- props.required("source", {
+    decoder.zero(props.decode(_, options.decoder()), options.zero)
+  })
+
   state.succeed(Select(None, options:))
 }
 
 fn checkbox_decoder() -> Props(Kind) {
-  use options <- props.field("source", props.decode(_, options.decoder()))
+  use <- extra.return(
+    state.map_error(_, report.context(_, error.BadKind("checkbox"))),
+  )
+
+  use options <- props.required("source", {
+    decoder.zero(props.decode(_, options.decoder()), options.zero)
+  })
+
   state.succeed(MultiSelect([], options:))
 }
 
 fn select_decoder() -> Props(Kind) {
-  use multiple <- props.default_field("multiple", Ok(False), {
-    decoder.new(decode.bool)
+  use <- extra.return(
+    state.map_error(_, report.context(_, error.BadKind("select"))),
+  )
+
+  use multiple <- props.zero("multiple", {
+    decoder.zero_bool(decoder.from(decode.bool))
   })
 
-  use options <- props.field("source", props.decode(_, options.decoder()))
+  use options <- props.required("source", {
+    decoder.zero(props.decode(_, options.decoder()), options.zero)
+  })
+
   use <- bool.guard(multiple, state.succeed(MultiSelect([], options:)))
   state.succeed(Select(None, options:))
 }

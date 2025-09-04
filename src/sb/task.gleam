@@ -1,10 +1,9 @@
-import extra
 import extra/state
 import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic/decode
 import gleam/list
-import gleam/option.{type Option, None, Some}
+import gleam/option.{type Option, Some}
 import gleam/pair
 import gleam/result
 import gleam/set.{type Set}
@@ -114,42 +113,40 @@ pub fn update(
 pub fn decoder(fields: custom.Fields, filters: custom.Filters) -> Props(Task) {
   use <- state.do(props.check_keys(task_keys))
 
-  use name <- props.field("name", decoder.new(decode.string))
-
-  use category <- props.field("category", {
-    decoder.new(decode.list(decode.string))
+  use name <- props.required("name", {
+    decoder.zero_string(decoder.from(decode.string))
   })
 
-  use id <- props.default_field("id", make_id(category, name), {
-    decoder.new(decode.string)
+  use category <- props.required("category", {
+    decoder.zero_list(decoder.from(decode.list(decode.string)))
   })
 
-  use summary <- props.default_field("summary", Ok(None), {
-    decoder.new(decode.map(decode.string, Some))
+  use id <- props.default("id", make_id(category, name), {
+    decoder.zero_string(decoder.from(decode.string))
   })
 
-  use description <- props.default_field("description", Ok(None), {
-    decoder.new(decode.map(decode.string, Some))
+  use summary <- props.zero("summary", {
+    decoder.zero_option(decoder.from(decode.map(decode.string, Some)))
   })
 
-  use command <- props.default_field("command", Ok([]), {
-    decoder.new(decode.list(decode.string))
+  use description <- props.zero("description", {
+    decoder.zero_option(decoder.from(decode.map(decode.string, Some)))
   })
 
-  use runners <- props.default_field("runners", Ok(access.none()), {
-    props.decode(_, access.decoder())
+  use command <- props.zero("command", {
+    decoder.zero_list(decoder.from(decode.list(decode.string)))
   })
 
-  use approvers <- props.default_field("approvers", Ok(access.none()), {
-    props.decode(_, access.decoder())
+  use runners <- props.zero("runners", {
+    decoder.zero(props.decode(_, access.decoder()), access.none)
   })
 
-  use fields <- props.default_field("fields", Ok([]), fn(dynamic) {
-    use list <- result.map(decoder.run(dynamic, decode.list(decode.dynamic)))
-    use <- extra.return(pair.second)
-    use seen, dynamic <- list.map_fold(list, set.new())
-    props.decode(dynamic, field.decoder(fields, filters))
-    |> error.try_duplicate_ids(seen)
+  use approvers <- props.zero("approvers", {
+    decoder.zero(props.decode(_, access.decoder()), access.none)
+  })
+
+  use fields <- props.zero("fields", {
+    decoder.zero_list(field.unique_decoder(fields, filters))
   })
 
   state.succeed(Task(

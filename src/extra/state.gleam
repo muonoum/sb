@@ -1,5 +1,3 @@
-import gleam/pair
-
 pub type State(v, err, ctx) {
   State(run: fn(ctx) -> #(ctx, Result(v, err)))
 }
@@ -15,7 +13,7 @@ pub fn run(
   state state: State(v, err, ctx),
   context context: ctx,
 ) -> Result(v, err) {
-  pair.second(step(state, context))
+  step(state, context).1
 }
 
 pub fn step(state: State(v, err, ctx), context: ctx) -> #(ctx, Result(v, err)) {

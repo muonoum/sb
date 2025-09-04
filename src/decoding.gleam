@@ -3,6 +3,7 @@ import extra/yaml
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
+import pprint
 import sb/custom
 import sb/inspect
 import sb/props
@@ -32,8 +33,14 @@ pub fn main() {
   let custom_filters = custom.Filters(dict.new())
 
   let decoder = task.decoder(custom_fields, custom_filters)
-  let assert Ok(task) = props.decode(dynamic, decoder)
-  inspect.inspect_task(echo task)
+  case props.decode(dynamic, decoder) {
+    Ok(task) -> inspect.inspect_task(echo task)
+
+    Error(report) -> {
+      pprint.debug(report)
+      Nil
+    }
+  }
 }
 
 fn load_task(path: String) -> Dynamic {

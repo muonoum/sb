@@ -26,6 +26,10 @@ pub type Group {
   Group(label: String, source: Reset(Result(Source, Report(Error))))
 }
 
+pub fn zero() -> Options {
+  from_source(source.Literal(value.Null))
+}
+
 pub fn from_source(source: Source) -> Options {
   SingleSource(reset.try_new(Ok(source), source.refs))
 }
@@ -129,22 +133,39 @@ fn select_object(
 }
 
 pub fn decoder() -> Props(Options) {
-  use dict <- state.with(state.get())
+  use dict <- props.get_dict()
 
   case dict.to_list(dict) {
-    [#("groups", dynamic)] -> {
-      case decoder.decode_list(dynamic, props.decode(_, group_decoder())) {
-        Error(report) -> state.fail(report)
-        Ok(groups) -> state.succeed(SourceGroups(groups))
-      }
-    }
+    [#("groups", dynamic)] ->
+      decoder.run(dynamic, decode.list(decode.dynamic))
+      |> result.try(list.try_map(_, props.decode(_, group_decoder())))
+      |> result.map(SourceGroups)
+      |> state.from_result
 
-    _else -> state.map(source.reset_decoder(), SingleSource)
+    _else ->
+      state.map(source.decoder(), Ok)
+      |> state.attempt(state.catch_error)
+      |> state.map(reset.try_new(_, source.refs))
+      |> state.map(SingleSource)
   }
 }
 
 fn group_decoder() -> Props(Group) {
-  use label <- props.field("label", decoder.new(decode.string))
-  use source <- props.field("source", props.decode(_, source.reset_decoder()))
+  use label <- props.required("label", {
+    decoder.zero_string(decoder.from(decode.string))
+  })
+
+  use source <- props.required("source", {
+    use <- decoder.zero(
+      props.decode(_, {
+        state.map(source.decoder(), Ok)
+        |> state.attempt(state.catch_error)
+        |> state.map(reset.try_new(_, source.refs))
+      }),
+    )
+
+    reset.try_new(Ok(source.zero()), source.refs)
+  })
+
   state.succeed(Group(label:, source:))
 }

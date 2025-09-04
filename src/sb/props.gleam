@@ -2,27 +2,61 @@ import extra/state.{type State}
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
-import sb/decoder.{type Decoder}
+import gleam/list
+import gleam/option.{None, Some}
+import gleam/pair
+import sb/decoder.{type Zero}
 import sb/error.{type Error}
 import sb/report.{type Report}
 
-pub type PropertyDecoder(v) {
-  RequiredDecoder(decode: Decoder(v))
-  DefaultDecoder(default: fn() -> v, decode: Decoder(v))
+pub opaque type Context {
+  Context(dict: Dict(String, Dynamic), reports: List(Report(Error)))
 }
 
 pub type Props(v) =
-  State(v, Report(Error), Dict(String, Dynamic))
+  State(v, Report(Error), Context)
 
+pub fn get_dict(then: fn(Dict(String, Dynamic)) -> Props(v)) -> Props(v) {
+  use Context(dict:, ..) <- state.with(state.get())
+  then(dict)
+}
+
+pub fn update_dict(
+  mapper: fn(Dict(String, Dynamic)) -> Dict(String, Dynamic),
+) -> Props(Nil) {
+  use Context(dict:, reports:) <- state.update()
+  Context(dict: mapper(dict), reports:)
+}
+
+pub fn get_reports(then: fn(List(Report(Error))) -> Props(v)) -> Props(v) {
+  use Context(reports:, ..) <- state.with(state.get())
+  then(list.reverse(reports))
+}
+
+pub fn add_report(report: Report(Error)) -> Props(Nil) {
+  use Context(dict:, reports:) <- state.update()
+  Context(dict:, reports: [report, ..reports])
+}
+
+// TODO: error.Collected --> List(Report(Error))
 pub fn decode(dynamic: Dynamic, decoder: Props(v)) -> Result(v, Report(Error)) {
-  state.run(context: dict.new(), state: {
+  let context = Context(dict: dict.new(), reports: [])
+
+  state.run(context:, state: {
     use <- load(dynamic)
-    decoder
+    use value <- state.with(decoder)
+    use reports <- get_reports()
+
+    case reports {
+      [] -> state.succeed(value)
+      reports -> state.fail(report.new(error.Collected(reports)))
+    }
   })
 }
 
 pub fn check_keys(keys: List(String)) -> Props(Nil) {
-  use dict <- state.with(state.get())
+  use Context(dict:, ..) <- state.with(state.get())
+
   state.from_result(error.unknown_keys(dict, keys))
   |> state.replace(Nil)
 }
@@ -34,37 +68,74 @@ pub fn load(dynamic: Dynamic, next: fn() -> Props(v)) -> Props(v) {
 
   case result {
     Error(report) -> state.fail(report)
-    Ok(dict) -> state.do(state.put(dict), next)
+
+    Ok(dict) -> {
+      use context <- state.with(state.get())
+      state.do(state.put(Context(..context, dict:)), next)
+    }
   }
 }
 
-pub fn field(
+pub fn required(
   name: String,
-  decoder: Decoder(a),
-  next: fn(a) -> Props(b),
+  decoder: fn(Dynamic) -> Zero(a),
+  then: fn(a) -> Props(b),
 ) -> Props(b) {
-  let default = report.error(error.MissingProperty(name))
-  default_field(name, default, decoder, next)
+  state.with(then:, with: {
+    use zero <- property(name, decoder)
+    #(zero, Some(report.new(error.MissingProperty(name))))
+  })
 }
 
-pub fn default_field(
+pub fn zero(
+  name: String,
+  decoder: fn(Dynamic) -> Zero(a),
+  then: fn(a) -> Props(b),
+) -> Props(b) {
+  state.with(then:, with: {
+    use zero <- property(name, decoder)
+    #(zero, None)
+  })
+}
+
+pub fn default(
   name: String,
   default: Result(a, Report(Error)),
-  decoder: Decoder(a),
-  next: fn(a) -> Props(b),
+  decoder: fn(Dynamic) -> Zero(a),
+  then: fn(a) -> Props(b),
 ) -> Props(b) {
-  use dict <- state.with(state.get())
+  state.with(then:, with: {
+    use zero <- property(name, decoder)
+
+    case default {
+      Error(report) -> #(zero, Some(report))
+      Ok(value) -> #(value, None)
+    }
+  })
+}
+
+pub fn property(
+  name: String,
+  decoder: fn(Dynamic) -> Zero(v),
+  zero: fn(v) -> Zero(v),
+) -> Props(v) {
+  use dict <- get_dict()
 
   let result = case dict.get(dict, name) {
-    Error(Nil) -> default
+    Error(Nil) -> zero(pair.first(decoder(dynamic.nil())))
 
-    Ok(dynamic) ->
-      decoder(dynamic)
-      |> report.error_context(error.BadProperty(name))
+    Ok(dynamic) -> {
+      use report <- pair.map_second(decoder(dynamic))
+      option.map(report, report.context(_, error.BadProperty(name)))
+    }
   }
 
   case result {
-    Error(report) -> state.fail(report)
-    Ok(value) -> state.with(state.succeed(value), next)
+    #(value, None) -> state.succeed(value)
+
+    #(value, Some(report)) -> {
+      use <- state.do(add_report(report))
+      state.succeed(value)
+    }
   }
 }
