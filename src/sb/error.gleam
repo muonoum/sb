@@ -14,9 +14,10 @@ pub type Error {
   Collected(List(Report(Error)))
 
   DuplicateId(String)
-  Message(String)
-  Required
   Expected(Value)
+  Message(String)
+  NotFound(String)
+  Required
 
   MissingProperty(String)
 

@@ -75,7 +75,7 @@ pub fn evaluate(value: Value, filter: Filter) -> Result(Value, Report(Error)) {
         value.String(string) ->
           case regexp.check(pattern, string), error_message {
             True, _error_message -> Ok(value)
-            False, None -> todo as "regex match default error message"
+            False, None -> report.error(error.NotFound(string))
             False, Some(error_message) ->
               report.error(error.Message(error_message))
           }
@@ -84,7 +84,10 @@ pub fn evaluate(value: Value, filter: Filter) -> Result(Value, Report(Error)) {
       }
 
     RegexReplace(pattern: _, replacements: _, error_message: _) ->
-      todo as "evaluate regex replace"
+      case value {
+        value.String(_string) -> todo as "evaluate regex replace"
+        value -> report.error(error.BadValue(value))
+      }
 
     ParseInteger ->
       case value {
