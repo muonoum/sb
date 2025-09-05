@@ -166,19 +166,33 @@ pub fn decoder(
   check_keys: fn(List(String)) -> Props(Nil),
 ) -> Props(Kind) {
   case name {
-    "data" -> state.do(check_keys(data_keys), data_decoder)
-    "text" -> state.do(check_keys(text_keys), text_decoder)
-    "textarea" -> state.do(check_keys(textarea_keys), textarea_decoder)
+    "data" ->
+      state.do(check_keys(data_keys), data_decoder)
+      |> props.error_context(error.BadKind(name))
+
+    "text" ->
+      state.do(check_keys(text_keys), text_decoder)
+      |> props.error_context(error.BadKind(name))
+
+    "textarea" ->
+      state.do(check_keys(textarea_keys), textarea_decoder)
+      |> props.error_context(error.BadKind(name))
+
     "radio" -> state.do(check_keys(radio_keys), radio_decoder)
-    "checkbox" -> state.do(check_keys(checkbox_keys), checkbox_decoder)
-    "select" -> state.do(check_keys(select_keys), select_decoder)
+
+    "checkbox" ->
+      state.do(check_keys(checkbox_keys), checkbox_decoder)
+      |> props.error_context(error.BadKind(name))
+
+    "select" ->
+      state.do(check_keys(select_keys), select_decoder)
+      |> props.error_context(error.BadKind(name))
+
     unknown -> state.fail(report.new(error.UnknownKind(unknown)))
   }
 }
 
 fn data_decoder() -> Props(Kind) {
-  use <- extra.return(props.error_context(error.BadKind("data")))
-
   use source <- props.get("source", {
     props.decode(_, {
       state.map(source.decoder(), Ok)
@@ -199,19 +213,16 @@ fn textarea_decoder() -> Props(Kind) {
 }
 
 fn radio_decoder() -> Props(Kind) {
-  use <- extra.return(props.error_context(error.BadKind("radio")))
   use options <- props.get("source", props.decode(_, options.decoder()))
   state.succeed(Select(None, options:))
 }
 
 fn checkbox_decoder() -> Props(Kind) {
-  use <- extra.return(props.error_context(error.BadKind("checkbox")))
   use options <- props.get("source", props.decode(_, options.decoder()))
   state.succeed(MultiSelect([], options:))
 }
 
 fn select_decoder() -> Props(Kind) {
-  use <- extra.return(props.error_context(error.BadKind("select")))
   use multiple <- props.try("multiple", zero.bool(decoder.from(decode.bool)))
   use options <- props.get("source", props.decode(_, options.decoder()))
   use <- bool.guard(multiple, state.succeed(MultiSelect([], options:)))

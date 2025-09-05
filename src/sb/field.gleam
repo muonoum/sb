@@ -121,6 +121,18 @@ fn kind_decoder(fields: custom.Fields) -> Props(Kind) {
   props.check_keys(list.append(field_keys, kind_keys))
 }
 
+fn filter_decoder(filters: custom.Filters) -> Props(Filter) {
+  use name <- props.get("kind", decoder.from(decode.string))
+
+  use <- result.lazy_unwrap({
+    use custom <- result.map(dict.get(filters.custom, name))
+    use <- state.do(props.merge(custom))
+    filter_decoder(filters)
+  })
+
+  filter.decoder(name)
+}
+
 pub fn decoder(
   fields: custom.Fields,
   filters: custom.Filters,
@@ -143,7 +155,7 @@ pub fn decoder(
     use dynamic <- zero.list
     use list <- result.try(decoder.run(dynamic, decode.list(decode.dynamic)))
     use dynamic <- list.try_map(list)
-    props.decode(dynamic, filter.decoder(filters))
+    props.decode(dynamic, filter_decoder(filters))
   })
 
   let field =

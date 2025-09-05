@@ -1,12 +1,10 @@
 import extra
 import extra/state
-import gleam/dict
 import gleam/dynamic/decode
 import gleam/float
 import gleam/int
 import gleam/option.{type Option, None, Some}
 import gleam/result
-import sb/custom
 import sb/decoder
 import sb/error.{type Error}
 import sb/props.{type Props}
@@ -73,22 +71,28 @@ pub fn evaluate(value: Value, filter: Filter) -> Result(Value, Report(Error)) {
   }
 }
 
-pub fn decoder(filters: custom.Filters) -> Props(Filter) {
-  use name <- props.get("kind", decoder.from(decode.string))
-  use <- extra.return(props.error_context(error.BadKind(name)))
-
-  use <- result.lazy_unwrap({
-    use custom <- result.map(dict.get(filters.custom, name))
-    use <- state.do(props.merge(custom))
-    decoder(filters)
-  })
-
+pub fn decoder(name: String) -> Props(Filter) {
   case name {
-    "succeed" -> succeed_decoder()
-    "fail" -> fail_decoder()
-    "expect" -> expect_decoder()
-    "parse-integer" -> parse_integer_decoder()
-    "parse-float" -> parse_float_decoder()
+    "succeed" ->
+      succeed_decoder()
+      |> props.error_context(error.BadKind("expect"))
+
+    "fail" ->
+      fail_decoder()
+      |> props.error_context(error.BadKind("expect"))
+
+    "expect" ->
+      expect_decoder()
+      |> props.error_context(error.BadKind("expect"))
+
+    "parse-integer" ->
+      parse_integer_decoder()
+      |> props.error_context(error.BadKind("expect"))
+
+    "parse-float" ->
+      parse_float_decoder()
+      |> props.error_context(error.BadKind("expect"))
+
     unknown -> state.fail(report.new(error.UnknownKind(unknown)))
   }
 }
