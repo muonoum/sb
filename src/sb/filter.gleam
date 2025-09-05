@@ -75,8 +75,7 @@ pub fn evaluate(value: Value, filter: Filter) -> Result(Value, Report(Error)) {
         value.String(string) ->
           case regexp.check(pattern, string), error_message {
             True, _error_message -> Ok(value)
-            False, None ->
-              report.error(error.Message("TODO -- default error message"))
+            False, None -> todo as "regex match default error message"
             False, Some(error_message) ->
               report.error(error.Message(error_message))
           }
