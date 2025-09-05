@@ -20,10 +20,6 @@ pub type Key {
   Key(id: String, secret: String)
 }
 
-pub fn key(id: String, secret: String) -> Key {
-  Key(id: id, secret: secret)
-}
-
 pub fn everyone() -> Access {
   Access(users: Everyone, groups: [], keys: [])
 }

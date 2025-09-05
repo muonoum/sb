@@ -4,11 +4,15 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
-import sb/extra/parser as p
 import sb/extra/report.{type Report}
 import sb/forms/error.{type Error}
 import sb/forms/scope.{type Scope}
 import sb/forms/value
+
+import sb/extra/parser.{
+  any, between, choice, drop, end, expect, grapheme, keep, label, many,
+  not_followed_by, one_of, some, string, succeed,
+}
 
 pub type Text {
   Text(parts: List(Part))
@@ -68,87 +72,87 @@ fn evaluate_step(
 }
 
 fn digit() {
-  p.expect(string.contains("01234567890", _))
-  |> p.label("base 10 digit")
+  expect(string.contains("01234567890", _))
+  |> label("base 10 digit")
 }
 
 fn lowercase() {
-  p.expect(string.contains("abcdefghijklmnopqrstuvwxyz", _))
-  |> p.label("lower case character")
+  expect(string.contains("abcdefghijklmnopqrstuvwxyz", _))
+  |> label("lower case character")
 }
 
 fn uppercase() {
-  p.expect(string.contains("ABCDEFGHIJKLMNOPQRSTUVWXYZ", _))
-  |> p.label("upper case character")
+  expect(string.contains("ABCDEFGHIJKLMNOPQRSTUVWXYZ", _))
+  |> label("upper case character")
 }
 
 fn alphanumeric() {
-  p.one_of([lowercase(), uppercase(), digit()])
-  |> p.label("alpha numeric character")
+  one_of([lowercase(), uppercase(), digit()])
+  |> label("alpha numeric character")
 }
 
 fn spaces() {
-  p.many(p.grapheme(" "))
+  many(grapheme(" "))
 }
 
 pub fn parse(source: String) -> Result(Text, Report(Error)) {
   let open = {
-    use <- p.drop(p.label(p.string("{{"), "opening braces"))
-    use <- p.drop(spaces())
-    p.succeed(Nil)
+    use <- drop(label(string("{{"), "opening braces"))
+    use <- drop(spaces())
+    succeed(Nil)
   }
 
   let close = {
-    use <- p.drop(spaces())
-    use <- p.drop(p.label(p.string("}}"), "closing braces"))
-    p.succeed(Nil)
+    use <- drop(spaces())
+    use <- drop(label(string("}}"), "closing braces"))
+    succeed(Nil)
   }
 
   let static = {
-    use parts <- p.keep(
-      p.some({
-        use <- p.drop(p.not_followed_by(open))
-        use grapheme <- p.keep(p.any())
-        p.succeed(grapheme)
+    use parts <- keep(
+      some({
+        use <- drop(not_followed_by(open))
+        use grapheme <- keep(any())
+        succeed(grapheme)
       }),
     )
 
-    p.succeed(Static(string.join(parts, "")))
+    succeed(Static(string.join(parts, "")))
   }
 
   let reference = {
     let id = {
-      use id <- p.keep(id_parser())
-      p.succeed(Reference(id))
+      use id <- keep(id_parser())
+      succeed(Reference(id))
     }
 
     let placeholder = {
-      use <- p.drop(p.grapheme("_"))
-      p.succeed(Placeholder)
+      use <- drop(grapheme("_"))
+      succeed(Placeholder)
     }
 
-    p.choice(p.label(placeholder, "placeholder"), p.label(id, "id"))
-    |> p.between(open, close)
+    choice(label(placeholder, "placeholder"), label(id, "id"))
+    |> between(open, close)
   }
 
   let template = {
-    use parts <- p.keep(p.many(p.choice(reference, static)))
-    use <- p.drop(p.end())
-    p.succeed(parts)
+    use parts <- keep(many(choice(reference, static)))
+    use <- drop(end())
+    succeed(parts)
   }
 
-  p.parse_string(source, template)
+  parser.parse_string(source, template)
   |> report.map_error(error.TextError)
   |> result.map(Text)
 }
 
 fn id_parser() {
   let initial = alphanumeric()
-  let symbol = p.choice(p.grapheme("-"), p.grapheme("_"))
-  let subsequent = p.choice(symbol, alphanumeric())
-  use first <- p.keep(initial)
-  use rest <- p.keep(p.many(subsequent))
-  p.succeed(string.join([first, ..rest], ""))
+  let symbol = choice(grapheme("-"), grapheme("_"))
+  let subsequent = choice(symbol, alphanumeric())
+  use first <- keep(initial)
+  use rest <- keep(many(subsequent))
+  succeed(string.join([first, ..rest], ""))
 }
 
 pub fn id_decoder(dynamic: Dynamic) -> Result(String, Report(Error)) {
@@ -157,7 +161,7 @@ pub fn id_decoder(dynamic: Dynamic) -> Result(String, Report(Error)) {
     |> report.map_error(error.DecodeError),
   )
 
-  p.parse_string(string, id_parser())
+  parser.parse_string(string, id_parser())
   |> report.map_error(error.TextError)
 }
 
