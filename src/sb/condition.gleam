@@ -104,18 +104,16 @@ pub fn decoder(dynamic: Dynamic) -> Result(Condition, Report(Error)) {
 }
 
 fn kind_decoder() -> Props(Condition) {
-  use dict <- props.get()
+  use dict <- props.get
 
   case dict.to_list(dict) {
     [#("when", dynamic)] -> {
-      let context = report.context(_, error.BadCondition("when"))
-      use <- extra.return(state.map_error(_, context))
+      use <- extra.return(props.error_context(error.BadCondition("when")))
       condition_decoder(dynamic, Defined, Equal)
     }
 
     [#("unless", dynamic)] -> {
-      let context = report.context(_, error.BadCondition("unless"))
-      use <- extra.return(state.map_error(_, context))
+      use <- extra.return(props.error_context(error.BadCondition("unless")))
       condition_decoder(dynamic, NotDefined, NotEqual)
     }
 
@@ -137,7 +135,7 @@ fn condition_decoder(
   )
 
   use <- extra.return(props.decode(dynamic, _))
-  use dict <- props.get()
+  use dict <- props.get
 
   case dict.to_list(dict) {
     [#(id, dynamic)] ->

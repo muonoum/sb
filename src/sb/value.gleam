@@ -15,10 +15,6 @@ pub type Value {
   Object(List(#(String, Value)))
 }
 
-pub fn zero() -> Value {
-  Null
-}
-
 pub fn string_list(strings: List(String)) -> Value {
   List(list.map(strings, String))
 }

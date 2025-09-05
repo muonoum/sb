@@ -1,5 +1,6 @@
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
+import gleam/result
 import sb/error.{type Error}
 import sb/report.{type Report}
 
@@ -18,4 +19,11 @@ pub fn run(
   decoder: decode.Decoder(v),
 ) -> Result(v, Report(Error)) {
   dynamic |> from(decoder)
+}
+
+pub fn map(decoder: Decoder(a), mapper: fn(a) -> b) -> Decoder(b) {
+  fn(dynamic) {
+    decoder(dynamic)
+    |> result.map(mapper)
+  }
 }

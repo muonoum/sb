@@ -24,10 +24,6 @@ pub fn new(string: String) -> Result(Text, Report(Error)) {
   parse(string)
 }
 
-pub fn zero() -> Text {
-  Text([])
-}
-
 pub fn refs(text: Text) -> List(String) {
   use part <- list.filter_map(text.parts)
 

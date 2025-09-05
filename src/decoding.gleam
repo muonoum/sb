@@ -34,7 +34,7 @@ pub fn main() {
 
   let decoder = task.decoder(custom_fields, custom_filters)
   case props.decode(dynamic, decoder) {
-    Ok(task) -> inspect.inspect_task(echo task)
+    Ok(task) -> inspect.inspect_task(pprint.debug(task))
 
     Error(report) -> {
       pprint.debug(report)

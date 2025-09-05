@@ -35,8 +35,7 @@ pub fn decoder() -> Props(Access) {
   use <- state.do(props.check_keys(access_keys))
 
   use users <- props.zero("users", {
-    use <- zero.new(decoder.from(users_decoder()))
-    Users([])
+    zero.new(Users([]), decoder.from(users_decoder()))
   })
 
   use groups <- props.zero("groups", {

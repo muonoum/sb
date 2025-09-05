@@ -16,7 +16,6 @@ import sb/reset.{type Reset}
 import sb/scope.{type Scope}
 import sb/source.{type Source}
 import sb/value.{type Value}
-import sb/zero
 
 pub opaque type Options {
   SingleSource(Reset(Result(Source, Report(Error))))
@@ -25,10 +24,6 @@ pub opaque type Options {
 
 pub type Group {
   Group(label: String, source: Reset(Result(Source, Report(Error))))
-}
-
-pub fn zero() -> Options {
-  from_source(source.Literal(value.Null))
 }
 
 pub fn from_source(source: Source) -> Options {
@@ -134,7 +129,7 @@ fn select_object(
 }
 
 pub fn decoder() -> Props(Options) {
-  use dict <- props.get()
+  use dict <- props.get
 
   case dict.to_list(dict) {
     [#("groups", dynamic)] ->
@@ -152,20 +147,14 @@ pub fn decoder() -> Props(Options) {
 }
 
 fn group_decoder() -> Props(Group) {
-  use label <- props.required("label", {
-    zero.string(decoder.from(decode.string))
-  })
+  use label <- props.required("label", decoder.from(decode.string))
 
   use source <- props.required("source", {
-    use <- zero.new(
-      props.decode(_, {
-        state.map(source.decoder(), Ok)
-        |> state.attempt(state.catch_error)
-        |> state.map(reset.try_new(_, source.refs))
-      }),
-    )
-
-    reset.try_new(Ok(source.zero()), source.refs)
+    props.decode(_, {
+      state.map(source.decoder(), Ok)
+      |> state.attempt(state.catch_error)
+      |> state.map(reset.try_new(_, source.refs))
+    })
   })
 
   state.succeed(Group(label:, source:))

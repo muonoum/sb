@@ -1,9 +1,10 @@
+import extra
 import extra/state
 import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic/decode
 import gleam/list
-import gleam/option.{type Option, Some}
+import gleam/option.{type Option}
 import gleam/pair
 import gleam/result
 import gleam/set.{type Set}
@@ -114,24 +115,22 @@ pub fn update(
 pub fn decoder(fields: custom.Fields, filters: custom.Filters) -> Props(Task) {
   use <- state.do(props.check_keys(task_keys))
 
-  use name <- props.required("name", {
-    zero.string(decoder.from(decode.string))
-  })
+  use name <- props.required("name", decoder.from(decode.string))
 
   use category <- props.required("category", {
-    zero.list(decoder.from(decode.list(decode.string)))
+    decoder.from(decode.list(decode.string))
   })
 
-  use id <- props.default("id", make_id(category, name), {
-    zero.string(decoder.from(decode.string))
+  use id <- props.zero("id", {
+    zero.new(make_id(category, name), decoder.from(decode.string))
   })
 
   use summary <- props.zero("summary", {
-    zero.option(decoder.from(decode.map(decode.string, Some)))
+    zero.option(decoder.from(decode.string))
   })
 
   use description <- props.zero("description", {
-    zero.option(decoder.from(decode.map(decode.string, Some)))
+    zero.option(decoder.from(decode.string))
   })
 
   use command <- props.zero("command", {
@@ -139,15 +138,20 @@ pub fn decoder(fields: custom.Fields, filters: custom.Filters) -> Props(Task) {
   })
 
   use runners <- props.zero("runners", {
-    zero.new(props.decode(_, access.decoder()), access.none)
+    zero.new(access.none(), props.decode(_, access.decoder()))
   })
 
   use approvers <- props.zero("approvers", {
-    zero.new(props.decode(_, access.decoder()), access.none)
+    zero.new(access.none(), props.decode(_, access.decoder()))
   })
 
   use fields <- props.zero("fields", {
-    zero.list(field.unique_decoder(fields, filters))
+    use dynamic <- zero.list
+    use list <- result.map(decoder.run(dynamic, decode.list(decode.dynamic)))
+    use <- extra.return(pair.second)
+    use seen, dynamic <- list.map_fold(list, set.new())
+    props.decode(dynamic, field.decoder(fields, filters))
+    |> error.try_duplicate_ids(seen)
   })
 
   state.succeed(Task(
@@ -166,9 +170,14 @@ pub fn decoder(fields: custom.Fields, filters: custom.Filters) -> Props(Task) {
 
 const valid_id = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 
-fn make_id(category, name) {
+// fn make_id(category: List(String), name: String) -> Result(String, _) {
+//   let category = string.join(list.map(category, into_id), "-")
+//   Ok(string.join([category, into_id(name)], "-"))
+// }
+
+fn make_id(category: List(String), name: String) -> String {
   let category = string.join(list.map(category, into_id), "-")
-  Ok(string.join([category, into_id(name)], "-"))
+  string.join([category, into_id(name)], "-")
 }
 
 fn into_id(from: String) -> String {

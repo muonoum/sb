@@ -1,14 +1,12 @@
 import extra
 import extra/state
 import gleam/bool
-import gleam/dict
 import gleam/dynamic/decode
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/set.{type Set}
 import sb/choice.{type Choice}
-import sb/custom
 import sb/decoder
 import sb/error.{type Error}
 import sb/handlers.{type Handlers}
@@ -111,16 +109,12 @@ pub fn evaluate(
       })
 
     Select(selected, options:) ->
-      Select(
-        selected,
-        options: options.evaluate(options, scope, search:, handlers:),
-      )
+      options.evaluate(options, scope, search:, handlers:)
+      |> Select(selected, options: _)
 
     MultiSelect(selected, options:) ->
-      MultiSelect(
-        selected,
-        options: options.evaluate(options, scope, search:, handlers:),
-      )
+      options.evaluate(options, scope, search:, handlers:)
+      |> MultiSelect(selected, options: _)
   }
 }
 
@@ -168,19 +162,9 @@ pub fn value(kind: Kind) -> Option(Result(Value, Report(Error))) {
 }
 
 pub fn decoder(
-  fields: custom.Fields,
+  name: String,
   check_keys: fn(List(String)) -> Props(Nil),
 ) -> Props(Kind) {
-  use name <- props.required("kind", {
-    zero.string(decoder.from(decode.string))
-  })
-
-  use <- result.lazy_unwrap({
-    use custom <- result.map(dict.get(fields.custom, name))
-    use <- state.do(props.merge(custom))
-    decoder(fields, check_keys)
-  })
-
   case name {
     "data" -> state.do(check_keys(data_keys), data_decoder)
     "text" -> state.do(check_keys(text_keys), text_decoder)
@@ -193,20 +177,14 @@ pub fn decoder(
 }
 
 fn data_decoder() -> Props(Kind) {
-  use <- extra.return(
-    state.map_error(_, report.context(_, error.BadKind("data"))),
-  )
+  use <- extra.return(props.error_context(error.BadKind("data")))
 
   use source <- props.required("source", {
-    use <- zero.new(
-      props.decode(_, {
-        state.map(source.decoder(), Ok)
-        |> state.attempt(state.catch_error)
-        |> state.map(reset.try_new(_, source.refs))
-      }),
-    )
-
-    reset.try_new(Ok(source.zero()), source.refs)
+    props.decode(_, {
+      state.map(source.decoder(), Ok)
+      |> state.attempt(state.catch_error)
+      |> state.map(reset.try_new(_, source.refs))
+    })
   })
 
   state.succeed(Data(source:))
@@ -221,42 +199,21 @@ fn textarea_decoder() -> Props(Kind) {
 }
 
 fn radio_decoder() -> Props(Kind) {
-  use <- extra.return(
-    state.map_error(_, report.context(_, error.BadKind("radio"))),
-  )
-
-  use options <- props.required("source", {
-    zero.new(props.decode(_, options.decoder()), options.zero)
-  })
-
+  use <- extra.return(props.error_context(error.BadKind("radio")))
+  use options <- props.required("source", props.decode(_, options.decoder()))
   state.succeed(Select(None, options:))
 }
 
 fn checkbox_decoder() -> Props(Kind) {
-  use <- extra.return(
-    state.map_error(_, report.context(_, error.BadKind("checkbox"))),
-  )
-
-  use options <- props.required("source", {
-    zero.new(props.decode(_, options.decoder()), options.zero)
-  })
-
+  use <- extra.return(props.error_context(error.BadKind("checkbox")))
+  use options <- props.required("source", props.decode(_, options.decoder()))
   state.succeed(MultiSelect([], options:))
 }
 
 fn select_decoder() -> Props(Kind) {
-  use <- extra.return(
-    state.map_error(_, report.context(_, error.BadKind("select"))),
-  )
-
-  use multiple <- props.zero("multiple", {
-    zero.bool(decoder.from(decode.bool))
-  })
-
-  use options <- props.required("source", {
-    zero.new(props.decode(_, options.decoder()), options.zero)
-  })
-
+  use <- extra.return(props.error_context(error.BadKind("select")))
+  use multiple <- props.zero("multiple", zero.bool(decoder.from(decode.bool)))
+  use options <- props.required("source", props.decode(_, options.decoder()))
   use <- bool.guard(multiple, state.succeed(MultiSelect([], options:)))
   state.succeed(Select(None, options:))
 }

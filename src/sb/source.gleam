@@ -40,10 +40,6 @@ pub type Source {
   )
 }
 
-pub fn zero() -> Source {
-  Literal(value.Null)
-}
-
 pub fn refs(source: Source) -> List(String) {
   case source {
     Literal(..) -> []
@@ -188,7 +184,7 @@ pub fn parse_json(
 }
 
 pub fn decoder() -> Props(Source) {
-  use dict <- props.get()
+  use dict <- props.get
   use <- extra.return(state.from_result)
   use <- extra.return(report.error_context(_, error.BadSource))
 
@@ -231,28 +227,22 @@ fn fetch_decoder(dynamic: Dynamic) -> Result(Source, Report(Error)) {
   use <- extra.return(props.decode(dynamic, _))
   use <- state.do(props.check_keys(fetch_keys))
 
-  use uri <- props.required("url", zero.new(text.decoder, text.zero))
+  use uri <- props.required("url", text.decoder)
 
-  use body <- props.zero("body", {
-    zero.option(props.decode(_, state.map(decoder(), Some)))
-  })
+  use body <- props.zero("body", { zero.option(props.decode(_, decoder())) })
 
   use method <- props.zero("method", {
-    use <- zero.new(fn(dynamic) {
-      use string <- result.try(decoder.run(dynamic, decode.string))
-      http.parse_method(string.uppercase(string))
-      |> report.replace_error(error.BadProperty("method"))
-    })
-
-    http.Get
+    use dynamic <- zero.new(http.Get)
+    use string <- result.try(decoder.run(dynamic, decode.string))
+    http.parse_method(string.uppercase(string))
+    |> report.replace_error(error.BadProperty("method"))
   })
 
   use headers <- props.zero("headers", {
-    zero.list(fn(dynamic) {
-      decoder.run(dynamic, decode.dict(decode.string, decode.string))
-      |> report.error_context(error.BadProperty("headers"))
-      |> result.map(dict.to_list)
-    })
+    use dynamic <- zero.list
+    decoder.run(dynamic, decode.dict(decode.string, decode.string))
+    |> report.error_context(error.BadProperty("headers"))
+    |> result.map(dict.to_list)
   })
 
   state.succeed(Fetch(method:, uri:, headers:, body:))
