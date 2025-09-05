@@ -1,15 +1,15 @@
-import extra
-import extra/state
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/result
-import sb/decoder
-import sb/error
-import sb/props.{type Props}
-import sb/scope.{type Scope}
-import sb/value.{type Value}
-import sb/zero.{type Zero}
+import sb/extra
+import sb/extra/state
+import sb/forms/decoder
+import sb/forms/error
+import sb/forms/props.{type Props}
+import sb/forms/scope.{type Scope}
+import sb/forms/value.{type Value}
+import sb/forms/zero.{type Zero}
 
 pub opaque type Condition {
   Resolved(Bool)

@@ -4,9 +4,9 @@ import gleam/dynamic/decode
 import gleam/json
 import gleam/regexp
 import gleam/set.{type Set}
-import sb/parser
-import sb/report.{type Report}
-import sb/value.{type Value}
+import sb/extra/parser
+import sb/extra/report.{type Report}
+import sb/forms/value.{type Value}
 
 pub type Error {
   FieldContext(String)

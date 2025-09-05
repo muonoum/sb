@@ -4,11 +4,11 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
-import sb/error.{type Error}
-import sb/parser as p
-import sb/report.{type Report}
-import sb/scope.{type Scope}
-import sb/value
+import sb/extra/parser as p
+import sb/extra/report.{type Report}
+import sb/forms/error.{type Error}
+import sb/forms/scope.{type Scope}
+import sb/forms/value
 
 pub type Text {
   Text(parts: List(Part))

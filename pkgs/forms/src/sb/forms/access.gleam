@@ -1,9 +1,9 @@
-import extra
-import extra/state
 import gleam/dynamic/decode.{type Decoder}
-import sb/decoder
-import sb/props
-import sb/zero.{type Zero}
+import sb/extra
+import sb/extra/state
+import sb/forms/decoder
+import sb/forms/props
+import sb/forms/zero.{type Zero}
 
 const access_keys = ["users", "groups", "keys"]
 

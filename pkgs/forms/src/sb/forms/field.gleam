@@ -1,5 +1,3 @@
-import extra
-import extra/state
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
@@ -7,20 +5,22 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/set.{type Set}
-import sb/condition.{type Condition}
-import sb/custom
-import sb/decoder
-import sb/error.{type Error}
-import sb/filter.{type Filter}
-import sb/handlers.{type Handlers}
-import sb/kind.{type Kind}
-import sb/props.{type Props}
-import sb/report.{type Report}
-import sb/reset.{type Reset}
-import sb/scope.{type Scope}
-import sb/text
-import sb/value.{type Value}
-import sb/zero
+import sb/extra
+import sb/extra/report.{type Report}
+import sb/extra/reset.{type Reset}
+import sb/extra/state
+import sb/forms/condition.{type Condition}
+import sb/forms/custom
+import sb/forms/decoder
+import sb/forms/error.{type Error}
+import sb/forms/filter.{type Filter}
+import sb/forms/handlers.{type Handlers}
+import sb/forms/kind.{type Kind}
+import sb/forms/props.{type Props}
+import sb/forms/scope.{type Scope}
+import sb/forms/text
+import sb/forms/value.{type Value}
+import sb/forms/zero
 
 const field_keys = [
   "id", "kind", "label", "description", "disabled", "hidden", "ignored",

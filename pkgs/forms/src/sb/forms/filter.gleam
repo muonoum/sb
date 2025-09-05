@@ -1,4 +1,3 @@
-import extra/state
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/float
@@ -6,12 +5,13 @@ import gleam/int
 import gleam/option.{type Option, None, Some}
 import gleam/regexp.{type Regexp}
 import gleam/result
-import sb/decoder
-import sb/error.{type Error}
-import sb/props.{type Props}
-import sb/report.{type Report}
-import sb/value.{type Value}
-import sb/zero
+import sb/extra/report.{type Report}
+import sb/extra/state
+import sb/forms/decoder
+import sb/forms/error.{type Error}
+import sb/forms/props.{type Props}
+import sb/forms/value.{type Value}
+import sb/forms/zero
 
 pub const builtin = [
   "succeed", "fail", "expect", "regex-match", "regex-replace", "parse-integer",

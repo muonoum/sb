@@ -1,20 +1,20 @@
-import extra/dots
-import extra/yaml
 import gleam/dict.{type Dict}
 import gleam/dynamic/decode
 import gleam/io
 import gleam/list
 import gleam/string
 import gleam_community/ansi
-import sb/custom
-import sb/error.{type Error}
-import sb/handlers
+import sb/extra/dots
+import sb/extra/report.{type Report}
+import sb/extra/yaml
+import sb/forms/custom
+import sb/forms/error.{type Error}
+import sb/forms/handlers
+import sb/forms/props
+import sb/forms/scope.{type Scope}
+import sb/forms/task.{type Task}
+import sb/forms/value
 import sb/inspect
-import sb/props
-import sb/report.{type Report}
-import sb/scope.{type Scope}
-import sb/task.{type Task}
-import sb/value
 
 pub fn main() -> Nil {
   let assert Ok(task) = {

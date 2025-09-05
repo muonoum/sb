@@ -1,0 +1,7 @@
+name = "extra"
+version = "1.0.0"
+
+[dependencies]
+gleam_stdlib = ">= 0.44.0 and < 2.0.0"
+exception = ">= 2.1.0 and < 3.0.0"
+gleam_yielder = ">= 1.1.0 and < 2.0.0"

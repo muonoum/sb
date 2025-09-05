@@ -1,15 +1,15 @@
-import extra/dots
-import extra/yaml
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/list
 import gleam/result
 import pprint
-import sb/custom
+import sb/extra/dots
+import sb/extra/yaml
+import sb/forms/custom
+import sb/forms/props
+import sb/forms/task
 import sb/inspect
-import sb/props
-import sb/task
 
 pub fn main() {
   let task_data = load_task("test_data/task1.yaml")

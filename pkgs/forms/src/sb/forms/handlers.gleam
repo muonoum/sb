@@ -3,8 +3,8 @@ import gleam/bytes_tree.{type BytesTree}
 import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
 import gleam/option.{type Option}
-import sb/error.{type Error}
-import sb/report.{type Report}
+import sb/extra/report.{type Report}
+import sb/forms/error.{type Error}
 
 pub type Http =
   fn(Request(Option(BytesTree))) -> Result(Response(BitArray), Report(Error))

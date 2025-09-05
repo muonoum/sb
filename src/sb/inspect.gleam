@@ -5,17 +5,17 @@ import gleam/list
 import gleam/option.{type Option}
 import gleam/string
 import gleam_community/ansi
-import sb/choice.{type Choice}
-import sb/error.{type Error}
-import sb/field.{type Field}
-import sb/kind.{type Kind}
-import sb/options.{type Options}
-import sb/report.{type Report}
-import sb/reset.{type Reset}
-import sb/scope.{type Scope}
-import sb/source.{type Source}
-import sb/task.{type Task}
-import sb/value.{type Value}
+import sb/extra/report.{type Report}
+import sb/extra/reset.{type Reset}
+import sb/forms/choice.{type Choice}
+import sb/forms/error.{type Error}
+import sb/forms/field.{type Field}
+import sb/forms/kind.{type Kind}
+import sb/forms/options.{type Options}
+import sb/forms/scope.{type Scope}
+import sb/forms/source.{type Source}
+import sb/forms/task.{type Task}
+import sb/forms/value.{type Value}
 
 pub fn inspect_task(task: Task) {
   inspect_fields(task.fields)

@@ -1,5 +1,5 @@
 import gleam/option.{type Option, None, Some}
-import sb/decoder.{type Decoder}
+import sb/forms/decoder.{type Decoder}
 
 pub type Zero(v) {
   Zero(value: v, decoder: Decoder(v))

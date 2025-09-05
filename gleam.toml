@@ -4,13 +4,10 @@ version = "1.0.0"
 [dependencies]
 gleam_community_ansi = ">= 1.4.3 and < 2.0.0"
 gleam_community_colour = ">= 2.0.2 and < 3.0.0"
-gleam_http = ">= 4.1.1 and < 5.0.0"
-gleam_json = ">= 3.0.2 and < 4.0.0"
 gleam_stdlib = ">= 0.44.0 and < 2.0.0"
-gleam_yielder = ">= 1.1.0 and < 2.0.0"
-exception = ">= 2.1.0 and < 3.0.0"
-yamerl = ">= 0.10.0 and < 1.0.0"
-gleam_regexp = ">= 1.1.1 and < 2.0.0"
+forms = { path = "pkgs/forms" }
+extra = { path = "pkgs/extra" }
+extra_erlang = { path = "pkgs/extra_erlang" }
 
 [dev-dependencies]
 birdie = ">= 1.4.0 and < 2.0.0"

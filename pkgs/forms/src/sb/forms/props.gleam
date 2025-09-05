@@ -1,12 +1,12 @@
-import extra/state.{type State}
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/list
-import sb/decoder.{type Decoder}
-import sb/error.{type Error}
-import sb/report.{type Report}
-import sb/zero.{type Zero}
+import sb/extra/report.{type Report}
+import sb/extra/state.{type State}
+import sb/forms/decoder.{type Decoder}
+import sb/forms/error.{type Error}
+import sb/forms/zero.{type Zero}
 
 pub opaque type Context {
   Context(dict: Dict(String, Dynamic), reports: List(Report(Error)))

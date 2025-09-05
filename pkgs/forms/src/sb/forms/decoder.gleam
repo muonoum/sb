@@ -1,8 +1,8 @@
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/result
-import sb/error.{type Error}
-import sb/report.{type Report}
+import sb/extra/report.{type Report}
+import sb/forms/error.{type Error}
 
 pub type Decoder(v) =
   fn(Dynamic) -> Result(v, Report(Error))

@@ -1,4 +1,4 @@
-import sb/value.{type Value}
+import sb/forms/value.{type Value}
 
 pub opaque type Choice {
   Choice(key: Value, value: Value)

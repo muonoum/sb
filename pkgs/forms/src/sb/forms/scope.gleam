@@ -1,7 +1,7 @@
 import gleam/dict.{type Dict}
-import sb/error.{type Error}
-import sb/report.{type Report}
-import sb/value.{type Value}
+import sb/extra/report.{type Report}
+import sb/forms/error.{type Error}
+import sb/forms/value.{type Value}
 
 pub type Scope =
   Dict(String, Result(Value, Report(Error)))

@@ -1,9 +1,9 @@
-import extra/state
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
-import sb/decoder
-import sb/props
+import sb/extra/state
+import sb/forms/decoder
+import sb/forms/props
 
 pub type Custom =
   Dict(String, Dynamic)
