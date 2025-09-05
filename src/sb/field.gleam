@@ -1,6 +1,7 @@
 import extra
 import extra/state
-import gleam/dict
+import gleam/dict.{type Dict}
+import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -108,29 +109,20 @@ pub fn value(field: Field) -> Option(Result(Value, Report(Error))) {
   }
 }
 
-fn kind_decoder(fields: custom.Fields) -> Props(Kind) {
+fn kind_decoder(
+  custom: custom,
+  get: fn(custom, String) -> Result(Dict(String, Dynamic), _),
+  then: fn(String) -> Props(v),
+) -> Props(v) {
   use name <- props.get("kind", decoder.from(decode.string))
 
   use <- result.lazy_unwrap({
-    use custom <- result.map(dict.get(fields.custom, name))
-    use <- state.do(props.merge(custom))
-    kind_decoder(fields)
+    use dict <- result.map(get(custom, name))
+    use <- state.do(props.merge(dict))
+    kind_decoder(custom, get, then)
   })
 
-  use kind_keys <- kind.decoder(name)
-  props.check_keys(list.append(field_keys, kind_keys))
-}
-
-fn filter_decoder(filters: custom.Filters) -> Props(Filter) {
-  use name <- props.get("kind", decoder.from(decode.string))
-
-  use <- result.lazy_unwrap({
-    use custom <- result.map(dict.get(filters.custom, name))
-    use <- state.do(props.merge(custom))
-    filter_decoder(filters)
-  })
-
-  filter.decoder(name)
+  then(name)
 }
 
 pub fn decoder(
@@ -139,7 +131,13 @@ pub fn decoder(
 ) -> Props(#(String, Field)) {
   use id <- props.get("id", text.id_decoder)
   use <- extra.return(props.error_context(error.FieldContext(id)))
-  use kind <- state.with(kind_decoder(fields))
+
+  use kind <- state.with({
+    use name <- kind_decoder(fields, custom.get_field)
+    use kind_keys <- kind.decoder(name)
+    props.check_keys(list.append(field_keys, kind_keys))
+  })
+
   use label <- props.try("label", zero.option(decoder.from(decode.string)))
 
   use description <- props.try("description", {
@@ -155,7 +153,9 @@ pub fn decoder(
     use dynamic <- zero.list
     use list <- result.try(decoder.run(dynamic, decode.list(decode.dynamic)))
     use dynamic <- list.try_map(list)
-    props.decode(dynamic, filter_decoder(filters))
+    props.decode(dynamic, {
+      kind_decoder(filters, custom.get_filter, filter.decoder)
+    })
   })
 
   let field =
