@@ -10,6 +10,7 @@ import sb/props.{type Props}
 import sb/report.{type Report}
 import sb/scope.{type Scope}
 import sb/value.{type Value}
+import sb/zero.{type Zero}
 
 pub opaque type Condition {
   Resolved(Bool)
@@ -101,6 +102,11 @@ pub fn decoder(dynamic: Dynamic) -> Result(Condition, Report(Error)) {
     Ok(bool) -> Ok(Resolved(bool))
     Error(..) -> props.decode(dynamic, kind_decoder())
   }
+}
+
+pub fn zero_decoder() -> Zero(Condition) {
+  use dynamic <- zero.new(false())
+  decoder(dynamic)
 }
 
 fn kind_decoder() -> Props(Condition) {

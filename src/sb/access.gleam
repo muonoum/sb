@@ -1,8 +1,9 @@
+import extra
 import extra/state
 import gleam/dynamic/decode.{type Decoder}
 import sb/decoder
 import sb/props.{type Props}
-import sb/zero
+import sb/zero.{type Zero}
 
 const access_keys = ["users", "groups", "keys"]
 
@@ -47,6 +48,13 @@ pub fn decoder() -> Props(Access) {
   })
 
   state.succeed(Access(users:, groups:, keys:))
+}
+
+pub fn zero_decoder() -> Zero(Access) {
+  use dynamic <- zero.new(none())
+  use <- extra.return(props.decode(dynamic, _))
+  use <- state.do(props.check_keys(access_keys))
+  decoder()
 }
 
 fn users_decoder() -> Decoder(Users) {

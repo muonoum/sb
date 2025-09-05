@@ -134,12 +134,10 @@ pub fn decoder(
     zero.option(decoder.from(decode.string))
   })
 
-  let condition = zero.new(condition.false(), condition.decoder)
-
-  use disabled <- props.try("disabled", condition)
-  use hidden <- props.try("hidden", condition)
-  use ignored <- props.try("ignored", condition)
-  use optional <- props.try("optional", condition)
+  use disabled <- props.try("disabled", condition.zero_decoder())
+  use hidden <- props.try("hidden", condition.zero_decoder())
+  use ignored <- props.try("ignored", condition.zero_decoder())
+  use optional <- props.try("optional", condition.zero_decoder())
 
   use filters <- props.try("filters", {
     use dynamic <- zero.list
