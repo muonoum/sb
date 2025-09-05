@@ -1,53 +1,34 @@
+import extra/dots
+import extra/yaml
 import gleam/dict.{type Dict}
+import gleam/dynamic/decode
 import gleam/io
 import gleam/list
-import gleam/option.{None}
 import gleam/string
 import gleam_community/ansi
-import sb/access
+import sb/custom
 import sb/error.{type Error}
-import sb/field
 import sb/handlers
 import sb/inspect
-import sb/kind
-import sb/options
+import sb/props
 import sb/report.{type Report}
-import sb/reset
 import sb/scope.{type Scope}
-import sb/source
-import sb/task.{type Task, Task}
+import sb/task.{type Task}
 import sb/value
 
 pub fn main() -> Nil {
-  let strings = value.string_list(["a", "b", "c"])
-  let string = value.String("str")
+  let task = {
+    let assert Ok(dynamic) = yaml.decode_file("test_data/task2.yaml")
+    let assert Ok([doc, ..]) = decode.run(dynamic, decode.list(decode.dynamic))
 
-  let object =
-    source.Literal(value.Object([#("key1", strings), #("key2", string)]))
+    let assert Ok(task) =
+      props.decode(
+        dots.split(doc),
+        task.decoder(custom.Fields(dict.new()), custom.Filters(dict.new())),
+      )
 
-  let radio1 = kind.Select(None, options.from_source(object))
-  let radio2 = kind.Select(None, options.from_source(source.Reference("1")))
-  let radio3 = kind.Select(None, options.from_source(source.Reference("2")))
-  let data1 = kind.Data(reset.new(Ok(source.Reference("1")), fn(_) { ["1"] }))
-
-  let task =
-    Task(
-      id: "task",
-      name: "Task",
-      category: ["Tests"],
-      summary: None,
-      description: None,
-      command: [],
-      runners: access.everyone(),
-      approvers: access.none(),
-      layout: [],
-      fields: dict.from_list([
-        #("1", field.new(radio1)),
-        #("2", field.new(radio2)),
-        #("3", field.new(radio3)),
-        #("4", field.new(data1)),
-      ]),
-    )
+    task
+  }
 
   let search = dict.new()
   let handlers = handlers.empty()

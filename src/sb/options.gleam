@@ -26,17 +26,6 @@ pub type Group {
   Group(label: String, source: Reset(Result(Source, Report(Error))))
 }
 
-pub fn from_source(source: Source) -> Options {
-  SingleSource(reset.try_new(Ok(source), source.refs))
-}
-
-pub fn from_groups(groups: List(#(String, Source))) -> Options {
-  SourceGroups({
-    use #(label, source) <- list.map(groups)
-    Group(label:, source: reset.try_new(Ok(source), source.refs))
-  })
-}
-
 pub fn sources(options: Options) -> List(Reset(Result(Source, Report(Error)))) {
   case options {
     SingleSource(source) -> [source]

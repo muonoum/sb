@@ -15,10 +15,6 @@ pub type Value {
   Object(List(#(String, Value)))
 }
 
-pub fn string_list(strings: List(String)) -> Value {
-  List(list.map(strings, String))
-}
-
 pub fn to_string(value: Value) -> Result(String, Nil) {
   case value {
     String(string) -> Ok(string)
