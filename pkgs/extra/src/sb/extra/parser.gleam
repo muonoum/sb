@@ -1,5 +1,4 @@
 import gleam/bool
-import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/set.{type Set}
@@ -74,28 +73,6 @@ fn merge_messages(message1: Message(i), message2: Message(i)) -> Message(i) {
       use <- bool.guard(position1 < position2, message2)
       Message(..message1, labels: set.union(labels1, labels2))
     }
-  }
-}
-
-pub fn format_message(message: Message(i)) -> String {
-  let Message(position:, error:, labels:) = message
-
-  let line1 = "parse error at position " <> int.to_string(position)
-
-  let line2 = case error {
-    None -> "unknown error"
-    Some(UnexpectedEnd) -> "unexpected end of input"
-    Some(UnexpectedToken(token)) -> "unexpected " <> string.inspect(token)
-  }
-
-  case set.to_list(labels) {
-    [] -> string.join([line1, line2], "\n")
-
-    expected ->
-      string.join(
-        [line1, line2, "expected: " <> string.join(expected, ", ")],
-        "\n",
-      )
   }
 }
 

@@ -7,16 +7,16 @@ import sb/forms/zero.{type Zero}
 
 const access_keys = ["users", "groups", "keys"]
 
-pub opaque type Access {
+pub type Access {
   Access(users: Users, groups: List(String), keys: List(String))
 }
 
-pub opaque type Users {
+pub type Users {
   Everyone
   Users(List(String))
 }
 
-pub opaque type Key {
+pub type Key {
   Key(id: String, secret: String)
 }
 

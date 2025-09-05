@@ -17,7 +17,7 @@ import sb/forms/scope.{type Scope}
 import sb/forms/source.{type Source}
 import sb/forms/value.{type Value}
 
-pub opaque type Options {
+pub type Options {
   SingleSource(Reset(Result(Source, Report(Error))))
   SourceGroups(List(Group))
 }

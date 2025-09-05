@@ -8,7 +8,7 @@ import sb/forms/decoder.{type Decoder}
 import sb/forms/error.{type Error}
 import sb/forms/zero.{type Zero}
 
-pub opaque type Context {
+pub type Context {
   Context(dict: Dict(String, Dynamic), reports: List(Report(Error)))
 }
 

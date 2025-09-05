@@ -11,40 +11,12 @@ import sb/forms/scope.{type Scope}
 import sb/forms/value.{type Value}
 import sb/forms/zero.{type Zero}
 
-pub opaque type Condition {
+pub type Condition {
   Resolved(Bool)
   Defined(String)
   Equal(String, Value)
   NotDefined(String)
   NotEqual(String, Value)
-}
-
-pub fn defined(id: String) -> Condition {
-  Defined(id)
-}
-
-pub fn not_defined(id: String) -> Condition {
-  NotDefined(id)
-}
-
-pub fn equal(id: String, value: Value) -> Condition {
-  Equal(id, value)
-}
-
-pub fn not_equal(id: String, value: Value) -> Condition {
-  NotEqual(id, value)
-}
-
-pub fn resolved(state: Bool) -> Condition {
-  Resolved(state)
-}
-
-pub fn true() -> Condition {
-  Resolved(True)
-}
-
-pub fn false() -> Condition {
-  Resolved(False)
 }
 
 pub fn refs(condition: Condition) -> List(String) {
@@ -97,7 +69,7 @@ pub fn evaluate(condition: Condition, scope: Scope) -> Condition {
 }
 
 pub fn decoder() -> Zero(Condition) {
-  use dynamic <- zero.lazy(false)
+  use dynamic <- zero.new(Resolved(False))
 
   case decoder.run(dynamic, decode.bool) {
     Ok(bool) -> Ok(Resolved(bool))

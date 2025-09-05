@@ -42,18 +42,6 @@ pub type Kind {
   MultiSelect(List(Choice), options: Options)
 }
 
-pub fn data(source: Source) -> Kind {
-  Data(source: reset.try_new(Ok(source), source.refs))
-}
-
-pub fn select(options: Options) -> Kind {
-  Select(None, options:)
-}
-
-pub fn multi_select(options: Options) -> Kind {
-  MultiSelect([], options:)
-}
-
 pub fn reset(kind: Kind, refs: Set(String)) -> Kind {
   case kind {
     Text(..) | Textarea(..) -> kind

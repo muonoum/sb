@@ -41,10 +41,6 @@ pub type Task {
   )
 }
 
-pub fn values(task: Task) -> Scope {
-  field_values(task.fields)
-}
-
 pub fn evaluate(
   task: Task,
   scope: Scope,

@@ -29,7 +29,7 @@ const field_keys = [
 
 const filter_keys = ["kind"]
 
-pub opaque type Field {
+pub type Field {
   Field(
     kind: Kind,
     label: Option(String),
@@ -40,28 +40,6 @@ pub opaque type Field {
     optional: Reset(Condition),
     filters: List(Filter),
   )
-}
-
-pub fn kind(field: Field) -> Kind {
-  field.kind
-}
-
-pub fn new(kind: Kind) -> Field {
-  Field(
-    kind:,
-    label: None,
-    description: None,
-    disabled: reset.new(condition.false(), condition.refs),
-    hidden: reset.new(condition.false(), condition.refs),
-    ignored: reset.new(condition.false(), condition.refs),
-    optional: reset.new(condition.false(), condition.refs),
-    filters: [],
-  )
-}
-
-pub fn optional(field: Field, state: Bool) -> Field {
-  let optional = condition.resolved(state)
-  Field(..field, optional: reset.new(optional, condition.refs))
 }
 
 pub fn reset(field: Field, refs: Set(String)) -> Field {
@@ -112,8 +90,8 @@ pub fn value(field: Field) -> Option(Result(Value, Report(Error))) {
 }
 
 fn kind_decoder(
-  custom: c,
-  get: fn(c, String) -> Result(Dict(String, Dynamic), _),
+  custom: custom,
+  get: fn(custom, String) -> Result(Dict(String, Dynamic), _),
   then: fn(String) -> Props(v),
 ) -> Props(v) {
   use name <- props.get("kind", decoder.from(decode.string))
