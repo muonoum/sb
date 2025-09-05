@@ -6,15 +6,15 @@ import gleam/option.{type Option}
 import sb/extra/report.{type Report}
 import sb/forms/error.{type Error}
 
+pub type Handlers {
+  Handlers(http: Http, command: Command)
+}
+
 pub type Http =
   fn(Request(Option(BytesTree))) -> Result(Response(BitArray), Report(Error))
 
 pub type Command =
   fn(List(String)) -> Result(BitArray, Report(Error))
-
-pub type Handlers {
-  Handlers(http: Http, command: Command)
-}
 
 pub fn empty() -> Handlers {
   Handlers(http: empty_http(), command: empty_command())
