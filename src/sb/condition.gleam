@@ -5,9 +5,8 @@ import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/result
 import sb/decoder
-import sb/error.{type Error}
+import sb/error
 import sb/props.{type Props}
-import sb/report.{type Report}
 import sb/scope.{type Scope}
 import sb/value.{type Value}
 import sb/zero.{type Zero}
@@ -97,15 +96,13 @@ pub fn evaluate(condition: Condition, scope: Scope) -> Condition {
   }
 }
 
-pub fn decoder(dynamic: Dynamic) -> Result(Condition, Report(Error)) {
+pub fn decoder() -> Zero(Condition) {
+  use dynamic <- zero.lazy(false)
+
   case decoder.run(dynamic, decode.bool) {
     Ok(bool) -> Ok(Resolved(bool))
     Error(..) -> props.decode(dynamic, kind_decoder())
   }
-}
-
-pub fn zero_decoder() -> Zero(Condition) {
-  zero.lazy(false, decoder)
 }
 
 fn kind_decoder() -> Props(Condition) {

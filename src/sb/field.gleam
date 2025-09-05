@@ -27,6 +27,8 @@ const field_keys = [
   "optional", "filters",
 ]
 
+const filter_keys = ["kind"]
+
 pub opaque type Field {
   Field(
     kind: Kind,
@@ -144,17 +146,20 @@ pub fn decoder(
     zero.option(decoder.from(decode.string))
   })
 
-  use disabled <- props.try("disabled", condition.zero_decoder())
-  use hidden <- props.try("hidden", condition.zero_decoder())
-  use ignored <- props.try("ignored", condition.zero_decoder())
-  use optional <- props.try("optional", condition.zero_decoder())
+  use disabled <- props.try("disabled", condition.decoder())
+  use hidden <- props.try("hidden", condition.decoder())
+  use ignored <- props.try("ignored", condition.decoder())
+  use optional <- props.try("optional", condition.decoder())
 
   use filters <- props.try("filters", {
     use dynamic <- zero.list
     use list <- result.try(decoder.run(dynamic, decode.list(decode.dynamic)))
     use dynamic <- list.try_map(list)
+
     props.decode(dynamic, {
-      kind_decoder(filters, custom.get_filter, filter.decoder)
+      use name <- kind_decoder(filters, custom.get_filter)
+      use kind_keys <- filter.decoder(name)
+      props.check_keys(list.append(filter_keys, kind_keys))
     })
   })
 

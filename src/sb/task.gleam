@@ -137,8 +137,8 @@ pub fn decoder(fields: custom.Fields, filters: custom.Filters) -> Props(Task) {
     zero.list(decoder.from(decode.list(decode.string)))
   })
 
-  use runners <- props.try("runners", access.zero_decoder())
-  use approvers <- props.try("approvers", access.zero_decoder())
+  use runners <- props.try("runners", access.decoder())
+  use approvers <- props.try("approvers", access.decoder())
 
   use fields <- props.try("fields", {
     use dynamic <- zero.list

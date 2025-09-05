@@ -1,4 +1,3 @@
-import extra
 import extra/state
 import gleam/bool
 import gleam/dynamic/decode
@@ -178,7 +177,9 @@ pub fn decoder(
       state.do(check_keys(textarea_keys), textarea_decoder)
       |> props.error_context(error.BadKind(name))
 
-    "radio" -> state.do(check_keys(radio_keys), radio_decoder)
+    "radio" ->
+      state.do(check_keys(radio_keys), radio_decoder)
+      |> props.error_context(error.BadKind(name))
 
     "checkbox" ->
       state.do(check_keys(checkbox_keys), checkbox_decoder)
