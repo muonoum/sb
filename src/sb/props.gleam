@@ -50,21 +50,12 @@ pub fn add_report(report: Report(Error)) -> Props(Nil) {
   Context(dict:, reports: [report, ..reports])
 }
 
-// TODO: List(Report(Error))
-// TODO: fail -> report + reports fra context
 pub fn decode(dynamic: Dynamic, decoder: Props(v)) -> Result(v, Report(Error)) {
   let context = Context(dict: dict.new(), reports: [])
 
   state.run(context:, state: {
     use <- load(dynamic)
     decoder
-    // use value <- state.with(decoder)
-    // use reports <- get_reports
-
-    // case reports {
-    //   [] -> state.succeed(value)
-    //   reports -> state.fail(report.new(error.Collected(list.reverse(reports))))
-    // }
   })
 }
 
@@ -127,69 +118,3 @@ pub fn zero(name: String, zero: Zero(a), then: fn(a) -> Props(b)) -> Props(b) {
     Ok(value) -> then(value)
   }
 }
-// ZERO
-
-// fn property(
-//   name: String,
-//   decoder: fn(Dynamic) -> Zero(v),
-//   zero: fn(v) -> Zero(v),
-// ) -> Props(v) {
-//   use dict <- get
-
-//   let result = case dict.get(dict, name) {
-//     Error(Nil) -> zero(pair.first(decoder(dynamic.nil())))
-
-//     Ok(dynamic) -> {
-//       use report <- pair.map_second(decoder(dynamic))
-//       option.map(report, report.context(_, error.BadProperty(name)))
-//     }
-//   }
-
-//   case result {
-//     #(value, None) -> state.succeed(value)
-
-//     #(_value, Some(report)) -> {
-//       // use <- state.do(add_report(report))
-//       // state.succeed(value)
-//       state.fail(report)
-//     }
-//   }
-// }
-
-// pub fn required(
-//   name: String,
-//   decoder: fn(Dynamic) -> Zero(a),
-//   then: fn(a) -> Props(b),
-// ) -> Props(b) {
-//   state.with(then:, with: {
-//     use zero <- property(name, decoder)
-//     #(zero, Some(report.new(error.MissingProperty(name))))
-//   })
-// }
-
-// pub fn zero(
-//   name: String,
-//   decoder: fn(Dynamic) -> Zero(a),
-//   then: fn(a) -> Props(b),
-// ) -> Props(b) {
-//   state.with(then:, with: {
-//     use zero <- property(name, decoder)
-//     #(zero, None)
-//   })
-// }
-
-// pub fn default(
-//   name: String,
-//   default: Result(a, Report(Error)),
-//   decoder: fn(Dynamic) -> Zero(a),
-//   then: fn(a) -> Props(b),
-// ) -> Props(b) {
-//   state.with(then:, with: {
-//     use zero <- property(name, decoder)
-
-//     case default {
-//       Error(report) -> #(zero, Some(report))
-//       Ok(value) -> #(value, None)
-//     }
-//   })
-// }

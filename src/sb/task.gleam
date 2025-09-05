@@ -170,11 +170,6 @@ pub fn decoder(fields: custom.Fields, filters: custom.Filters) -> Props(Task) {
 
 const valid_id = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 
-// fn make_id(category: List(String), name: String) -> Result(String, _) {
-//   let category = string.join(list.map(category, into_id), "-")
-//   Ok(string.join([category, into_id(name)], "-"))
-// }
-
 fn make_id(category: List(String), name: String) -> String {
   let category = string.join(list.map(category, into_id), "-")
   string.join([category, into_id(name)], "-")
