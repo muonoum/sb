@@ -104,7 +104,7 @@ pub fn decoder(dynamic: Dynamic) -> Result(Condition, Report(Error)) {
 }
 
 fn kind_decoder() -> Props(Condition) {
-  use dict <- props.get
+  use dict <- props.get_dict
 
   case dict.to_list(dict) {
     [#("when", dynamic)] -> {
@@ -135,7 +135,7 @@ fn condition_decoder(
   )
 
   use <- extra.return(props.decode(dynamic, _))
-  use dict <- props.get
+  use dict <- props.get_dict
 
   case dict.to_list(dict) {
     [#(id, dynamic)] ->

@@ -115,37 +115,37 @@ pub fn update(
 pub fn decoder(fields: custom.Fields, filters: custom.Filters) -> Props(Task) {
   use <- state.do(props.check_keys(task_keys))
 
-  use name <- props.required("name", decoder.from(decode.string))
+  use name <- props.get("name", decoder.from(decode.string))
 
-  use category <- props.required("category", {
+  use category <- props.get("category", {
     decoder.from(decode.list(decode.string))
   })
 
-  use id <- props.zero("id", {
+  use id <- props.try("id", {
     zero.new(make_id(category, name), decoder.from(decode.string))
   })
 
-  use summary <- props.zero("summary", {
+  use summary <- props.try("summary", {
     zero.option(decoder.from(decode.string))
   })
 
-  use description <- props.zero("description", {
+  use description <- props.try("description", {
     zero.option(decoder.from(decode.string))
   })
 
-  use command <- props.zero("command", {
+  use command <- props.try("command", {
     zero.list(decoder.from(decode.list(decode.string)))
   })
 
-  use runners <- props.zero("runners", {
+  use runners <- props.try("runners", {
     zero.new(access.none(), props.decode(_, access.decoder()))
   })
 
-  use approvers <- props.zero("approvers", {
+  use approvers <- props.try("approvers", {
     zero.new(access.none(), props.decode(_, access.decoder()))
   })
 
-  use fields <- props.zero("fields", {
+  use fields <- props.try("fields", {
     use dynamic <- zero.list
     use list <- result.map(decoder.run(dynamic, decode.list(decode.dynamic)))
     use <- extra.return(pair.second)

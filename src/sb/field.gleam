@@ -109,7 +109,7 @@ pub fn value(field: Field) -> Option(Result(Value, Report(Error))) {
 }
 
 fn kind_decoder(fields: custom.Fields) -> Props(Kind) {
-  use name <- props.required("kind", decoder.from(decode.string))
+  use name <- props.get("kind", decoder.from(decode.string))
 
   use <- result.lazy_unwrap({
     use custom <- result.map(dict.get(fields.custom, name))
@@ -125,23 +125,23 @@ pub fn decoder(
   fields: custom.Fields,
   filters: custom.Filters,
 ) -> Props(#(String, Field)) {
-  use id <- props.required("id", text.id_decoder)
+  use id <- props.get("id", text.id_decoder)
   use <- extra.return(props.error_context(error.FieldContext(id)))
   use kind <- state.with(kind_decoder(fields))
-  use label <- props.zero("label", zero.option(decoder.from(decode.string)))
+  use label <- props.try("label", zero.option(decoder.from(decode.string)))
 
-  use description <- props.zero("description", {
+  use description <- props.try("description", {
     zero.option(decoder.from(decode.string))
   })
 
   let condition = zero.new(condition.false(), condition.decoder)
 
-  use disabled <- props.zero("disabled", condition)
-  use hidden <- props.zero("hidden", condition)
-  use ignored <- props.zero("ignored", condition)
-  use optional <- props.zero("optional", condition)
+  use disabled <- props.try("disabled", condition)
+  use hidden <- props.try("hidden", condition)
+  use ignored <- props.try("ignored", condition)
+  use optional <- props.try("optional", condition)
 
-  use filters <- props.zero("filters", {
+  use filters <- props.try("filters", {
     use dynamic <- zero.list
     use list <- result.try(decoder.run(dynamic, decode.list(decode.dynamic)))
     use dynamic <- list.try_map(list)

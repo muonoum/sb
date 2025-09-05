@@ -184,7 +184,7 @@ pub fn parse_json(
 }
 
 pub fn decoder() -> Props(Source) {
-  use dict <- props.get
+  use dict <- props.get_dict
   use <- extra.return(state.from_result)
   use <- extra.return(report.error_context(_, error.BadSource))
 
@@ -227,18 +227,18 @@ fn fetch_decoder(dynamic: Dynamic) -> Result(Source, Report(Error)) {
   use <- extra.return(props.decode(dynamic, _))
   use <- state.do(props.check_keys(fetch_keys))
 
-  use uri <- props.required("url", text.decoder)
+  use uri <- props.get("url", text.decoder)
 
-  use body <- props.zero("body", { zero.option(props.decode(_, decoder())) })
+  use body <- props.try("body", { zero.option(props.decode(_, decoder())) })
 
-  use method <- props.zero("method", {
+  use method <- props.try("method", {
     use dynamic <- zero.new(http.Get)
     use string <- result.try(decoder.run(dynamic, decode.string))
     http.parse_method(string.uppercase(string))
     |> report.replace_error(error.BadProperty("method"))
   })
 
-  use headers <- props.zero("headers", {
+  use headers <- props.try("headers", {
     use dynamic <- zero.list
     decoder.run(dynamic, decode.dict(decode.string, decode.string))
     |> report.error_context(error.BadProperty("headers"))

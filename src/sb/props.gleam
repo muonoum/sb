@@ -22,17 +22,9 @@ pub fn error_context(error: Error) -> fn(Props(v)) -> Props(v) {
   }
 }
 
-pub fn get(then: fn(Dict(String, Dynamic)) -> Props(v)) -> Props(v) {
+pub fn get_dict(then: fn(Dict(String, Dynamic)) -> Props(v)) -> Props(v) {
   use Context(dict:, ..) <- state.with(state.get())
   then(dict)
-}
-
-pub fn get_key(
-  key: String,
-  then: fn(Result(Dynamic, Nil)) -> Props(v),
-) -> Props(v) {
-  use Context(dict:, ..) <- state.with(state.get())
-  then(dict.get(dict, key))
 }
 
 pub fn merge(other: Dict(String, Dynamic)) -> Props(Nil) {
@@ -81,12 +73,12 @@ pub fn load(dynamic: Dynamic, next: fn() -> Props(v)) -> Props(v) {
   }
 }
 
-pub fn required(
+pub fn get(
   name: String,
   decoder: Decoder(a),
   then: fn(a) -> Props(b),
 ) -> Props(b) {
-  use dict <- get
+  use dict <- get_dict
 
   let result = case dict.get(dict, name) {
     Error(Nil) -> report.error(error.MissingProperty(name))
@@ -102,8 +94,8 @@ pub fn required(
   }
 }
 
-pub fn zero(name: String, zero: Zero(a), then: fn(a) -> Props(b)) -> Props(b) {
-  use dict <- get
+pub fn try(name: String, zero: Zero(a), then: fn(a) -> Props(b)) -> Props(b) {
+  use dict <- get_dict
 
   let result = case dict.get(dict, name) {
     Error(Nil) -> Ok(zero.value)

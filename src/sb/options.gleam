@@ -129,7 +129,7 @@ fn select_object(
 }
 
 pub fn decoder() -> Props(Options) {
-  use dict <- props.get
+  use dict <- props.get_dict
 
   case dict.to_list(dict) {
     [#("groups", dynamic)] ->
@@ -147,9 +147,9 @@ pub fn decoder() -> Props(Options) {
 }
 
 fn group_decoder() -> Props(Group) {
-  use label <- props.required("label", decoder.from(decode.string))
+  use label <- props.get("label", decoder.from(decode.string))
 
-  use source <- props.required("source", {
+  use source <- props.get("source", {
     props.decode(_, {
       state.map(source.decoder(), Ok)
       |> state.attempt(state.catch_error)

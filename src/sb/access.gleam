@@ -34,15 +34,15 @@ pub fn none() -> Access {
 pub fn decoder() -> Props(Access) {
   use <- state.do(props.check_keys(access_keys))
 
-  use users <- props.zero("users", {
+  use users <- props.try("users", {
     zero.new(Users([]), decoder.from(users_decoder()))
   })
 
-  use groups <- props.zero("groups", {
+  use groups <- props.try("groups", {
     zero.list(decoder.from(decode.list(decode.string)))
   })
 
-  use keys <- props.zero("keys", {
+  use keys <- props.try("keys", {
     zero.list(decoder.from(decode.list(decode.string)))
   })
 

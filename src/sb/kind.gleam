@@ -179,7 +179,7 @@ pub fn decoder(
 fn data_decoder() -> Props(Kind) {
   use <- extra.return(props.error_context(error.BadKind("data")))
 
-  use source <- props.required("source", {
+  use source <- props.get("source", {
     props.decode(_, {
       state.map(source.decoder(), Ok)
       |> state.attempt(state.catch_error)
@@ -200,20 +200,20 @@ fn textarea_decoder() -> Props(Kind) {
 
 fn radio_decoder() -> Props(Kind) {
   use <- extra.return(props.error_context(error.BadKind("radio")))
-  use options <- props.required("source", props.decode(_, options.decoder()))
+  use options <- props.get("source", props.decode(_, options.decoder()))
   state.succeed(Select(None, options:))
 }
 
 fn checkbox_decoder() -> Props(Kind) {
   use <- extra.return(props.error_context(error.BadKind("checkbox")))
-  use options <- props.required("source", props.decode(_, options.decoder()))
+  use options <- props.get("source", props.decode(_, options.decoder()))
   state.succeed(MultiSelect([], options:))
 }
 
 fn select_decoder() -> Props(Kind) {
   use <- extra.return(props.error_context(error.BadKind("select")))
-  use multiple <- props.zero("multiple", zero.bool(decoder.from(decode.bool)))
-  use options <- props.required("source", props.decode(_, options.decoder()))
+  use multiple <- props.try("multiple", zero.bool(decoder.from(decode.bool)))
+  use options <- props.get("source", props.decode(_, options.decoder()))
   use <- bool.guard(multiple, state.succeed(MultiSelect([], options:)))
   state.succeed(Select(None, options:))
 }

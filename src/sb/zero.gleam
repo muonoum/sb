@@ -24,33 +24,3 @@ pub fn list(decoder: Decoder(List(v))) -> Zero(List(v)) {
 pub fn option(decoder: Decoder(v)) -> Zero(Option(v)) {
   new(None, decoder.map(decoder, Some))
 }
-// pub type Zero(v) =
-//   #(v, Option(Report(Error)))
-
-// pub fn new(
-//   zero: v,
-//   decoder: Decoder(v),
-// ) -> fn(Dynamic) -> #(v, Option(Report(Error))) {
-//   fn(dynamic) {
-//     case decoder(dynamic) {
-//       Error(report) -> #(zero, Some(report))
-//       Ok(value) -> #(value, None)
-//     }
-//   }
-// }
-
-// pub fn string(decoder: decoder.Decoder(String)) -> fn(Dynamic) -> Zero(String) {
-//   new("", decoder)
-// }
-
-// pub fn bool(decoder: Decoder(Bool)) -> fn(Dynamic) -> Zero(Bool) {
-//   new(False, decoder)
-// }
-
-// pub fn list(decoder: Decoder(List(v))) -> fn(Dynamic) -> Zero(List(v)) {
-//   new([], decoder)
-// }
-
-// pub fn option(decoder: Decoder(Option(v))) -> fn(Dynamic) -> Zero(Option(v)) {
-//   new(None, decoder)
-// }

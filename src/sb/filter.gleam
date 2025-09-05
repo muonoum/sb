@@ -74,7 +74,7 @@ pub fn evaluate(value: Value, filter: Filter) -> Result(Value, Report(Error)) {
 }
 
 pub fn decoder(filters: custom.Filters) -> Props(Filter) {
-  use name <- props.required("kind", decoder.from(decode.string))
+  use name <- props.get("kind", decoder.from(decode.string))
   use <- extra.return(props.error_context(error.BadKind(name)))
 
   use <- result.lazy_unwrap({
@@ -101,7 +101,7 @@ fn succeed_decoder() -> Props(Filter) {
 fn fail_decoder() -> Props(Filter) {
   use <- state.do(props.check_keys(fail_keys))
 
-  use error_message <- props.required("error-message", {
+  use error_message <- props.get("error-message", {
     decoder.from(decode.string)
   })
 
@@ -110,9 +110,9 @@ fn fail_decoder() -> Props(Filter) {
 
 fn expect_decoder() -> Props(Filter) {
   use <- state.do(props.check_keys(expect_keys))
-  use value <- props.required("value", decoder.from(value.decoder()))
+  use value <- props.get("value", decoder.from(value.decoder()))
 
-  use error_message <- props.zero("error-message", {
+  use error_message <- props.try("error-message", {
     zero.option(decoder.from(decode.string))
   })
 
