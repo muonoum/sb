@@ -1,4 +1,5 @@
 import extra/state
+import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/float
 import gleam/int
@@ -69,7 +70,19 @@ pub fn evaluate(value: Value, filter: Filter) -> Result(Value, Report(Error)) {
           |> report.error_context(error.Expected(expected))
       }
 
-    RegexMatch(pattern: _, error_message: _) -> todo as "evaluate regex match"
+    RegexMatch(pattern:, error_message:) ->
+      case value {
+        value.String(string) ->
+          case regexp.check(pattern, string), error_message {
+            True, _error_message -> Ok(value)
+            False, None ->
+              report.error(error.Message("TODO -- default error message"))
+            False, Some(error_message) ->
+              report.error(error.Message(error_message))
+          }
+
+        value -> report.error(error.BadValue(value))
+      }
 
     RegexReplace(pattern: _, replacements: _, error_message: _) ->
       todo as "evaluate regex replace"
@@ -160,13 +173,7 @@ fn regex_match_decoder() -> Props(Filter) {
     zero.bool(decoder.from(decode.bool))
   })
 
-  use pattern <- props.get("pattern", fn(dynamic) {
-    use string <- result.try(decoder.run(dynamic, decode.string))
-
-    regexp.Options(case_insensitive:, multi_line: False)
-    |> regexp.compile(string, _)
-    |> report.map_error(error.RegexError)
-  })
+  use pattern <- props.get("pattern", regex_decoder(case_insensitive))
 
   use error_message <- props.try("error-message", {
     zero.option(decoder.from(decode.string))
@@ -176,7 +183,21 @@ fn regex_match_decoder() -> Props(Filter) {
 }
 
 fn regex_replace_decoder() -> Props(Filter) {
-  todo as "regex replace decoder"
+  use case_insensitive <- props.try("case-insensitive", {
+    zero.bool(decoder.from(decode.bool))
+  })
+
+  use pattern <- props.get("pattern", regex_decoder(case_insensitive))
+
+  use replacements <- props.get("replacements", {
+    decoder.from(decode.list(decode.string))
+  })
+
+  use error_message <- props.try("error-message", {
+    zero.option(decoder.from(decode.string))
+  })
+
+  state.succeed(RegexReplace(pattern:, replacements:, error_message:))
 }
 
 fn parse_integer_decoder() -> Props(Filter) {
@@ -185,4 +206,16 @@ fn parse_integer_decoder() -> Props(Filter) {
 
 fn parse_float_decoder() -> Props(Filter) {
   state.succeed(ParseFloat)
+}
+
+fn regex_decoder(
+  case_insensitive: Bool,
+) -> fn(Dynamic) -> Result(Regexp, Report(Error)) {
+  fn(dynamic) {
+    use string <- result.try(decoder.run(dynamic, decode.string))
+
+    regexp.Options(case_insensitive:, multi_line: False)
+    |> regexp.compile(string, _)
+    |> report.map_error(error.RegexError)
+  }
 }
