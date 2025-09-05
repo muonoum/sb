@@ -105,8 +105,7 @@ pub fn decoder(dynamic: Dynamic) -> Result(Condition, Report(Error)) {
 }
 
 pub fn zero_decoder() -> Zero(Condition) {
-  use dynamic <- zero.new(false())
-  decoder(dynamic)
+  zero.lazy(false, decoder)
 }
 
 fn kind_decoder() -> Props(Condition) {

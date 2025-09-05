@@ -98,7 +98,7 @@ pub fn try(name: String, zero: Zero(a), then: fn(a) -> Props(b)) -> Props(b) {
   use dict <- get_dict
 
   let result = case dict.get(dict, name) {
-    Error(Nil) -> Ok(zero.value)
+    Error(Nil) -> Ok(zero.value(zero))
 
     Ok(dynamic) ->
       zero.decoder(dynamic)

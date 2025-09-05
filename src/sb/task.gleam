@@ -122,7 +122,7 @@ pub fn decoder(fields: custom.Fields, filters: custom.Filters) -> Props(Task) {
   })
 
   use id <- props.try("id", {
-    zero.new(make_id(category, name), decoder.from(decode.string))
+    zero.lazy(make_id(category, name), decoder.from(decode.string))
   })
 
   use summary <- props.try("summary", {
@@ -165,7 +165,8 @@ pub fn decoder(fields: custom.Fields, filters: custom.Filters) -> Props(Task) {
 
 const valid_id = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 
-fn make_id(category: List(String), name: String) -> String {
+fn make_id(category: List(String), name: String) -> fn() -> String {
+  use <- extra.identity
   let category = string.join(list.map(category, into_id), "-")
   string.join([category, into_id(name)], "-")
 }

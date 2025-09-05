@@ -51,7 +51,7 @@ pub fn decoder() -> Props(Access) {
 }
 
 pub fn zero_decoder() -> Zero(Access) {
-  use dynamic <- zero.new(none())
+  use dynamic <- zero.lazy(none)
   use <- extra.return(props.decode(dynamic, _))
   use <- state.do(props.check_keys(access_keys))
   decoder()
