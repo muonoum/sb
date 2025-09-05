@@ -3,6 +3,8 @@ import extra/yaml
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
+import gleam/list
+import gleam/result
 import pprint
 import sb/custom
 import sb/inspect
@@ -10,30 +12,17 @@ import sb/props
 import sb/task
 
 pub fn main() {
-  let dynamic = load_task("test_data/task1.yaml")
+  let task_data = load_task("test_data/task1.yaml")
 
-  let custom_fields =
-    custom.Fields(
-      dict.from_list([
-        #(
-          "mega",
-          dict.from_list([
-            #("kind", dynamic.string("data")),
-            #(
-              "source",
-              dynamic.properties([
-                #(dynamic.string("reference"), dynamic.string("a")),
-              ]),
-            ),
-          ]),
-        ),
-      ]),
-    )
+  let assert Ok(custom_fields) =
+    load_custom("test_data/fields.yaml")
+    |> result.map(dict.from_list)
+    |> result.map(custom.Fields)
 
   let custom_filters = custom.Filters(dict.new())
 
   let decoder = task.decoder(custom_fields, custom_filters)
-  case props.decode(dynamic, decoder) {
+  case props.decode(task_data, decoder) {
     Ok(task) -> inspect.inspect_task(pprint.debug(task))
 
     Error(report) -> {
@@ -47,4 +36,11 @@ fn load_task(path: String) -> Dynamic {
   let assert Ok(dynamic) = yaml.decode_file(path)
   let assert Ok([doc, ..]) = decode.run(dynamic, decode.list(decode.dynamic))
   dots.split(doc)
+}
+
+fn load_custom(path: String) {
+  let assert Ok(dynamic) = yaml.decode_file(path)
+  let assert Ok(docs) = decode.run(dynamic, decode.list(decode.dynamic))
+  use doc <- list.try_map(docs)
+  props.decode(dots.split(doc), custom.decoder())
 }

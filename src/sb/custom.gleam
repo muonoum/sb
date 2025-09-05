@@ -1,5 +1,9 @@
+import extra/state
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
+import gleam/dynamic/decode
+import sb/decoder
+import sb/props
 
 pub type Custom =
   Dict(String, Dynamic)
@@ -24,4 +28,10 @@ pub fn get_filter(
   name: String,
 ) -> Result(Dict(String, Dynamic), Nil) {
   dict.get(filters.custom, name)
+}
+
+pub fn decoder() {
+  use id <- props.get("id", decoder.from(decode.string))
+  use dict <- props.get_dict()
+  state.succeed(#(id, dict.drop(dict, ["id"])))
 }
