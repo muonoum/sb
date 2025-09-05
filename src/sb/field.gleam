@@ -110,8 +110,8 @@ pub fn value(field: Field) -> Option(Result(Value, Report(Error))) {
 }
 
 fn kind_decoder(
-  custom: custom,
-  get: fn(custom, String) -> Result(Dict(String, Dynamic), _),
+  custom: c,
+  get: fn(c, String) -> Result(Dict(String, Dynamic), _),
   then: fn(String) -> Props(v),
 ) -> Props(v) {
   use name <- props.get("kind", decoder.from(decode.string))
