@@ -3,6 +3,7 @@ import gleam/dynamic/decode
 import gleam/float
 import gleam/int
 import gleam/option.{type Option, None, Some}
+import gleam/regexp.{type Regexp}
 import gleam/result
 import sb/decoder
 import sb/error.{type Error}
@@ -11,20 +12,43 @@ import sb/report.{type Report}
 import sb/value.{type Value}
 import sb/zero
 
-const succeed_keys = ["kind"]
+pub const builtin = [
+  "succeed", "fail", "expect", "regex-match", "regex-replace", "parse-integer",
+  "parse-float",
+]
 
-const fail_keys = ["kind", "error-message"]
+const succeed_keys = []
 
-const expect_keys = ["kind", "value", "error-message"]
+const fail_keys = ["error-message"]
 
-const parse_integer_keys = ["kind"]
+const expect_keys = ["value", "error-message"]
 
-const parse_float_keys = ["kind"]
+const regex_match_keys = ["pattern", "case-sensitive", "error-message"]
+
+const regex_replace_keys = [
+  "pattern",
+  "case-sensitive",
+  "replacements",
+  "error-message",
+]
+
+const parse_integer_keys = []
+
+const parse_float_keys = []
 
 pub type Filter {
   Succeed
   Fail(error_message: String)
   Expect(value: Value, error_message: Option(String))
+
+  RegexMatch(pattern: Regexp, error_message: Option(String))
+
+  RegexReplace(
+    pattern: Regexp,
+    replacements: List(String),
+    error_message: Option(String),
+  )
+
   ParseInteger
   ParseFloat
 }
@@ -44,6 +68,11 @@ pub fn evaluate(value: Value, filter: Filter) -> Result(Value, Report(Error)) {
           report.error(error.BadValue(value))
           |> report.error_context(error.Expected(expected))
       }
+
+    RegexMatch(pattern: _, error_message: _) -> todo as "evaluate regex match"
+
+    RegexReplace(pattern: _, replacements: _, error_message: _) ->
+      todo as "evaluate regex replace"
 
     ParseInteger ->
       case value {
@@ -87,6 +116,14 @@ pub fn decoder(
       state.do(check_keys(expect_keys), expect_decoder)
       |> props.error_context(error.BadKind(name))
 
+    "regex-match" ->
+      state.do(check_keys(regex_match_keys), regex_match_decoder)
+      |> props.error_context(error.BadKind(name))
+
+    "regex-replace" ->
+      state.do(check_keys(regex_replace_keys), regex_replace_decoder)
+      |> props.error_context(error.BadKind(name))
+
     "parse-integer" ->
       state.do(check_keys(parse_integer_keys), parse_integer_decoder)
       |> props.error_context(error.BadKind(name))
@@ -116,6 +153,30 @@ fn expect_decoder() -> Props(Filter) {
   })
 
   state.succeed(Expect(value:, error_message:))
+}
+
+fn regex_match_decoder() -> Props(Filter) {
+  use case_insensitive <- props.try("case-insensitive", {
+    zero.bool(decoder.from(decode.bool))
+  })
+
+  use pattern <- props.get("pattern", fn(dynamic) {
+    use string <- result.try(decoder.run(dynamic, decode.string))
+
+    regexp.Options(case_insensitive:, multi_line: False)
+    |> regexp.compile(string, _)
+    |> report.map_error(error.RegexError)
+  })
+
+  use error_message <- props.try("error-message", {
+    zero.option(decoder.from(decode.string))
+  })
+
+  state.succeed(RegexMatch(pattern:, error_message:))
+}
+
+fn regex_replace_decoder() -> Props(Filter) {
+  todo as "regex replace decoder"
 }
 
 fn parse_integer_decoder() -> Props(Filter) {

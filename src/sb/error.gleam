@@ -2,6 +2,7 @@ import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic/decode
 import gleam/json
+import gleam/regexp
 import gleam/set.{type Set}
 import sb/parser
 import sb/report.{type Report}
@@ -31,6 +32,7 @@ pub type Error {
 
   DecodeError(List(decode.DecodeError))
   JsonError(json.DecodeError)
+  RegexError(regexp.CompileError)
   TextError(parser.Message(String))
 }
 

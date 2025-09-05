@@ -18,6 +18,10 @@ import sb/source.{type Source}
 import sb/value.{type Value}
 import sb/zero
 
+pub const builtin = [
+  "data", "markdown", "text", "textarea", "radio", "checkbox", "select",
+]
+
 pub const data_keys = ["source"]
 
 pub const text_keys = ["default", "placeholder"]
