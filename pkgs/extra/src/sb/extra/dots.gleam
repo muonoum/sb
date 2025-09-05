@@ -4,11 +4,11 @@ import gleam/dynamic/decode
 import gleam/list
 import gleam/pair
 import gleam/string
-import sb/extra
+import sb/extra/dynamic as dynamic_extra
 
 pub fn split(data: Dynamic) -> Dynamic {
   case decode_list(data) {
-    Ok(values) -> extra.dynamic_from(list.map(values, split))
+    Ok(values) -> dynamic_extra.from(list.map(values, split))
 
     Error(..) ->
       case decode_dict(data) {
@@ -19,7 +19,7 @@ pub fn split(data: Dynamic) -> Dynamic {
           |> list.map(split_node)
           |> list.filter_map(decode_dict)
           |> list.fold(dict.new(), merge_dicts)
-          |> extra.dynamic_from
+          |> dynamic_extra.from
       }
   }
 }
@@ -42,7 +42,7 @@ fn merge_dicts(
 ) -> Dict(String, Dynamic) {
   use a, b <- dict.combine(a, b)
   case decode_dict(a), decode_dict(b) {
-    Ok(a), Ok(b) -> extra.dynamic_from(merge_dicts(a, b))
+    Ok(a), Ok(b) -> dynamic_extra.from(merge_dicts(a, b))
     _other, _wise -> b
   }
 }
@@ -51,5 +51,5 @@ fn split_node(node: #(String, Dynamic)) -> Dynamic {
   let #(key, value) = pair.map_second(node, split)
   let list = list.reverse(string.split(key, on: "."))
   use value, key <- list.fold(list, value)
-  extra.dynamic_from(dict.from_list([#(key, value)]))
+  dynamic_extra.from(dict.from_list([#(key, value)]))
 }

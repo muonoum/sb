@@ -12,7 +12,7 @@ import sb/forms/task
 import sb/inspect
 
 pub fn main() {
-  let task_data = load_task("test_data/task1.yaml")
+  let task_data = load_document("test_data/task1.yaml")
 
   let assert Ok(custom_fields) =
     load_custom("test_data/fields.yaml")
@@ -32,7 +32,7 @@ pub fn main() {
   }
 }
 
-fn load_task(path: String) -> Dynamic {
+fn load_document(path: String) -> Dynamic {
   let assert Ok(dynamic) = yaml.decode_file(path)
   let assert Ok([doc, ..]) = decode.run(dynamic, decode.list(decode.dynamic))
   dots.split(doc)
