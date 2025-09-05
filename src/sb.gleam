@@ -17,17 +17,15 @@ import sb/task.{type Task}
 import sb/value
 
 pub fn main() -> Nil {
-  let task = {
+  let assert Ok(task) = {
     let assert Ok(dynamic) = yaml.decode_file("test_data/task2.yaml")
     let assert Ok([doc, ..]) = decode.run(dynamic, decode.list(decode.dynamic))
 
-    let assert Ok(task) =
-      props.decode(
-        dots.split(doc),
-        task.decoder(custom.Fields(dict.new()), custom.Filters(dict.new())),
-      )
-
-    task
+    dots.split(doc)
+    |> props.decode(task.decoder(
+      custom.Fields(dict.new()),
+      custom.Filters(dict.new()),
+    ))
   }
 
   let search = dict.new()
