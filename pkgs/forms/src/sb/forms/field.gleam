@@ -107,6 +107,7 @@ fn kind_decoder(
 
 pub fn decoder(
   fields: custom.Fields,
+  sources: custom.Sources,
   filters: custom.Filters,
 ) -> Props(#(String, Field)) {
   use id <- props.get("id", text.id_decoder)
@@ -114,7 +115,7 @@ pub fn decoder(
 
   use kind <- state.with({
     use name <- kind_decoder(fields, custom.get_field)
-    use kind_keys <- kind.decoder(name)
+    use kind_keys <- kind.decoder(name, sources)
     props.check_keys(list.append(field_keys, kind_keys))
   })
 

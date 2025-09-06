@@ -8,6 +8,7 @@ import sb/extra/report.{type Report}
 import sb/extra/reset.{type Reset}
 import sb/extra/state
 import sb/forms/choice.{type Choice}
+import sb/forms/custom
 import sb/forms/decoder
 import sb/forms/error.{type Error}
 import sb/forms/handlers.{type Handlers}
@@ -154,6 +155,7 @@ pub fn value(kind: Kind) -> Option(Result(Value, Report(Error))) {
 
 pub fn decoder(
   name: String,
+  _sources: custom.Sources,
   check_keys: fn(List(String)) -> Props(Nil),
 ) -> Props(Kind) {
   case name {

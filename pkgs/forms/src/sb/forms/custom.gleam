@@ -12,6 +12,10 @@ pub type Fields {
   Fields(custom: Dict(String, Custom))
 }
 
+pub type Sources {
+  Sources(custom: Dict(String, Custom))
+}
+
 pub type Filters {
   Filters(custom: Dict(String, Custom))
 }
@@ -21,6 +25,13 @@ pub fn get_field(
   name: String,
 ) -> Result(Dict(String, Dynamic), Nil) {
   dict.get(fields.custom, name)
+}
+
+pub fn get_source(
+  sources: Sources,
+  name: String,
+) -> Result(Dict(String, Dynamic), Nil) {
+  dict.get(sources.custom, name)
 }
 
 pub fn get_filter(

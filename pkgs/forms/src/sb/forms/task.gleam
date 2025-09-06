@@ -108,7 +108,11 @@ pub fn update(
   Ok(Task(..task, fields: dict.insert(task.fields, id, field)))
 }
 
-pub fn decoder(fields: custom.Fields, filters: custom.Filters) -> Props(Task) {
+pub fn decoder(
+  fields: custom.Fields,
+  sources: custom.Sources,
+  filters: custom.Filters,
+) -> Props(Task) {
   use <- state.do(props.check_keys(task_keys))
 
   use name <- props.get("name", decoder.from(decode.string))
@@ -141,7 +145,7 @@ pub fn decoder(fields: custom.Fields, filters: custom.Filters) -> Props(Task) {
     use list <- result.map(decoder.run(dynamic, decode.list(decode.dynamic)))
     use <- extra.return(pair.second)
     use seen, dynamic <- list.map_fold(list, set.new())
-    props.decode(dynamic, field.decoder(fields, filters))
+    props.decode(dynamic, field.decoder(fields, sources, filters))
     |> error.try_duplicate_ids(seen)
   })
 

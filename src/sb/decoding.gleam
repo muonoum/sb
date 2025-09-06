@@ -12,18 +12,26 @@ import sb/forms/task
 import sb/inspect
 
 pub fn main() {
-  let task_data = load_document("test_data/task1.yaml")
+  let task_data = load_document("test_data/task3.yaml")
 
   let assert Ok(custom_fields) =
     load_custom("test_data/fields.yaml")
     |> result.map(dict.from_list)
     |> result.map(custom.Fields)
 
+  let custom_sources = custom.Sources(dict.new())
   let custom_filters = custom.Filters(dict.new())
 
-  let decoder = task.decoder(custom_fields, custom_filters)
+  let decoder = task.decoder(custom_fields, custom_sources, custom_filters)
   case props.decode(task_data, decoder) {
-    Ok(task) -> inspect.inspect_task(pprint.debug(task))
+    Ok(task) -> {
+      {
+        use _id, field <- dict.map_values(task.fields)
+        pprint.debug(field.kind)
+      }
+
+      Nil
+    }
 
     Error(report) -> {
       pprint.debug(report)
