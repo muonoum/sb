@@ -155,13 +155,15 @@ pub fn value(kind: Kind) -> Option(Result(Value, Report(Error))) {
 
 pub fn decoder(
   name: String,
-  _sources: custom.Sources,
+  sources: custom.Sources,
   check_keys: fn(List(String)) -> Props(Nil),
 ) -> Props(Kind) {
   case name {
-    "data" ->
-      state.do(check_keys(data_keys), data_decoder)
+    "data" -> {
+      use <- state.do(check_keys(data_keys))
+      data_decoder(sources)
       |> props.error_context(error.BadKind(name))
+    }
 
     "text" ->
       state.do(check_keys(text_keys), text_decoder)
@@ -171,26 +173,32 @@ pub fn decoder(
       state.do(check_keys(textarea_keys), textarea_decoder)
       |> props.error_context(error.BadKind(name))
 
-    "radio" ->
-      state.do(check_keys(radio_keys), radio_decoder)
+    "radio" -> {
+      use <- state.do(check_keys(radio_keys))
+      radio_decoder(sources)
       |> props.error_context(error.BadKind(name))
+    }
 
-    "checkbox" ->
-      state.do(check_keys(checkbox_keys), checkbox_decoder)
+    "checkbox" -> {
+      use <- state.do(check_keys(checkbox_keys))
+      checkbox_decoder(sources)
       |> props.error_context(error.BadKind(name))
+    }
 
-    "select" ->
-      state.do(check_keys(select_keys), select_decoder)
+    "select" -> {
+      use <- state.do(check_keys(select_keys))
+      select_decoder(sources)
       |> props.error_context(error.BadKind(name))
+    }
 
     unknown -> state.fail(report.new(error.UnknownKind(unknown)))
   }
 }
 
-fn data_decoder() -> Props(Kind) {
+fn data_decoder(sources: custom.Sources) -> Props(Kind) {
   use source <- props.get("source", {
     props.decode(_, {
-      state.map(source.decoder(), Ok)
+      state.map(source.decoder(sources), Ok)
       |> state.attempt(state.catch_error)
       |> state.map(reset.try_new(_, source.refs))
     })
@@ -207,19 +215,19 @@ fn textarea_decoder() -> Props(Kind) {
   state.succeed(Textarea(""))
 }
 
-fn radio_decoder() -> Props(Kind) {
-  use options <- props.get("source", props.decode(_, options.decoder()))
+fn radio_decoder(sources: custom.Sources) -> Props(Kind) {
+  use options <- props.get("source", props.decode(_, options.decoder(sources)))
   state.succeed(Select(None, options:))
 }
 
-fn checkbox_decoder() -> Props(Kind) {
-  use options <- props.get("source", props.decode(_, options.decoder()))
+fn checkbox_decoder(sources: custom.Sources) -> Props(Kind) {
+  use options <- props.get("source", props.decode(_, options.decoder(sources)))
   state.succeed(MultiSelect([], options:))
 }
 
-fn select_decoder() -> Props(Kind) {
+fn select_decoder(sources: custom.Sources) -> Props(Kind) {
   use multiple <- props.try("multiple", zero.bool(decoder.from(decode.bool)))
-  use options <- props.get("source", props.decode(_, options.decoder()))
+  use options <- props.get("source", props.decode(_, options.decoder(sources)))
   use <- bool.guard(multiple, state.succeed(MultiSelect([], options:)))
   state.succeed(Select(None, options:))
 }

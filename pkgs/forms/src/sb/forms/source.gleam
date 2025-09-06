@@ -14,6 +14,7 @@ import gleam/uri
 import sb/extra
 import sb/extra/report.{type Report}
 import sb/extra/state
+import sb/forms/custom
 import sb/forms/decoder
 import sb/forms/error.{type Error}
 import sb/forms/handlers.{type Handlers}
@@ -188,7 +189,7 @@ fn parse_json(bits: BitArray, decoder: Decoder(v)) -> Result(v, Report(Error)) {
   |> report.map_error(error.JsonError)
 }
 
-pub fn decoder() -> Props(Source) {
+pub fn decoder(sources: custom.Sources) -> Props(Source) {
   use dict <- props.get_dict
 
   case dict.to_list(dict) {
@@ -196,15 +197,23 @@ pub fn decoder() -> Props(Source) {
     [#("reference", dynamic)] -> state.from_result(decode_reference(dynamic))
     [#("template", dynamic)] -> state.from_result(decode_template(dynamic))
     [#("command", dynamic)] -> state.from_result(decode_command(dynamic))
-    [#("fetch", dynamic)] -> state.from_result(decode_fetch(dynamic))
+    [#("fetch", dynamic)] -> state.from_result(decode_fetch(dynamic, sources))
+    [#("kind", _dynamic)] -> kind_decoder(sources)
     [#(name, _)] -> state.from_result(report.error(error.UnknownKind(name)))
     // TODO: custom sources
-    _else -> kind_decoder()
+    _else -> kind_decoder(sources)
   }
 }
 
-fn kind_decoder() -> Props(Source) {
+fn kind_decoder(sources: custom.Sources) -> Props(Source) {
   use kind <- props.get("kind", decoder.from(decode.string))
+
+  use <- result.lazy_unwrap({
+    use dict <- result.map(custom.get_source(sources, echo kind) |> echo)
+    use <- state.do(props.merge(dict))
+    kind_decoder(sources)
+  })
+
   let context = report.context(_, error.BadKind(kind))
   use <- extra.return(state.map_error(_, context))
 
@@ -213,7 +222,12 @@ fn kind_decoder() -> Props(Source) {
     "reference" -> state.do(props.drop(["kind"]), reference_decoder)
     "template" -> state.do(props.drop(["kind"]), template_decoder)
     "command" -> state.do(props.drop(["kind"]), command_decoder)
-    "fetch" -> state.do(props.drop(["kind"]), fetch_decoder)
+
+    "fetch" -> {
+      use <- state.do(props.drop(["kind"]))
+      fetch_decoder(sources)
+    }
+
     name -> state.fail(report.new(error.UnknownKind(name)))
   }
 }
@@ -226,7 +240,7 @@ fn decode_literal(dynamic: Dynamic) -> Result(Source, Report(Error)) {
 
 fn literal_decoder() -> Props(Source) {
   use <- state.do(props.check_keys(literal_keys))
-  use value <- props.get("value", decoder.from(value.decoder()))
+  use value <- props.get("literal", decoder.from(value.decoder()))
   state.succeed(Literal(value))
 }
 
@@ -238,7 +252,7 @@ fn decode_reference(dynamic: Dynamic) -> Result(Source, Report(Error)) {
 
 fn reference_decoder() -> Props(Source) {
   use <- state.do(props.check_keys(reference_keys))
-  use id <- props.get("id", text.id_decoder)
+  use id <- props.get("reference", text.id_decoder)
   state.succeed(Reference(id))
 }
 
@@ -250,7 +264,7 @@ fn decode_template(dynamic: Dynamic) -> Result(Source, Report(Error)) {
 
 fn template_decoder() -> Props(Source) {
   use <- state.do(props.check_keys(template_keys))
-  use text <- props.get("text", text.decoder)
+  use text <- props.get("template", text.decoder)
   state.succeed(Template(text))
 }
 
@@ -266,20 +280,23 @@ fn command_decoder() -> Props(Source) {
   state.succeed(Command(command))
 }
 
-fn decode_fetch(dynamic: Dynamic) -> Result(Source, Report(Error)) {
+fn decode_fetch(
+  dynamic: Dynamic,
+  sources: custom.Sources,
+) -> Result(Source, Report(Error)) {
   use <- result.lazy_or({
     use uri <- result.map(text.decoder(dynamic))
     Fetch(method: http.Get, uri:, headers: [], body: None)
   })
 
-  props.decode(dynamic, fetch_decoder())
+  props.decode(dynamic, fetch_decoder(sources))
   |> report.error_context(error.BadKind("fetch"))
 }
 
-fn fetch_decoder() -> Props(Source) {
+fn fetch_decoder(sources: custom.Sources) -> Props(Source) {
   use <- state.do(props.check_keys(fetch_keys))
   use uri <- props.get("url", text.decoder)
-  use body <- props.try("body", zero.option(props.decode(_, decoder())))
+  use body <- props.try("body", zero.option(props.decode(_, decoder(sources))))
 
   use method <- props.try("method", {
     use dynamic <- zero.new(http.Get)

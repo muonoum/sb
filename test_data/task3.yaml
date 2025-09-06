@@ -1,0 +1,8 @@
+name: Task
+category: [Tests]
+
+fields:
+  - id: a
+    kind: select
+    source:
+      kind: mega

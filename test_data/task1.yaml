@@ -4,15 +4,22 @@ runners.users: [alex]
 runners.groups: [admins]
 
 fields:
+  # - id: a
+  #   kind: select
+  #   source.literal: [a, b, c]
+
+  # - id: b
+  #   kind: mega
+
+  # - id: c
+  #   kind: select
+  #   source.fetch:
+  #     url: asdf
+  #     body.literal: 10
+
   - id: a
-    kind: select
-    source.literal: [a, b, c]
+    kind: radio
+    description: 10
+    label: null
 
-  - id: b
-    kind: mega
 
-  - id: c
-    kind: select
-    source.fetch:
-      url: asdf
-      body.literal: 10

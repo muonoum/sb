@@ -9,6 +9,7 @@ import sb/extra/report.{type Report}
 import sb/extra/reset.{type Reset}
 import sb/extra/state
 import sb/forms/choice.{type Choice}
+import sb/forms/custom
 import sb/forms/decoder
 import sb/forms/error.{type Error}
 import sb/forms/handlers.{type Handlers}
@@ -117,30 +118,30 @@ fn select_object(
   Ok(choice.new(value.String(have), value))
 }
 
-pub fn decoder() -> Props(Options) {
+pub fn decoder(sources: custom.Sources) -> Props(Options) {
   use dict <- props.get_dict
 
   case dict.to_list(dict) {
     [#("groups", dynamic)] ->
       decoder.run(dynamic, decode.list(decode.dynamic))
-      |> result.try(list.try_map(_, props.decode(_, group_decoder())))
+      |> result.try(list.try_map(_, props.decode(_, group_decoder(sources))))
       |> result.map(SourceGroups)
       |> state.from_result
 
     _else ->
-      state.map(source.decoder(), Ok)
+      state.map(source.decoder(sources), Ok)
       |> state.attempt(state.catch_error)
       |> state.map(reset.try_new(_, source.refs))
       |> state.map(SingleSource)
   }
 }
 
-fn group_decoder() -> Props(Group) {
+fn group_decoder(sources: custom.Sources) -> Props(Group) {
   use label <- props.get("label", decoder.from(decode.string))
 
   use source <- props.get("source", {
     props.decode(_, {
-      state.map(source.decoder(), Ok)
+      state.map(source.decoder(sources), Ok)
       |> state.attempt(state.catch_error)
       |> state.map(reset.try_new(_, source.refs))
     })

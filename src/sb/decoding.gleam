@@ -19,7 +19,11 @@ pub fn main() {
     |> result.map(dict.from_list)
     |> result.map(custom.Fields)
 
-  let custom_sources = custom.Sources(dict.new())
+  let assert Ok(custom_sources) =
+    load_custom("test_data/sources.yaml")
+    |> result.map(dict.from_list)
+    |> result.map(custom.Sources)
+
   let custom_filters = custom.Filters(dict.new())
 
   let decoder = task.decoder(custom_fields, custom_sources, custom_filters)
