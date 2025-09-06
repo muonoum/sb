@@ -46,8 +46,6 @@ pub fn get_filter(
   dict.get(filters.custom, name)
 }
 
-// TODO: Duplicate ids
-
 pub fn decode(dynamic: Dynamic) -> Result(Dict(String, Custom), Report(Error)) {
   decoder.run(dynamic, decode.dict(decode.string, custom_decoder()))
 }
@@ -72,7 +70,8 @@ pub fn kind_decoder(
   use <- result.lazy_unwrap({
     use dict <- result.map(get_custom(custom, name))
     use <- state.do(props.merge(dict))
-    kind_decoder(set.insert(kinds, name), custom, get_custom, then)
+    set.insert(kinds, name)
+    |> kind_decoder(custom, get_custom, then)
   })
 
   then(kinds, name)

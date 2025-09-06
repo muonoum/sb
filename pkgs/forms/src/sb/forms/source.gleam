@@ -198,41 +198,37 @@ fn kinds_decoder(kinds: Set(String), sources: custom.Sources) -> Props(Source) {
   use dict <- props.get_dict
 
   case dict.to_list(dict) {
-    [#("literal", dynamic)] -> state.from_result(decode_literal(dynamic))
-    [#("reference", dynamic)] -> state.from_result(decode_reference(dynamic))
-    [#("template", dynamic)] -> state.from_result(decode_template(dynamic))
-    [#("command", dynamic)] -> state.from_result(decode_command(dynamic))
-    [#("fetch", dynamic)] -> state.from_result(decode_fetch(dynamic, sources))
+    [#("literal", dynamic)] -> short_literal_decoder(dynamic)
+    [#("reference", dynamic)] -> short_reference_decoder(dynamic)
+    [#("template", dynamic)] -> short_template_decoder(dynamic)
+    [#("command", dynamic)] -> short_command_decoder(dynamic)
+    [#("fetch", dynamic)] -> short_fetch_decoder(dynamic, sources)
     [#("kind", _dynamic)] -> kind_decoder(kinds, sources)
-    [#(name, _)] -> state.from_result(report.error(error.UnknownKind(name)))
+    [#(name, _)] -> state.fail(report.new(error.UnknownKind(name)))
     _else -> kind_decoder(kinds, sources)
   }
 }
 
 fn kind_decoder(kinds: Set(String), sources: custom.Sources) -> Props(Source) {
   use kinds, name <- custom.kind_decoder(kinds, sources, custom.get_source)
-  let context = report.context(_, error.BadKind(name))
-  use <- extra.return(state.map_error(_, context))
+  use <- extra.return(props.error_context(error.BadKind(name)))
+  use <- state.do(props.drop(["kind"]))
 
   case name {
-    "literal" -> state.do(props.drop(["kind"]), literal_decoder)
-    "reference" -> state.do(props.drop(["kind"]), reference_decoder)
-    "template" -> state.do(props.drop(["kind"]), template_decoder)
-    "command" -> state.do(props.drop(["kind"]), command_decoder)
-
-    "fetch" -> {
-      use <- state.do(props.drop(["kind"]))
-      fetch_decoder(kinds, sources)
-    }
-
+    "literal" -> literal_decoder()
+    "reference" -> reference_decoder()
+    "template" -> template_decoder()
+    "command" -> command_decoder()
+    "fetch" -> fetch_decoder(kinds, sources)
     name -> state.fail(report.new(error.UnknownKind(name)))
   }
 }
 
-fn decode_literal(dynamic: Dynamic) -> Result(Source, Report(Error)) {
+fn short_literal_decoder(dynamic: Dynamic) -> Props(Source) {
   decoder.run(dynamic, value.decoder())
   |> report.error_context(error.BadKind("literal"))
   |> result.map(Literal)
+  |> state.from_result
 }
 
 fn literal_decoder() -> Props(Source) {
@@ -241,10 +237,11 @@ fn literal_decoder() -> Props(Source) {
   state.succeed(Literal(value))
 }
 
-fn decode_reference(dynamic: Dynamic) -> Result(Source, Report(Error)) {
+fn short_reference_decoder(dynamic: Dynamic) -> Props(Source) {
   text.id_decoder(dynamic)
   |> report.error_context(error.BadKind("reference"))
   |> result.map(Reference)
+  |> state.from_result
 }
 
 fn reference_decoder() -> Props(Source) {
@@ -253,10 +250,11 @@ fn reference_decoder() -> Props(Source) {
   state.succeed(Reference(id))
 }
 
-fn decode_template(dynamic: Dynamic) -> Result(Source, Report(Error)) {
+fn short_template_decoder(dynamic: Dynamic) -> Props(Source) {
   text.decoder(dynamic)
   |> report.error_context(error.BadKind("template"))
   |> result.map(Template)
+  |> state.from_result
 }
 
 fn template_decoder() -> Props(Source) {
@@ -265,10 +263,11 @@ fn template_decoder() -> Props(Source) {
   state.succeed(Template(text))
 }
 
-fn decode_command(dynamic: Dynamic) -> Result(Source, Report(Error)) {
+fn short_command_decoder(dynamic: Dynamic) -> Props(Source) {
   text.decoder(dynamic)
   |> report.error_context(error.BadKind("command"))
   |> result.map(Command)
+  |> state.from_result
 }
 
 fn command_decoder() -> Props(Source) {
@@ -277,10 +276,12 @@ fn command_decoder() -> Props(Source) {
   state.succeed(Command(command))
 }
 
-fn decode_fetch(
+fn short_fetch_decoder(
   dynamic: Dynamic,
   sources: custom.Sources,
-) -> Result(Source, Report(Error)) {
+) -> Props(Source) {
+  use <- extra.return(state.from_result)
+
   use <- result.lazy_or({
     use uri <- result.map(text.decoder(dynamic))
     Fetch(method: http.Get, uri:, headers: [], body: None)
