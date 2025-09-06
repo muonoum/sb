@@ -13,11 +13,44 @@
 ### kind
 
 #### text
+
+```yaml
+kind: text
+placeholder: string # optional
+default: string # optional
+```
+
 #### textarea
+
+```yaml
+kind: textarea
+placeholder: string # optional
+default: string # optional
+```
+
 #### data
+
+```yaml
+kind: data
+source: <Source>
+```
+
 #### radio
+
+- `layout` : `“row” | “column”`
+- `source` : `Source`
+
 #### checkbox
+
+- `layout` : `“row” | “column”`
+- `source` : `Source`
+
 #### select
+
+- `placeholder` : `String` *(optional)*
+- `multiple` : `Bool` *(optional)*
+- `default` : `List(String) | String` *(optional)*
+- `source` : `Source`
 
 ## filter
 
@@ -111,4 +144,16 @@ source:
   method: ..
   headers: [..]
   body: <source>
+```
+
+##### kanskje
+
+```yaml
+source:
+  kind: fetch
+  fetch:
+    url: ..
+    method: ..
+    headers: [..]
+    body: <source>
 ```

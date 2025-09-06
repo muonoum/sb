@@ -58,13 +58,14 @@ fn inspect_kind(kind: Kind) -> String {
         option.Some(Ok(value)) -> inspect_value(value)
       }
 
-    kind.Text(string) | kind.Textarea(string) -> ansi.grey("str ") <> string
+    kind.Text(string, ..) | kind.Textarea(string, ..) ->
+      ansi.grey("str ") <> string
 
-    kind.Select(selected, options:) ->
+    kind.Select(choice:, options:, ..) ->
       ansi.grey("select ")
       <> inspect_options(options)
       <> ansi.grey(" ==> ")
-      <> single_selected(selected)
+      <> single_selected(choice)
 
     kind.MultiSelect(selected, options:) ->
       ansi.grey("multiselect ")

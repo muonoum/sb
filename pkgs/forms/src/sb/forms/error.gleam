@@ -1,5 +1,6 @@
 import gleam/bool
 import gleam/dict.{type Dict}
+import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/json
 import gleam/regexp
@@ -36,6 +37,7 @@ pub type Error {
   JsonError(json.DecodeError)
   RegexError(regexp.CompileError)
   TextError(parser.Message(String))
+  YamlError(Dynamic)
 }
 
 pub fn unknown_keys(

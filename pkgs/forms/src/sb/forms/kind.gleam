@@ -36,11 +36,11 @@ pub const checkbox_keys = ["default", "layout", "source"]
 pub const select_keys = ["default", "multiple", "placeholder", "source"]
 
 pub type Kind {
-  Text(String)
-  Textarea(String)
+  Text(string: String, placeholder: Option(String))
+  Textarea(string: String, placeholder: Option(String))
   Data(source: Reset(Result(Source, Report(Error))))
-  Select(Option(Choice), options: Options)
-  MultiSelect(List(Choice), options: Options)
+  Select(choice: Option(Choice), placeholder: Option(String), options: Options)
+  MultiSelect(choice: List(Choice), options: Options)
 }
 
 pub fn reset(kind: Kind, refs: Set(String)) -> Kind {
@@ -48,10 +48,10 @@ pub fn reset(kind: Kind, refs: Set(String)) -> Kind {
     Text(..) | Textarea(..) -> kind
     Data(source:) -> Data(reset.maybe(source, refs))
 
-    Select(selected, options:) -> {
+    Select(choice:, options:, ..) -> {
       let options = options.reset(options, refs)
-      let selected = select_one(selected, options)
-      Select(selected, options:)
+      let choice = select_one(choice, options)
+      Select(..kind, choice:, options:)
     }
 
     MultiSelect(selected, options:) -> {
@@ -100,9 +100,9 @@ pub fn evaluate(
         source.evaluate(source, scope, search:, handlers:)
       })
 
-    Select(selected, options:) ->
+    Select(choice:, options:, placeholder:) ->
       options.evaluate(options, scope, search:, handlers:)
-      |> Select(selected, options: _)
+      |> Select(choice:, options: _, placeholder:)
 
     MultiSelect(selected, options:) ->
       options.evaluate(options, scope, search:, handlers:)
@@ -114,13 +114,13 @@ pub fn update(kind: Kind, value: Value) -> Result(Kind, Report(Error)) {
   case kind, value {
     Data(..), _value -> report.error(error.BadKind("data"))
 
-    Text(..), value.String(string) -> Ok(Text(string))
-    Textarea(..), value.String(string) -> Ok(Textarea(string))
+    Text(..), value.String(string) -> Ok(Text(..kind, string:))
+    Textarea(..), value.String(string) -> Ok(Textarea(..kind, string:))
     Text(..), value | Textarea(..), value -> report.error(error.BadValue(value))
 
-    Select(_selected, options:), key -> {
+    Select(options:, ..), key -> {
       use selected <- result.try(options.select(options, key))
-      Ok(Select(Some(selected), options:))
+      Ok(Select(..kind, choice: Some(selected), options:))
     }
 
     MultiSelect(_selected, options:), value.List(keys) -> {
@@ -134,10 +134,10 @@ pub fn update(kind: Kind, value: Value) -> Result(Kind, Report(Error)) {
 
 pub fn value(kind: Kind) -> Option(Result(Value, Report(Error))) {
   case kind {
-    Text("") | Textarea("") -> None
+    Text("", ..) | Textarea("", ..) -> None
     Select(None, ..) | MultiSelect([], ..) -> None
 
-    Text(string) | Textarea(string) -> Some(Ok(value.String(string)))
+    Text(string:, ..) | Textarea(string:, ..) -> Some(Ok(value.String(string)))
 
     Data(source:) ->
       case reset.unwrap(source) {
@@ -208,26 +208,47 @@ fn data_decoder(sources: custom.Sources) -> Props(Kind) {
 }
 
 fn text_decoder() -> Props(Kind) {
-  state.succeed(Text(""))
+  use placeholder <- props.try("placeholder", {
+    zero.option(decoder.from(decode.string))
+  })
+
+  use string <- props.try("default", zero.string(decoder.from(decode.string)))
+  state.succeed(Text(string:, placeholder:))
 }
 
 fn textarea_decoder() -> Props(Kind) {
-  state.succeed(Textarea(""))
+  use placeholder <- props.try("placeholder", {
+    zero.option(decoder.from(decode.string))
+  })
+
+  use string <- props.try("default", zero.string(decoder.from(decode.string)))
+  state.succeed(Textarea(string:, placeholder:))
 }
 
 fn radio_decoder(sources: custom.Sources) -> Props(Kind) {
+  use placeholder <- props.try("placeholder", {
+    zero.option(decoder.from(decode.string))
+  })
+
+  // TODO: radio
   use options <- props.get("source", props.decode(_, options.decoder(sources)))
-  state.succeed(Select(None, options:))
+  state.succeed(Select(choice: None, placeholder:, options:))
 }
 
 fn checkbox_decoder(sources: custom.Sources) -> Props(Kind) {
   use options <- props.get("source", props.decode(_, options.decoder(sources)))
+
+  // TODO: checkbox
   state.succeed(MultiSelect([], options:))
 }
 
 fn select_decoder(sources: custom.Sources) -> Props(Kind) {
+  use placeholder <- props.try("placeholder", {
+    zero.option(decoder.from(decode.string))
+  })
+
   use multiple <- props.try("multiple", zero.bool(decoder.from(decode.bool)))
   use options <- props.get("source", props.decode(_, options.decoder(sources)))
   use <- bool.guard(multiple, state.succeed(MultiSelect([], options:)))
-  state.succeed(Select(None, options:))
+  state.succeed(Select(choice: None, placeholder:, options:))
 }
