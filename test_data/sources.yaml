@@ -1,7 +1,8 @@
 mega:
-  kind: reference
-  reference: a
----
-mega:
-  kind: reference
-  reference: b
+  kind: fetch
+  url: mega
+  body:
+    kind: kung
+kung:
+  kind: fetch
+  url: kung
