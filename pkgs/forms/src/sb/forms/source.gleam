@@ -191,10 +191,10 @@ fn parse_json(bits: BitArray, decoder: Decoder(v)) -> Result(v, Report(Error)) {
 }
 
 pub fn decoder(sources: custom.Sources) -> Props(Source) {
-  seen_decoder(sources, set.new())
+  kinds_decoder(set.new(), sources)
 }
 
-fn seen_decoder(sources: custom.Sources, kinds: Set(String)) -> Props(Source) {
+fn kinds_decoder(kinds: Set(String), sources: custom.Sources) -> Props(Source) {
   use dict <- props.get_dict
 
   case dict.to_list(dict) {
@@ -222,7 +222,7 @@ fn kind_decoder(kinds: Set(String), sources: custom.Sources) -> Props(Source) {
 
     "fetch" -> {
       use <- state.do(props.drop(["kind"]))
-      fetch_decoder(sources, kinds)
+      fetch_decoder(kinds, sources)
     }
 
     name -> state.fail(report.new(error.UnknownKind(name)))
@@ -286,11 +286,11 @@ fn decode_fetch(
     Fetch(method: http.Get, uri:, headers: [], body: None)
   })
 
-  props.decode(dynamic, fetch_decoder(sources, set.new()))
+  props.decode(dynamic, fetch_decoder(set.new(), sources))
   |> report.error_context(error.BadKind("fetch"))
 }
 
-fn fetch_decoder(sources: custom.Sources, seen: Set(String)) -> Props(Source) {
+fn fetch_decoder(kinds: Set(String), sources: custom.Sources) -> Props(Source) {
   use <- state.do(props.check_keys(fetch_keys))
 
   use method <- props.try("method", {
@@ -310,7 +310,7 @@ fn fetch_decoder(sources: custom.Sources, seen: Set(String)) -> Props(Source) {
   })
 
   use body <- props.try("body", {
-    zero.option(props.decode(_, seen_decoder(sources, seen)))
+    zero.option(props.decode(_, kinds_decoder(kinds, sources)))
   })
 
   state.succeed(Fetch(method:, uri:, headers:, body:))
