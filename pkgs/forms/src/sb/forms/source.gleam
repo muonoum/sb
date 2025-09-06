@@ -1,6 +1,5 @@
 import gleam/bytes_tree.{type BytesTree}
 import gleam/dict
-import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type Decoder}
 import gleam/http
 import gleam/http/request.{type Request}
@@ -198,11 +197,45 @@ fn kinds_decoder(kinds: Set(String), sources: custom.Sources) -> Props(Source) {
   use dict <- props.get_dict
 
   case dict.to_list(dict) {
-    [#("literal", dynamic)] -> short_literal_decoder(dynamic)
-    [#("reference", dynamic)] -> short_reference_decoder(dynamic)
-    [#("template", dynamic)] -> short_template_decoder(dynamic)
-    [#("command", dynamic)] -> short_command_decoder(dynamic)
-    [#("fetch", dynamic)] -> short_fetch_decoder(dynamic, sources)
+    [#("literal", dynamic)] ->
+      state.from_result(
+        decoder.run(dynamic, value.decoder())
+        |> report.error_context(error.BadKind("literal"))
+        |> result.map(Literal),
+      )
+
+    [#("reference", dynamic)] ->
+      state.from_result(
+        text.id_decoder(dynamic)
+        |> report.error_context(error.BadKind("reference"))
+        |> result.map(Reference),
+      )
+
+    [#("template", dynamic)] ->
+      state.from_result(
+        text.decoder(dynamic)
+        |> report.error_context(error.BadKind("template"))
+        |> result.map(Template),
+      )
+
+    [#("command", dynamic)] ->
+      state.from_result(
+        text.decoder(dynamic)
+        |> report.error_context(error.BadKind("command"))
+        |> result.map(Command),
+      )
+
+    [#("fetch", dynamic)] ->
+      state.from_result({
+        use <- result.lazy_or({
+          use uri <- result.map(text.decoder(dynamic))
+          Fetch(method: http.Get, uri:, headers: [], body: None)
+        })
+
+        props.decode(dynamic, fetch_decoder(set.new(), sources))
+        |> report.error_context(error.BadKind("fetch"))
+      })
+
     [#("kind", _dynamic)] -> kind_decoder(kinds, sources)
     [#(name, _)] -> state.fail(report.new(error.UnknownKind(name)))
     _else -> kind_decoder(kinds, sources)
@@ -215,80 +248,33 @@ fn kind_decoder(kinds: Set(String), sources: custom.Sources) -> Props(Source) {
   use <- state.do(props.drop(["kind"]))
 
   case name {
-    "literal" -> literal_decoder()
-    "reference" -> reference_decoder()
-    "template" -> template_decoder()
-    "command" -> command_decoder()
+    "literal" -> {
+      use <- state.do(props.check_keys(literal_keys))
+      use value <- props.get("literal", decoder.from(value.decoder()))
+      state.succeed(Literal(value))
+    }
+
+    "reference" -> {
+      use <- state.do(props.check_keys(reference_keys))
+      use id <- props.get("reference", text.id_decoder)
+      state.succeed(Reference(id))
+    }
+
+    "template" -> {
+      use <- state.do(props.check_keys(template_keys))
+      use text <- props.get("template", text.decoder)
+      state.succeed(Template(text))
+    }
+
+    "command" -> {
+      use <- state.do(props.check_keys(command_keys))
+      use command <- props.get("command", text.decoder)
+      state.succeed(Command(command))
+    }
+
     "fetch" -> fetch_decoder(kinds, sources)
     name -> state.fail(report.new(error.UnknownKind(name)))
   }
-}
-
-fn short_literal_decoder(dynamic: Dynamic) -> Props(Source) {
-  decoder.run(dynamic, value.decoder())
-  |> report.error_context(error.BadKind("literal"))
-  |> result.map(Literal)
-  |> state.from_result
-}
-
-fn literal_decoder() -> Props(Source) {
-  use <- state.do(props.check_keys(literal_keys))
-  use value <- props.get("literal", decoder.from(value.decoder()))
-  state.succeed(Literal(value))
-}
-
-fn short_reference_decoder(dynamic: Dynamic) -> Props(Source) {
-  text.id_decoder(dynamic)
-  |> report.error_context(error.BadKind("reference"))
-  |> result.map(Reference)
-  |> state.from_result
-}
-
-fn reference_decoder() -> Props(Source) {
-  use <- state.do(props.check_keys(reference_keys))
-  use id <- props.get("reference", text.id_decoder)
-  state.succeed(Reference(id))
-}
-
-fn short_template_decoder(dynamic: Dynamic) -> Props(Source) {
-  text.decoder(dynamic)
-  |> report.error_context(error.BadKind("template"))
-  |> result.map(Template)
-  |> state.from_result
-}
-
-fn template_decoder() -> Props(Source) {
-  use <- state.do(props.check_keys(template_keys))
-  use text <- props.get("template", text.decoder)
-  state.succeed(Template(text))
-}
-
-fn short_command_decoder(dynamic: Dynamic) -> Props(Source) {
-  text.decoder(dynamic)
-  |> report.error_context(error.BadKind("command"))
-  |> result.map(Command)
-  |> state.from_result
-}
-
-fn command_decoder() -> Props(Source) {
-  use <- state.do(props.check_keys(command_keys))
-  use command <- props.get("command", text.decoder)
-  state.succeed(Command(command))
-}
-
-fn short_fetch_decoder(
-  dynamic: Dynamic,
-  sources: custom.Sources,
-) -> Props(Source) {
-  use <- extra.return(state.from_result)
-
-  use <- result.lazy_or({
-    use uri <- result.map(text.decoder(dynamic))
-    Fetch(method: http.Get, uri:, headers: [], body: None)
-  })
-
-  props.decode(dynamic, fetch_decoder(set.new(), sources))
-  |> report.error_context(error.BadKind("fetch"))
 }
 
 fn fetch_decoder(kinds: Set(String), sources: custom.Sources) -> Props(Source) {
