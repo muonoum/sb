@@ -271,8 +271,8 @@ fn command_decoder() -> Props(Source) {
 
 fn decode_fetch(dynamic: Dynamic) -> Result(Source, Report(Error)) {
   use <- result.lazy_or({
-    text.decoder(dynamic)
-    |> result.map(Fetch(method: http.Get, uri: _, headers: [], body: None))
+    use uri <- result.map(text.decoder(dynamic))
+    Fetch(method: http.Get, uri:, headers: [], body: None)
   })
 
   props.decode(dynamic, fetch_decoder())
@@ -282,7 +282,7 @@ fn decode_fetch(dynamic: Dynamic) -> Result(Source, Report(Error)) {
 fn fetch_decoder() -> Props(Source) {
   use <- state.do(props.check_keys(fetch_keys))
   use uri <- props.get("url", text.decoder)
-  use body <- props.try("body", { zero.option(props.decode(_, decoder())) })
+  use body <- props.try("body", zero.option(props.decode(_, decoder())))
 
   use method <- props.try("method", {
     use dynamic <- zero.new(http.Get)

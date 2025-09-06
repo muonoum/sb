@@ -10,8 +10,8 @@ import sb/forms/scope.{type Scope}
 import sb/forms/value
 
 import sb/extra/parser.{
-  any, between, choice, drop, end, expect, grapheme, keep, label, many,
-  not_followed_by, one_of, some, string, succeed,
+  type Parser, any, between, choice, drop, end, expect, grapheme, keep, label,
+  many, not_followed_by, one_of, some, string, succeed,
 }
 
 pub type Text {
@@ -146,7 +146,7 @@ pub fn parse(source: String) -> Result(Text, Report(Error)) {
   |> result.map(Text)
 }
 
-fn id_parser() {
+fn id_parser() -> Parser(String, String) {
   let initial = alphanumeric()
   let symbol = choice(grapheme("-"), grapheme("_"))
   let subsequent = choice(symbol, alphanumeric())

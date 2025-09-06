@@ -52,7 +52,7 @@ fn users_decoder() -> Decoder(Users) {
   decode.string
   |> decode.then(user_decoder)
   |> decode.one_of([
-    decode.list(decode.string) |> decode.map(Users),
+    decode.map(decode.list(decode.string), Users),
   ])
 }
 
