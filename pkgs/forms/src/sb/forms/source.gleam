@@ -9,6 +9,7 @@ import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
+import gleam/set.{type Set}
 import gleam/string
 import gleam/uri
 import sb/extra
@@ -190,6 +191,10 @@ fn parse_json(bits: BitArray, decoder: Decoder(v)) -> Result(v, Report(Error)) {
 }
 
 pub fn decoder(sources: custom.Sources) -> Props(Source) {
+  seen_decoder(sources, set.new())
+}
+
+fn seen_decoder(sources: custom.Sources, kinds: Set(String)) -> Props(Source) {
   use dict <- props.get_dict
 
   case dict.to_list(dict) {
@@ -198,25 +203,18 @@ pub fn decoder(sources: custom.Sources) -> Props(Source) {
     [#("template", dynamic)] -> state.from_result(decode_template(dynamic))
     [#("command", dynamic)] -> state.from_result(decode_command(dynamic))
     [#("fetch", dynamic)] -> state.from_result(decode_fetch(dynamic, sources))
-    [#("kind", _dynamic)] -> kind_decoder(sources)
+    [#("kind", _dynamic)] -> kind_decoder(kinds, sources)
     [#(name, _)] -> state.from_result(report.error(error.UnknownKind(name)))
-    _else -> kind_decoder(sources)
+    _else -> kind_decoder(kinds, sources)
   }
 }
 
-fn kind_decoder(sources: custom.Sources) -> Props(Source) {
-  use kind <- props.get("kind", decoder.from(decode.string))
-
-  use <- result.lazy_unwrap({
-    use dict <- result.map(custom.get_source(sources, kind))
-    use <- state.do(props.merge(dict))
-    kind_decoder(sources)
-  })
-
-  let context = report.context(_, error.BadKind(kind))
+fn kind_decoder(kinds: Set(String), sources: custom.Sources) -> Props(Source) {
+  use kinds, name <- custom.kind_decoder(kinds, sources, custom.get_source)
+  let context = report.context(_, error.BadKind(name))
   use <- extra.return(state.map_error(_, context))
 
-  case kind {
+  case name {
     "literal" -> state.do(props.drop(["kind"]), literal_decoder)
     "reference" -> state.do(props.drop(["kind"]), reference_decoder)
     "template" -> state.do(props.drop(["kind"]), template_decoder)
@@ -224,7 +222,7 @@ fn kind_decoder(sources: custom.Sources) -> Props(Source) {
 
     "fetch" -> {
       use <- state.do(props.drop(["kind"]))
-      fetch_decoder(sources)
+      fetch_decoder(sources, kinds)
     }
 
     name -> state.fail(report.new(error.UnknownKind(name)))
@@ -288,14 +286,12 @@ fn decode_fetch(
     Fetch(method: http.Get, uri:, headers: [], body: None)
   })
 
-  props.decode(dynamic, fetch_decoder(sources))
+  props.decode(dynamic, fetch_decoder(sources, set.new()))
   |> report.error_context(error.BadKind("fetch"))
 }
 
-fn fetch_decoder(sources: custom.Sources) -> Props(Source) {
+fn fetch_decoder(sources: custom.Sources, seen: Set(String)) -> Props(Source) {
   use <- state.do(props.check_keys(fetch_keys))
-  use uri <- props.get("url", text.decoder)
-  use body <- props.try("body", zero.option(props.decode(_, decoder(sources))))
 
   use method <- props.try("method", {
     use dynamic <- zero.new(http.Get)
@@ -304,11 +300,17 @@ fn fetch_decoder(sources: custom.Sources) -> Props(Source) {
     |> report.replace_error(error.BadProperty("method"))
   })
 
+  use uri <- props.get("url", text.decoder)
+
   use headers <- props.try("headers", {
     use dynamic <- zero.list
     decoder.run(dynamic, decode.dict(decode.string, decode.string))
     |> report.error_context(error.BadProperty("headers"))
     |> result.map(dict.to_list)
+  })
+
+  use body <- props.try("body", {
+    zero.option(props.decode(_, seen_decoder(sources, seen)))
   })
 
   state.succeed(Fetch(method:, uri:, headers:, body:))

@@ -1,5 +1,3 @@
-import gleam/dict.{type Dict}
-import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -89,22 +87,6 @@ pub fn value(field: Field) -> Option(Result(Value, Report(Error))) {
   }
 }
 
-fn kind_decoder(
-  custom: custom,
-  get: fn(custom, String) -> Result(Dict(String, Dynamic), _),
-  then: fn(String) -> Props(v),
-) -> Props(v) {
-  use name <- props.get("kind", decoder.from(decode.string))
-
-  use <- result.lazy_unwrap({
-    use dict <- result.map(get(custom, name))
-    use <- state.do(props.merge(dict))
-    kind_decoder(custom, get, then)
-  })
-
-  then(name)
-}
-
 pub fn decoder(
   fields: custom.Fields,
   sources: custom.Sources,
@@ -114,7 +96,7 @@ pub fn decoder(
   use <- extra.return(props.error_context(error.FieldContext(id)))
 
   use kind <- state.with({
-    use name <- kind_decoder(fields, custom.get_field)
+    use _kinds, name <- custom.kind_decoder(set.new(), fields, custom.get_field)
     use kind_keys <- kind.decoder(name, sources)
     props.check_keys(list.append(field_keys, kind_keys))
   })
@@ -136,7 +118,12 @@ pub fn decoder(
     use dynamic <- list.try_map(list)
 
     props.decode(dynamic, {
-      use name <- kind_decoder(filters, custom.get_filter)
+      use _kinds, name <- custom.kind_decoder(
+        set.new(),
+        filters,
+        custom.get_filter,
+      )
+
       use kind_keys <- filter.decoder(name)
       props.check_keys(list.append(filter_keys, kind_keys))
     })

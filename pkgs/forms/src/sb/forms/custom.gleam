@@ -1,9 +1,14 @@
+import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type Decoder}
+import gleam/result
+import gleam/set.{type Set}
 import sb/extra/report.{type Report}
+import sb/extra/state
 import sb/forms/decoder
 import sb/forms/error.{type Error}
+import sb/forms/props.{type Props}
 
 pub type Custom =
   Dict(String, Dynamic)
@@ -49,4 +54,26 @@ pub fn decode(dynamic: Dynamic) -> Result(Dict(String, Custom), Report(Error)) {
 
 fn custom_decoder() -> Decoder(Dict(String, Dynamic)) {
   decode.dict(decode.string, decode.dynamic)
+}
+
+pub fn kind_decoder(
+  kinds: Set(String),
+  custom: custom,
+  get_custom: fn(custom, String) -> Result(Dict(String, Dynamic), _),
+  then: fn(Set(String), String) -> Props(v),
+) -> Props(v) {
+  use name <- props.get("kind", decoder.from(decode.string))
+
+  use <- bool.guard(
+    set.contains(kinds, name),
+    state.fail(report.new(error.Recursive(name))),
+  )
+
+  use <- result.lazy_unwrap({
+    use dict <- result.map(get_custom(custom, name))
+    use <- state.do(props.merge(dict))
+    kind_decoder(set.insert(kinds, name), custom, get_custom, then)
+  })
+
+  then(kinds, name)
 }
