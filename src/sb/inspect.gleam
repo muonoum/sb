@@ -1,5 +1,6 @@
 import gleam/bool
 import gleam/dict
+import gleam/int
 import gleam/io
 import gleam/list
 import gleam/option.{type Option}
@@ -141,7 +142,7 @@ pub fn inspect_value(value: Value) -> String {
     value.Null -> inspect_todo("null")
     value.Bool(_bool) -> inspect_todo("bool")
     value.Float(_float) -> inspect_todo("float")
-    value.Int(_int) -> inspect_todo("int")
+    value.Int(int) -> ansi.magenta(int.to_string(int))
 
     value.List(list) ->
       "#[" <> list.map(list, inspect_value) |> string.join(" ") <> "]"

@@ -27,6 +27,11 @@ pub fn get_dict(then: fn(Dict(String, Dynamic)) -> Props(v)) -> Props(v) {
   then(dict)
 }
 
+pub fn drop(keys: List(String)) -> Props(Nil) {
+  use Context(dict:, reports:) <- state.update
+  Context(dict: dict.drop(dict, keys), reports:)
+}
+
 pub fn merge(other: Dict(String, Dynamic)) -> Props(Nil) {
   use Context(dict:, reports:) <- state.update
   Context(dict: dict.merge(dict, other), reports:)
