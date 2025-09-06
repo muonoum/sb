@@ -190,10 +190,10 @@ fn parse_json(bits: BitArray, decoder: Decoder(v)) -> Result(v, Report(Error)) {
 }
 
 pub fn decoder(sources: custom.Sources) -> Props(Source) {
-  kinds_decoder(set.new(), sources)
+  seen_decoder(set.new(), sources)
 }
 
-fn kinds_decoder(kinds: Set(String), sources: custom.Sources) -> Props(Source) {
+fn seen_decoder(seen: Set(String), sources: custom.Sources) -> Props(Source) {
   use dict <- props.get_dict
 
   case dict.to_list(dict) {
@@ -236,14 +236,14 @@ fn kinds_decoder(kinds: Set(String), sources: custom.Sources) -> Props(Source) {
         |> report.error_context(error.BadKind("fetch"))
       })
 
-    [#("kind", _dynamic)] -> kind_decoder(kinds, sources)
+    [#("kind", _dynamic)] -> kind_decoder(seen, sources)
     [#(name, _)] -> state.fail(report.new(error.UnknownKind(name)))
-    _else -> kind_decoder(kinds, sources)
+    _else -> kind_decoder(seen, sources)
   }
 }
 
-fn kind_decoder(kinds: Set(String), sources: custom.Sources) -> Props(Source) {
-  use kinds, name <- custom.kind_decoder(kinds, sources, custom.get_source)
+fn kind_decoder(seen: Set(String), sources: custom.Sources) -> Props(Source) {
+  use seen, name <- custom.kind_decoder(seen, sources, custom.get_source)
   use <- extra.return(props.error_context(error.BadKind(name)))
   use <- state.do(props.drop(["kind"]))
 
@@ -272,12 +272,12 @@ fn kind_decoder(kinds: Set(String), sources: custom.Sources) -> Props(Source) {
       state.succeed(Command(command))
     }
 
-    "fetch" -> fetch_decoder(kinds, sources)
+    "fetch" -> fetch_decoder(seen, sources)
     name -> state.fail(report.new(error.UnknownKind(name)))
   }
 }
 
-fn fetch_decoder(kinds: Set(String), sources: custom.Sources) -> Props(Source) {
+fn fetch_decoder(seen: Set(String), sources: custom.Sources) -> Props(Source) {
   use <- state.do(props.check_keys(fetch_keys))
 
   use method <- props.try("method", {
@@ -297,7 +297,7 @@ fn fetch_decoder(kinds: Set(String), sources: custom.Sources) -> Props(Source) {
   })
 
   use body <- props.try("body", {
-    zero.option(props.decode(_, kinds_decoder(kinds, sources)))
+    zero.option(props.decode(_, seen_decoder(seen, sources)))
   })
 
   state.succeed(Fetch(method:, uri:, headers:, body:))

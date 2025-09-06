@@ -55,7 +55,7 @@ fn custom_decoder() -> Decoder(Dict(String, Dynamic)) {
 }
 
 pub fn kind_decoder(
-  kinds: Set(String),
+  seen: Set(String),
   custom: custom,
   get_custom: fn(custom, String) -> Result(Dict(String, Dynamic), _),
   then: fn(Set(String), String) -> Props(v),
@@ -63,16 +63,16 @@ pub fn kind_decoder(
   use name <- props.get("kind", decoder.from(decode.string))
 
   use <- bool.guard(
-    set.contains(kinds, name),
+    set.contains(seen, name),
     state.fail(report.new(error.Recursive(name))),
   )
 
   use <- result.lazy_unwrap({
     use dict <- result.map(get_custom(custom, name))
     use <- state.do(props.merge(dict))
-    set.insert(kinds, name)
+    set.insert(seen, name)
     |> kind_decoder(custom, get_custom, then)
   })
 
-  then(kinds, name)
+  then(seen, name)
 }

@@ -96,7 +96,7 @@ pub fn decoder(
   use <- extra.return(props.error_context(error.FieldContext(id)))
 
   use kind <- state.with({
-    use _kinds, name <- custom.kind_decoder(set.new(), fields, custom.get_field)
+    use _seen, name <- custom.kind_decoder(set.new(), fields, custom.get_field)
     use kind_keys <- kind.decoder(name, sources)
     props.check_keys(list.append(field_keys, kind_keys))
   })
@@ -118,7 +118,7 @@ pub fn decoder(
     use dynamic <- list.try_map(list)
 
     props.decode(dynamic, {
-      use _kinds, name <- custom.kind_decoder(
+      use _seen, name <- custom.kind_decoder(
         set.new(),
         filters,
         custom.get_filter,
