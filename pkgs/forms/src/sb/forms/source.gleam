@@ -200,7 +200,6 @@ pub fn decoder(sources: custom.Sources) -> Props(Source) {
     [#("fetch", dynamic)] -> state.from_result(decode_fetch(dynamic, sources))
     [#("kind", _dynamic)] -> kind_decoder(sources)
     [#(name, _)] -> state.from_result(report.error(error.UnknownKind(name)))
-    // TODO: custom sources
     _else -> kind_decoder(sources)
   }
 }
