@@ -49,7 +49,7 @@ pub fn inspect_fields(fields: dict.Dict(String, Field)) -> List(String) {
 fn inspect_kind(kind: Kind) -> String {
   case kind {
     kind.Data(source:) ->
-      ansi.grey("dat ")
+      ansi.grey("data ")
       <> inspect_source(source)
       <> ansi.grey(" ==> ")
       <> case kind.value(kind) {
@@ -61,13 +61,13 @@ fn inspect_kind(kind: Kind) -> String {
     kind.Text(string) | kind.Textarea(string) -> ansi.grey("str ") <> string
 
     kind.Select(selected, options:) ->
-      ansi.grey("sel ")
+      ansi.grey("select ")
       <> inspect_options(options)
       <> ansi.grey(" ==> ")
       <> single_selected(selected)
 
     kind.MultiSelect(selected, options:) ->
-      ansi.grey("mse ")
+      ansi.grey("multiselect ")
       <> inspect_options(options)
       <> ansi.grey(" ==> ")
       <> multiple_selected(selected)

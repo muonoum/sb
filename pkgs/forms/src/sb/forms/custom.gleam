@@ -1,9 +1,9 @@
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
-import gleam/dynamic/decode
-import sb/extra/state
+import gleam/dynamic/decode.{type Decoder}
+import sb/extra/report.{type Report}
 import sb/forms/decoder
-import sb/forms/props
+import sb/forms/error.{type Error}
 
 pub type Custom =
   Dict(String, Dynamic)
@@ -41,8 +41,12 @@ pub fn get_filter(
   dict.get(filters.custom, name)
 }
 
-pub fn decoder() {
-  use id <- props.get("id", decoder.from(decode.string))
-  use dict <- props.get_dict()
-  state.succeed(#(id, dict.drop(dict, ["id"])))
+// TODO: Duplicate ids
+
+pub fn decode(dynamic: Dynamic) -> Result(Dict(String, Custom), Report(Error)) {
+  decoder.run(dynamic, decode.dict(decode.string, custom_decoder()))
+}
+
+fn custom_decoder() -> Decoder(Dict(String, Dynamic)) {
+  decode.dict(decode.string, decode.dynamic)
 }

@@ -208,7 +208,7 @@ fn kind_decoder(sources: custom.Sources) -> Props(Source) {
   use kind <- props.get("kind", decoder.from(decode.string))
 
   use <- result.lazy_unwrap({
-    use dict <- result.map(custom.get_source(sources, echo kind) |> echo)
+    use dict <- result.map(custom.get_source(sources, kind))
     use <- state.do(props.merge(dict))
     kind_decoder(sources)
   })

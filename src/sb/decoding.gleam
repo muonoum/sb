@@ -16,23 +16,29 @@ pub fn main() {
 
   let assert Ok(custom_fields) =
     load_custom("test_data/fields.yaml")
-    |> result.map(dict.from_list)
     |> result.map(custom.Fields)
 
   let assert Ok(custom_sources) =
     load_custom("test_data/sources.yaml")
-    |> result.map(dict.from_list)
     |> result.map(custom.Sources)
 
   let custom_filters = custom.Filters(dict.new())
 
   let decoder = task.decoder(custom_fields, custom_sources, custom_filters)
+
   case props.decode(task_data, decoder) {
     Ok(task) -> {
+      {
+        use result <- list.each(task.layout)
+        pprint.debug(result)
+      }
+
       {
         use _id, field <- dict.map_values(task.fields)
         pprint.debug(field.kind)
       }
+
+      inspect.inspect_task(task)
 
       Nil
     }
@@ -53,6 +59,7 @@ fn load_document(path: String) -> Dynamic {
 fn load_custom(path: String) {
   let assert Ok(dynamic) = yaml.decode_file(path)
   let assert Ok(docs) = decode.run(dynamic, decode.list(decode.dynamic))
-  use doc <- list.try_map(docs)
-  props.decode(dots.split(doc), custom.decoder())
+  use dict, dynamic <- list.try_fold(docs, dict.new())
+  use custom <- result.try(custom.decode(dots.split(dynamic)))
+  Ok(dict.merge(dict, custom))
 }

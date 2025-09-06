@@ -1,13 +1,7 @@
-# id: mega
-# ---
-# kind: reference
-# reference: a
-
-# mega:
-#   kind: reference
-#   reference: a
-
-id: mega
-kind: reference
-reference: a
-
+mega:
+  kind: reference
+  reference: a
+---
+mega:
+  kind: reference
+  reference: b
