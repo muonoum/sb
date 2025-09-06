@@ -141,7 +141,7 @@ pub fn evaluate(
   }
 }
 
-pub fn build_request(
+fn build_request(
   method: http.Method,
   uri: String,
   headers: List(http.Header),
@@ -161,7 +161,7 @@ pub fn build_request(
   request.set_header(request, key, value)
 }
 
-pub fn set_request_body(
+fn set_request_body(
   request: Request(v),
   value: Value,
 ) -> Request(Option(BytesTree)) {
@@ -174,7 +174,7 @@ pub fn set_request_body(
   ))
 }
 
-pub fn send_request(
+fn send_request(
   request: Request(v),
   decoder: Decoder(Value),
   handler: fn(Request(v)) -> Result(Response(BitArray), Report(Error)),
@@ -183,10 +183,7 @@ pub fn send_request(
   parse_json(response.body, decoder)
 }
 
-pub fn parse_json(
-  bits: BitArray,
-  decoder: Decoder(v),
-) -> Result(v, Report(Error)) {
+fn parse_json(bits: BitArray, decoder: Decoder(v)) -> Result(v, Report(Error)) {
   json.parse_bits(bits, decoder)
   |> report.map_error(error.JsonError)
 }
