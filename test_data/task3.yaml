@@ -3,4 +3,4 @@ category: [Tests]
 
 fields:
   - id: a
-    kind: mega
+    kind: custom-field

@@ -1,8 +1,5 @@
-mega:
+custom-source:
   kind: fetch
-  url: mega
+  url: http://example.org
   body:
-    kind: kung
-kung:
-  kind: fetch
-  url: kung
+    kind: custom-source

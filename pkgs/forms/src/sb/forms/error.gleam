@@ -13,6 +13,7 @@ pub type Error {
 
   Collected(List(Report(Error)))
 
+  Recursive(String)
   DuplicateId(String)
   Expected(Value)
   Message(String)
