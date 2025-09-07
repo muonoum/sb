@@ -24,7 +24,7 @@ pub fn page() -> Element(a) {
       html.meta([attr.charset("utf-8")]),
       html.meta([
         attr.name("viewport"),
-        attr.content("width=device-width, initial-scale=1"),
+        attr.content("width=device-width,initial-scale=1"),
       ]),
       html.script(
         [

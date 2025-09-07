@@ -33,7 +33,11 @@ fn init(uri: Uri) -> #(Model, Effect(Message)) {
   }
 
   let effects =
-    effect.batch([modem.init(UriChanged), shared_effect, page_effect])
+    effect.batch([
+      modem.init(UriChanged),
+      shared_effect,
+      page_effect,
+    ])
 
   #(Model(uri:, shared:, page:), effects)
 }
