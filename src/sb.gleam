@@ -51,7 +51,11 @@ pub fn main() {
     next()
   }
 
-  let assert Ok(http_address) = envoy.get("HTTP_ADDRESS")
+  let http_address = {
+    use <- result.lazy_unwrap(envoy.get("HTTP_ADDRESS"))
+    "localhost"
+  }
+
   let assert Ok(http_port) = result.try(envoy.get("HTTP_PORT"), int.parse)
 
   let secret_key_base = {

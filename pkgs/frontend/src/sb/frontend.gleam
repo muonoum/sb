@@ -30,7 +30,11 @@ pub fn page() -> Element(a) {
       html.script([attr.type_("module"), attr.src("/app.js")], ""),
     ]),
     html.body([attr.class("bg-zinc-700 text-zinc-800 overscroll-y-none")], [
-      element.text("TODO: fallback content"),
+      html.div([attr.class("flex justify-center items-center h-screen")], [
+        html.div([attr.class("p-4 bg-white rounded")], [
+          element.text("•••"),
+        ]),
+      ]),
     ]),
   ])
 }
