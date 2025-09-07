@@ -28,6 +28,9 @@ pub fn main() {
     }
   }
 
+  let task_store_name = process.new_name("task_store")
+  let _task_store = process.named_subject(task_store_name)
+
   let static_handler = {
     let sb = filepath.join(priv_directory, "static")
 

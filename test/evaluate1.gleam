@@ -4,6 +4,7 @@ import gleam/io
 import gleam/list
 import gleam/string
 import gleam_community/ansi
+import inspect
 import sb/extra/dots
 import sb/extra/report.{type Report}
 import sb/extra/yaml
@@ -14,7 +15,6 @@ import sb/forms/props
 import sb/forms/scope.{type Scope}
 import sb/forms/task.{type Task}
 import sb/forms/value
-import sb/inspect
 
 pub fn main() -> Nil {
   let assert Ok(task) = {

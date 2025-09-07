@@ -4,6 +4,40 @@
 
 - dot parsing
 
+## files
+
+### tasks
+
+```yaml
+kind: tasks/v1
+category: List(String) # optional
+runners: Access # optional
+approvers: Access # optional
+---
+Task
+```
+
+### custom fields
+
+```yaml
+kind: fields/v1
+---
+```
+
+### custom filters
+
+```yaml
+kind: filters/v1
+---
+```
+
+### custom sources
+
+```yaml
+kind: sources/v1
+---
+```
+
 ## task
 
 ## field

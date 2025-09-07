@@ -3,13 +3,13 @@ import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/list
 import gleam/result
+import inspect
 import pprint
 import sb/extra/dots
 import sb/extra/yaml
 import sb/forms/custom
 import sb/forms/props
 import sb/forms/task
-import sb/inspect
 
 pub fn main() {
   let task_data = load_document("test_data/task3.yaml")
