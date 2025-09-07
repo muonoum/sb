@@ -98,9 +98,6 @@ fn select(nodes: Zipper(Node), search: String) -> Zipper(Node) {
 }
 
 fn view(model: Model) -> Element(Message) {
-  // TODO: Loading og feilrapportering
-  // TODO: Er core.page (id=sb-page) nødvendig?
-
   core.page(case model.nodes {
     loadable.Initial -> [element.none()]
     loadable.Loading -> [element.none()]

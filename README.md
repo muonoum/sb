@@ -11,8 +11,13 @@
 ```yaml
 kind: tasks/v1
 category: List(String) # optional
+summary: String # optional
+description: String # optional
 runners: Access # optional
 approvers: Access # optional
+command: List(String) # optional
+layout: List(String) | .. # optional
+fields: List(Field) # optional
 ---
 Task
 ```
@@ -42,18 +47,51 @@ kind: sources/v1
 
 ## Value
 
+## Access
+
+```
+users: everyone | List(String)
+groups: List(String)
+keys: List(String)
+```
+
+## Condition
+
+```yaml
+when.defined: Id
+when.equal:
+  Id: Value
+
+unless.defined: Id
+unless.equal:
+  Id: Value
+```
+
 ## Task
+
+```yaml
+id: String # optional
+name: String
+category: List(String)
+runners: Access # default: none
+approvers: Access # default: none
+```
 
 ## Field
 
-### custom
-
 ```yaml
-kind: custom-field
-[..]
+id: String
+kind: Kind | Custom
+label: String # optional
+description: String # optional
+disabled: Condition # default: false
+hidden: Condition # default: false
+ignored: Condition # default: false
+optional: Condition # default: false
+filters: List(Filter) # optional
 ```
 
-### kind
+### Kind
 
 #### text
 
