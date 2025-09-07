@@ -66,7 +66,7 @@ pub fn spinner(
 pub fn page(content: List(Element(message))) -> Element(message) {
   html.div(
     [
-      attr.id("sb/page"),
+      attr.id("sb-page"),
       attr.class(
         "fixed inset-0 top-(--header-height) overflow-y-auto scroll-smooth",
       ),
