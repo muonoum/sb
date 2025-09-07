@@ -69,6 +69,10 @@ pub fn view(model: Model, uri: Uri) -> Element(Message) {
       header.active_menu("Oppgaver", "/oppgaver"),
       header.inactive_menu("Jobber", "/jobber"),
       header.inactive_menu("Hjelp", "/hjelp"),
+      server.element(
+        [attr.class("contents"), server.route("/components/errors")],
+        [],
+      ),
     ]),
     portals.into_actions([
       search.view(search: model.search, clear: Search(""), attributes: [

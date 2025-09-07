@@ -12,6 +12,7 @@ import sb/component
 import sb/extra
 import sb/extra_erlang
 import sb/frontend
+import sb/frontend/components/errors
 import sb/frontend/components/tasks
 import sb/task_store
 import wisp
@@ -40,6 +41,18 @@ pub fn websocket_router(
   use request <- extra.identity
 
   case wisp.path_segments(request) {
+    ["components", "errors"] ->
+      component_service(
+        request,
+        errors.app(
+          schedule: extra_erlang.schedule(store_interval, _),
+          load: fn(message) {
+            use dispatch <- effect.from
+            dispatch(message(task_store.get_errors(task_store)))
+          },
+        ),
+      )
+
     ["components", "tasks"] ->
       component_service(
         request,

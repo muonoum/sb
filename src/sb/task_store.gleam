@@ -6,9 +6,11 @@ import gleam/list
 import gleam/otp/actor
 import gleam/otp/supervision
 import gleam/result
+import sb/extra/dots
 import sb/extra/path
 import sb/extra/report.{type Report}
 import sb/extra/yaml
+import sb/forms/custom
 import sb/forms/error.{type Error}
 import sb/forms/file
 import sb/forms/props
@@ -121,73 +123,86 @@ fn schedule(
   }
 }
 
-fn load(model: Model, config: Config) -> Model {
-  let #(files, errors) =
+fn load(_model: Model, config: Config) -> Model {
+  let #(files, file_errors) =
     result.partition({
-      use path <- list.filter_map(path.wildcard(config.prefix, config.pattern))
+      use path <- list.map(path.wildcard(config.prefix, config.pattern))
 
-      // {
-      //   use dynamic <- result.try(
-      //     yaml.decode_file(filepath.join(config.prefix, path))
-      //     |> report.map_error(error.YamlError),
-      //   )
+      use dynamic <- result.try(
+        yaml.decode_file(filepath.join(config.prefix, path))
+        |> report.map_error(error.YamlError)
+        |> report.error_context(error.PathContext(path)),
+      )
 
-      //   use docs <- result.try(
-      //     decode.run(dynamic, decode.list(decode.dynamic))
-      //     |> report.map_error(error.DecodeError),
-      //   )
+      use docs <- result.try(
+        decode.run(dynamic, decode.list(decode.dynamic))
+        |> report.map_error(error.DecodeError)
+        |> report.error_context(error.PathContext(path)),
+      )
 
-      //   case docs {
-      //     [] -> Error(Nil)
+      case docs {
+        [] -> report.error(error.EmptyFile)
 
-      //     [header, ..docs] -> {
-      //       Ok(case props.decode(header, file.kind_decoder()) {
-      //         Ok(kind) -> Ok(file.File(kind:, path:, docs:))
-
-      //         Error(error) ->
-      //           report.error_context(Error(error), error.PathContext(path))
-      //       })
-      //     }
-      //   }
-      // }
-
-      case yaml.decode_file(filepath.join(config.prefix, path)) {
-        Error(dynamic) ->
-          Ok(
-            report.error(error.YamlError(dynamic))
-            |> report.error_context(error.PathContext(path)),
-          )
-
-        Ok(dynamic) ->
-          case decode.run(dynamic, decode.list(decode.dynamic)) {
-            Error(errors) ->
-              Ok(
-                report.error(error.DecodeError(errors))
-                |> report.error_context(error.PathContext(path)),
-              )
-
-            Ok(docs) ->
-              case docs {
-                [] -> Error(Nil)
-
-                [header, ..docs] -> {
-                  Ok(case props.decode(header, file.kind_decoder()) {
-                    Ok(kind) -> Ok(file.File(kind:, path:, docs:))
-
-                    Error(error) ->
-                      report.error_context(
-                        Error(error),
-                        error.PathContext(path),
-                      )
-                  })
-                }
-              }
-          }
+        [header, ..docs] -> {
+          props.decode(dots.split(header), file.kind_decoder())
+          |> result.map(file.File(kind: _, path:, docs:))
+          |> report.error_context(error.PathContext(path))
+        }
       }
     })
 
-  echo files
-  echo errors
+  let #(tasks, task_errors) = {
+    let #(filters, filter_errors) = {
+      let #(custom, errors) =
+        result.partition(
+          list.flatten(list.filter_map(files, file.filters))
+          |> list.map(custom.decode),
+        )
 
-  model
+      #(custom.Filters(list.fold(custom, dict.new(), dict.merge)), errors)
+    }
+
+    let #(fields, field_errors) = {
+      let #(custom, errors) =
+        result.partition(
+          list.flatten(list.filter_map(files, file.fields))
+          |> list.map(custom.decode),
+        )
+
+      #(custom.Fields(list.fold(custom, dict.new(), dict.merge)), errors)
+    }
+
+    let #(sources, source_errors) = {
+      let #(custom, errors) =
+        result.partition(
+          list.flatten(list.filter_map(files, file.sources))
+          |> list.map(custom.decode),
+        )
+
+      #(custom.Sources(list.fold(custom, dict.new(), dict.merge)), errors)
+    }
+
+    let #(tasks, task_errors) =
+      result.partition({
+        let docs = list.flatten(list.filter_map(files, file.tasks))
+        list.map(docs, props.decode(_, task.decoder(fields, sources, filters)))
+      })
+
+    let errors =
+      task_errors
+      |> list.append(filter_errors)
+      |> list.append(field_errors)
+      |> list.append(source_errors)
+
+    #(tasks, errors)
+  }
+
+  let tasks =
+    dict.from_list({
+      use task <- list.map(tasks)
+      #(task.id, task)
+    })
+
+  let errors = list.append(file_errors, task_errors)
+  Model(tasks:, errors:)
 }

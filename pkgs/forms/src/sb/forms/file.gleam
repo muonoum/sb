@@ -20,6 +20,34 @@ pub type Kind {
   TasksV1(category: List(String), runners: Access, approvers: Access)
 }
 
+pub fn tasks(file: File) -> Result(List(Dynamic), Nil) {
+  case file {
+    File(kind: TasksV1(..), path: _, docs:) -> Ok(docs)
+    _else -> Error(Nil)
+  }
+}
+
+pub fn fields(file: File) -> Result(List(Dynamic), Nil) {
+  case file {
+    File(kind: FieldsV1, path: _, docs:) -> Ok(docs)
+    _else -> Error(Nil)
+  }
+}
+
+pub fn sources(file: File) -> Result(List(Dynamic), Nil) {
+  case file {
+    File(kind: SourcesV1, path: _, docs:) -> Ok(docs)
+    _else -> Error(Nil)
+  }
+}
+
+pub fn filters(file: File) -> Result(List(Dynamic), Nil) {
+  case file {
+    File(kind: FiltersV1, path: _, docs:) -> Ok(docs)
+    _else -> Error(Nil)
+  }
+}
+
 pub fn kind_decoder() {
   use identifier <- props.get("kind", decoder.from(decode.string))
 

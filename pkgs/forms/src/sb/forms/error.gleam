@@ -21,6 +21,7 @@ pub type Error {
   Message(String)
   NotFound(String)
   Required
+  EmptyFile
 
   MissingProperty(String)
 
