@@ -34,12 +34,10 @@ pub fn main() {
     let assert Ok(lustre) =
       application.priv_directory("lustre")
       |> result.map(filepath.join(_, "static"))
-      as "lustre static directory"
 
     let assert Ok(lustre_portal) =
       application.priv_directory("lustre_portal")
       |> result.map(filepath.join(_, "static"))
-      as "lustre_portal static directory"
 
     use request, next <- extra.identity
 
@@ -50,8 +48,8 @@ pub fn main() {
     next()
   }
 
+  let assert Ok(http_address) = envoy.get("HTTP_ADDRESS")
   let assert Ok(http_port) = result.try(envoy.get("HTTP_PORT"), int.parse)
-    as "http port"
 
   let secret_key_base = {
     use <- result.lazy_unwrap(envoy.get("SECRET_KEY_BASE"))
@@ -63,7 +61,7 @@ pub fn main() {
     |> wisp_mist.handler(secret_key_base)
     |> router.websocket_router
     |> mist.new
-    |> mist.bind("localhost")
+    |> mist.bind(http_address)
     |> mist.port(http_port)
     |> mist.supervised
 
