@@ -5,8 +5,12 @@ import gleam/list
 import gleam/result
 import sb/extra/dots
 import sb/extra/report.{type Report}
+import sb/extra/state
 import sb/forms/custom
 import sb/forms/error.{type Error}
+import sb/forms/field.{type Field}
+import sb/forms/props
+import sb/forms/source.{type Source}
 
 pub fn load_documents(
   data: String,
@@ -33,4 +37,26 @@ pub fn load_custom(
   use dict, dynamic <- list.try_fold(docs, dict.new())
   use custom <- result.try(custom.decode(dots.split(dynamic)))
   Ok(dict.merge(dict, custom))
+}
+
+pub fn decode_source_property(
+  name: String,
+  dynamic: dynamic.Dynamic,
+  sources: custom.Sources,
+) -> Result(Source, Report(Error)) {
+  props.decode(dots.split(dynamic), {
+    let decoder = props.decode(_, source.decoder(sources))
+    use source <- props.get(name, decoder)
+    state.succeed(source)
+  })
+}
+
+pub fn decode_field(
+  dynamic: Dynamic,
+  fields: custom.Fields,
+  sources: custom.Sources,
+  filters: custom.Filters,
+) -> Result(#(String, Field), Report(Error)) {
+  let decoder = field.decoder(fields, sources, filters)
+  props.decode(dots.split(dynamic), decoder)
 }

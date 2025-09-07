@@ -1,0 +1,44 @@
+@import "Inter/inter.css";
+@import "Iosevka/IosevkaSS13.css";
+@import "tailwindcss";
+
+@theme {
+  --font-mono: "Iosevka SS13 Web", monospace;
+}
+
+@layer base {
+  html {
+    font-size: 15px;
+  }
+
+  :root,
+  :host {
+    --header-height: 55px;
+    --sheet-width: 1100px;
+    --menu-width: calc(var(--sheet-width) - 50px);
+    --tasks-width: calc(var(--sheet-width) + 800px);
+    --page-margin: 30px;
+
+    --minimum-field-height: 100px;
+    --minimum-textarea-height: 125px;
+
+    --z-top: 90;
+    --z-header: 50;
+    --z-sheet: 40;
+    --z-errors: 90;
+  }
+
+  :root,
+  :host {
+    font-family: "Inter", sans-serif;
+  }
+
+  @supports (font-variation-settings: normal) {
+
+    :root,
+    :host {
+      font-family: "InterVariable", sans-serif;
+      font-optical-sizing: auto;
+    }
+  }
+}

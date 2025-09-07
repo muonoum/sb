@@ -1,88 +1,77 @@
-import gleam/dict.{type Dict}
-import gleam/dynamic/decode
-import gleam/io
-import gleam/list
-import gleam/string
-import gleam_community/ansi
-import sb/extra/dots
-import sb/extra/report.{type Report}
-import sb/extra/yaml
-import sb/forms/custom
-import sb/forms/error.{type Error}
-import sb/forms/handlers
-import sb/forms/props
-import sb/forms/scope.{type Scope}
-import sb/forms/task.{type Task}
-import sb/forms/value
-import sb/inspect
+import envoy
+import filepath
+import gleam/erlang/application
+import gleam/erlang/process
+import gleam/int
+import gleam/otp/static_supervisor as supervisor
+import gleam/result
+import mist
+import sb/extra
+import sb/router
+import wisp
+import wisp/wisp_mist
 
-pub fn main() -> Nil {
-  let assert Ok(task) = {
-    let assert Ok(dynamic) = yaml.decode_file("test_data/task2.yaml")
-    let assert Ok([doc, ..]) = decode.run(dynamic, decode.list(decode.dynamic))
+pub fn main() {
+  wisp.configure_logger()
 
-    dots.split(doc)
-    |> props.decode(task.decoder(
-      custom.Fields(dict.new()),
-      custom.Sources(dict.new()),
-      custom.Filters(dict.new()),
-    ))
+  let assert Ok(priv_directory) = application.priv_directory("sb")
+
+  let _store_prefix = {
+    use <- result.lazy_unwrap(envoy.get("STORE_PREFIX"))
+    filepath.join(priv_directory, "sb")
   }
 
-  let search = dict.new()
-  let handlers = handlers.empty()
+  let assert Ok(_store_interval) = {
+    case envoy.get("STORE_INTERVAL") {
+      Ok(interval) -> result.map(int.parse(interval), int.max(1000, _))
+      Error(Nil) -> Ok(2500)
+    }
+  }
 
-  let scope = dict.new()
-  let #(task, scope) = evaluate(task, scope, search, handlers)
-  inspect_task(task)
+  let static_handler = {
+    let sb = filepath.join(priv_directory, "static")
 
-  let assert Ok(task) = update(task, "1", value.String("key1"))
-  let #(task, scope) = evaluate(task, scope, search, handlers)
-  inspect_task(task)
+    let assert Ok(lustre) =
+      application.priv_directory("lustre")
+      |> result.map(filepath.join(_, "static"))
+      as "lustre static directory"
 
-  let assert Ok(task) = update(task, "2", value.String("a"))
-  let #(task, scope) = evaluate(task, scope, search, handlers)
-  inspect_task(task)
+    let assert Ok(lustre_portal) =
+      application.priv_directory("lustre_portal")
+      |> result.map(filepath.join(_, "static"))
+      as "lustre_portal static directory"
 
-  let assert Ok(task) = update(task, "1", value.String("key2"))
-  let #(task, _scope) = evaluate(task, scope, search, handlers)
-  inspect_task(task)
+    use request, next <- extra.identity
 
-  Nil
-}
+    use <- wisp.serve_static(request, under: "/", from: sb)
+    use <- wisp.serve_static(request, under: "/lustre", from: lustre)
+    use <- wisp.serve_static(request, under: "/lustre", from: lustre_portal)
 
-fn inspect_task(task: Task) {
-  inspect.inspect_fields(task.fields)
-  |> list.map(fn(v) { " " <> v })
-  |> string.join("\n")
-  |> io.println
-}
+    next()
+  }
 
-fn evaluate(
-  task: Task,
-  scope: Scope,
-  search: Dict(String, String),
-  handlers: handlers.Handlers,
-) -> #(Task, Dict(String, Result(value.Value, Report(Error)))) {
-  let scope1 = inspect.inspect_scope(scope)
-  let #(task, scope) = task.evaluate(task, scope, search, handlers)
-  let scope2 = inspect.inspect_scope(scope)
-  io.println(string.join([ansi.grey("eval"), scope1], " "))
-  io.println(string.join([ansi.grey("eval"), scope2], " "))
-  #(task, scope)
-}
+  let assert Ok(http_port) = result.try(envoy.get("HTTP_PORT"), int.parse)
+    as "http port"
 
-fn update(
-  task: Task,
-  id: String,
-  value: value.Value,
-) -> Result(Task, Report(Error)) {
-  let parts = [
-    ansi.grey("update"),
-    ansi.green(id),
-    inspect.inspect_value(value),
-  ]
+  let secret_key_base = {
+    use <- result.lazy_unwrap(envoy.get("SECRET_KEY_BASE"))
+    wisp.random_string(64)
+  }
 
-  io.println(string.join(parts, " "))
-  task.update(task, id, value)
+  let http_server_spec =
+    router.service(_, static_handler)
+    |> wisp_mist.handler(secret_key_base)
+    |> router.websocket_router
+    |> mist.new
+    |> mist.bind("localhost")
+    |> mist.port(http_port)
+    |> mist.supervised
+
+  let assert Ok(_) =
+    supervisor.start(
+      supervisor.new(supervisor.OneForOne)
+      |> supervisor.add(http_server_spec),
+    )
+
+  process.sleep_forever()
 }
