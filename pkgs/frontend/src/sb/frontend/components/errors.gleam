@@ -1,5 +1,6 @@
 import gleam/int
 import gleam/list
+import gleam/string
 import lustre
 import lustre/attribute as attr
 import lustre/effect.{type Effect}
@@ -100,6 +101,23 @@ fn error_button(model: Model) -> Element(Message) {
   )
 }
 
-fn error_reports(_reports: List(Report(Error))) -> Element(Message) {
-  element.none()
+fn error_reports(reports: List(Report(Error))) -> Element(Message) {
+  html.div(
+    [
+      core.classes([
+        "flex flex-col z-(--z-errors) overflow-y-scroll",
+        "fixed inset-x-0 bottom-0 left-1/2 -translate-x-2/4",
+        "rounded-t-lg px-4 py-3 w-(--sheet-width) max-h-[300px]",
+        "font-mono font-medium bg-zinc-900 text-stone-300",
+        "shadow-[0_10px_50px_20px_rgba(0_0_0/20%)]",
+      ]),
+    ],
+    list.map(reports, view_report),
+  )
+}
+
+fn view_report(report: Report(Error)) -> Element(Message) {
+  html.div([attr.class("flex gap-2")], [
+    element.text(string.inspect(report)),
+  ])
 }

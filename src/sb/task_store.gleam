@@ -123,6 +123,7 @@ fn schedule(
   }
 }
 
+// TODO: IndexContext
 fn load(_model: Model, config: Config) -> Model {
   let #(files, file_errors) =
     result.partition({
