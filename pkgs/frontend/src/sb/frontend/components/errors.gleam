@@ -84,16 +84,14 @@ fn view(model: Model) -> Element(Message) {
 }
 
 fn error_button(model: Model) -> Element(Message) {
-  // TODO: Fill height
-
   core.button(
-    button: [event.on_click(Toggle), attr.class("self-center")],
+    button: [event.on_click(Toggle), attr.class("group")],
     label: [
       attr.class("flex items-center !no-underline"),
-      case model.visibility {
-        Hidden -> attr.class("text-red-800/80")
-        Visible -> attr.class("text-neutral-100 bg-red-800/80 text-shadow-25")
-      },
+      attr.class(case model.visibility {
+        Hidden -> "text-red-800/80"
+        Visible -> "text-neutral-100 bg-red-800/80 bg-red-800/80 text-shadow-25"
+      }),
     ],
     body: [
       icons.exclamation_triangle_outline([attr.class("stroke-2")]),
