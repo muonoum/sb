@@ -1,7 +1,10 @@
 import gleam/dict.{type Dict}
 import gleam/erlang/process
+import gleam/list
 import gleam/otp/actor
 import gleam/otp/supervision
+import gleam/result
+import sb/extra/path
 import sb/extra/report.{type Report}
 import sb/forms/error.{type Error}
 import sb/forms/task.{type Task}
@@ -113,6 +116,12 @@ fn schedule(
   }
 }
 
-fn load(model: Model, _config: Config) -> Model {
+fn load(model: Model, config: Config) -> Model {
+  let #(_files, _errors) =
+    result.partition({
+      use _path <- list.map(path.wildcard(config.prefix, config.pattern))
+      report.error(error.Message("TODO"))
+    })
+
   model
 }
