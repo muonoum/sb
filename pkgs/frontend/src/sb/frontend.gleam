@@ -1,9 +1,20 @@
+import gleam/string
+import gleam/uri
+import lustre
 import lustre/attribute as attr
 import lustre/element.{type Element}
 import lustre/element/html
+import plinth/browser/window
+import sb/frontend/app
 
 pub fn main() {
-  todo
+  let app = app.new()
+  let assert Ok(uri) = uri.parse(window.location()) as "window location"
+
+  case lustre.start(app, "body", uri) {
+    Error(error) -> panic as string.inspect(error)
+    Ok(_app) -> Nil
+  }
 }
 
 pub fn page() -> Element(a) {
