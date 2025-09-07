@@ -1,4 +1,6 @@
+import filepath
 import gleam/dict.{type Dict}
+import gleam/dynamic/decode
 import gleam/erlang/process
 import gleam/list
 import gleam/otp/actor
@@ -6,7 +8,10 @@ import gleam/otp/supervision
 import gleam/result
 import sb/extra/path
 import sb/extra/report.{type Report}
+import sb/extra/yaml
 import sb/forms/error.{type Error}
+import sb/forms/file
+import sb/forms/props
 import sb/forms/task.{type Task}
 
 const start_timeout = 10_000
@@ -117,11 +122,72 @@ fn schedule(
 }
 
 fn load(model: Model, config: Config) -> Model {
-  let #(_files, _errors) =
+  let #(files, errors) =
     result.partition({
-      use _path <- list.map(path.wildcard(config.prefix, config.pattern))
-      report.error(error.Message("TODO"))
+      use path <- list.filter_map(path.wildcard(config.prefix, config.pattern))
+
+      // {
+      //   use dynamic <- result.try(
+      //     yaml.decode_file(filepath.join(config.prefix, path))
+      //     |> report.map_error(error.YamlError),
+      //   )
+
+      //   use docs <- result.try(
+      //     decode.run(dynamic, decode.list(decode.dynamic))
+      //     |> report.map_error(error.DecodeError),
+      //   )
+
+      //   case docs {
+      //     [] -> Error(Nil)
+
+      //     [header, ..docs] -> {
+      //       Ok(case props.decode(header, file.kind_decoder()) {
+      //         Ok(kind) -> Ok(file.File(kind:, path:, docs:))
+
+      //         Error(error) ->
+      //           report.error_context(Error(error), error.PathContext(path))
+      //       })
+      //     }
+      //   }
+      // }
+
+      case yaml.decode_file(filepath.join(config.prefix, path)) {
+        Error(dynamic) ->
+          Ok(
+            report.error(error.YamlError(dynamic))
+            |> report.error_context(error.PathContext(path)),
+          )
+
+        Ok(dynamic) ->
+          case decode.run(dynamic, decode.list(decode.dynamic)) {
+            Error(errors) ->
+              Ok(
+                report.error(error.DecodeError(errors))
+                |> report.error_context(error.PathContext(path)),
+              )
+
+            Ok(docs) ->
+              case docs {
+                [] -> Error(Nil)
+
+                [header, ..docs] -> {
+                  Ok(case props.decode(header, file.kind_decoder()) {
+                    Ok(kind) -> Ok(file.File(kind:, path:, docs:))
+
+                    Error(error) ->
+                      report.error_context(
+                        Error(error),
+                        error.PathContext(path),
+                      )
+                  })
+                }
+              }
+          }
+      }
     })
+
+  echo files
+  echo errors
 
   model
 }

@@ -13,7 +13,7 @@ import sb/extra
 import sb/extra_erlang
 import sb/frontend
 import sb/frontend/components/tasks
-import sb/store
+import sb/task_store
 import wisp
 
 pub fn service(
@@ -35,7 +35,7 @@ pub fn service(
 pub fn websocket_router(
   next_router: fn(Request(_)) -> Response(_),
   store_interval store_interval: Int,
-  store store: process.Subject(store.Message),
+  task_store task_store: process.Subject(task_store.Message),
 ) -> fn(Request(_)) -> Response(_) {
   use request <- extra.identity
 
@@ -47,7 +47,7 @@ pub fn websocket_router(
           schedule: extra_erlang.schedule(store_interval, _),
           load: fn(message) {
             use dispatch <- effect.from
-            dispatch(message(store.get_tasks(store)))
+            dispatch(message(task_store.get_tasks(task_store)))
           },
         ),
       )

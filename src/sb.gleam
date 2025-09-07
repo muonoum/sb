@@ -8,7 +8,7 @@ import gleam/result
 import mist
 import sb/extra
 import sb/router
-import sb/store
+import sb/task_store
 import wisp
 import wisp/wisp_mist
 
@@ -29,13 +29,13 @@ pub fn main() {
     }
   }
 
-  let store_name = process.new_name("store")
-  let store = process.named_subject(store_name)
+  let task_store_name = process.new_name("task_store")
+  let task_store = process.named_subject(task_store_name)
 
-  let store_spec =
-    store.supervised(
-      store_name,
-      store.Config(
+  let task_store_spec =
+    task_store.supervised(
+      task_store_name,
+      task_store.Config(
         prefix: store_prefix,
         interval: store_interval,
         pattern: "**/*.yaml",
@@ -62,11 +62,7 @@ pub fn main() {
     next()
   }
 
-  let http_address = {
-    use <- result.lazy_unwrap(envoy.get("HTTP_ADDRESS"))
-    "localhost"
-  }
-
+  let http_address = result.unwrap(envoy.get("HTTP_ADDRESS"), "localhost")
   let assert Ok(http_port) = result.try(envoy.get("HTTP_PORT"), int.parse)
 
   let secret_key_base = {
@@ -77,7 +73,7 @@ pub fn main() {
   let http_server_spec =
     router.service(_, static_handler)
     |> wisp_mist.handler(secret_key_base)
-    |> router.websocket_router(store_interval:, store:)
+    |> router.websocket_router(store_interval:, task_store:)
     |> mist.new
     |> mist.bind(http_address)
     |> mist.port(http_port)
@@ -87,7 +83,7 @@ pub fn main() {
     supervisor.start({
       supervisor.new(supervisor.OneForOne)
       |> supervisor.add(http_server_spec)
-      |> supervisor.add(store_spec)
+      |> supervisor.add(task_store_spec)
     })
 
   process.sleep_forever()

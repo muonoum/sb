@@ -11,6 +11,7 @@ import sb/forms/value.{type Value}
 
 pub type Error {
   FieldContext(String)
+  PathContext(String)
 
   Collected(List(Report(Error)))
 

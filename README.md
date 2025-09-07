@@ -11,13 +11,8 @@
 ```yaml
 kind: tasks/v1
 category: List(String) # optional
-summary: String # optional
-description: String # optional
 runners: Access # optional
 approvers: Access # optional
-command: List(String) # optional
-layout: List(String) | .. # optional
-fields: List(Field) # optional
 ---
 Task
 ```
@@ -72,9 +67,14 @@ unless.equal:
 ```yaml
 id: String # optional
 name: String
+summary: String # optional
+description: String # optional
 category: List(String)
 runners: Access # default: none
 approvers: Access # default: none
+command: List(String) # optional
+layout: List(String) | .. # optional
+fields: List(Field) # optional
 ```
 
 ## Field
