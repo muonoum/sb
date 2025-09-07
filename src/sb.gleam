@@ -21,7 +21,7 @@ pub fn main() {
     filepath.join(priv_directory, "sb")
   }
 
-  let assert Ok(_store_interval) = {
+  let assert Ok(store_interval) = {
     case envoy.get("STORE_INTERVAL") {
       Ok(interval) -> result.map(int.parse(interval), int.max(1000, _))
       Error(Nil) -> Ok(2500)
@@ -66,7 +66,7 @@ pub fn main() {
   let http_server_spec =
     router.service(_, static_handler)
     |> wisp_mist.handler(secret_key_base)
-    |> router.websocket_router
+    |> router.websocket_router(store_interval:)
     |> mist.new
     |> mist.bind(http_address)
     |> mist.port(http_port)

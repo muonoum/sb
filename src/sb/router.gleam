@@ -4,11 +4,14 @@ import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
 import gleam/string
 import lustre
+import lustre/effect
 import lustre/element
 import mist
 import sb/component
 import sb/extra
+import sb/extra_erlang
 import sb/frontend
+import sb/frontend/components/tasks
 import wisp
 
 pub fn service(
@@ -29,11 +32,23 @@ pub fn service(
 
 pub fn websocket_router(
   next_router: fn(Request(_)) -> Response(_),
+  store_interval store_interval: Int,
 ) -> fn(Request(_)) -> Response(_) {
   use request <- extra.identity
 
   case wisp.path_segments(request) {
-    ["components", "tasks"] -> component_service(request, todo)
+    ["components", "tasks"] ->
+      component_service(
+        request,
+        tasks.app(
+          schedule: extra_erlang.schedule(store_interval, _),
+          load: fn(message) {
+            use dispatch <- effect.from
+            dispatch(message([]))
+          },
+        ),
+      )
+
     ["components", "task"] -> component_service(request, todo)
     ["components", "jobs", "requested"] -> component_service(request, todo)
     ["components", "jobs", "started"] -> component_service(request, todo)
