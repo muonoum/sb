@@ -3,9 +3,9 @@ import lustre/element.{type Element}
 import lustre/element/html
 import lustre/portal
 
-pub const links_target = "sb/links"
+const links_target = "sb/links"
 
-pub const actions_target = "sb/actions"
+const actions_target = "sb/actions"
 
 pub fn links() {
   html.div([attr.id(links_target), attr.class("contents")], [])

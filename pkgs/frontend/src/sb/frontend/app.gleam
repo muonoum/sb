@@ -5,13 +5,15 @@ import lustre/element.{type Element}
 import modem
 import sb/frontend/components/header
 import sb/frontend/pages
+import sb/frontend/shared
 
 pub opaque type Model {
-  Model(uri: Uri, page: pages.Model)
+  Model(uri: Uri, shared: shared.Model, page: pages.Model)
 }
 
 pub opaque type Message {
   UriChanged(Uri)
+  SharedMessage(shared.Message)
   PageMessage(pages.Message)
 }
 
@@ -20,13 +22,20 @@ pub fn new() -> lustre.App(Uri, Model, Message) {
 }
 
 fn init(uri: Uri) -> #(Model, Effect(Message)) {
+  let #(shared, shared_effect) = {
+    let #(model, effect) = shared.init()
+    #(model, effect.map(effect, SharedMessage))
+  }
+
   let #(page, page_effect) = {
     let #(model, effect) = pages.init(uri)
     #(model, effect.map(effect, PageMessage))
   }
 
-  let effects = effect.batch([modem.init(UriChanged), page_effect])
-  #(Model(uri:, page:), effects)
+  let effects =
+    effect.batch([modem.init(UriChanged), shared_effect, page_effect])
+
+  #(Model(uri:, shared:, page:), effects)
 }
 
 fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
@@ -41,9 +50,18 @@ fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
             #(model, effect.map(effect, PageMessage))
           }
 
-          #(Model(uri:, page:), page_effect)
+          #(Model(..model, uri:, page:), page_effect)
         }
       }
+    }
+
+    SharedMessage(message) -> {
+      let #(shared, shared_effect) = {
+        let #(model, effect) = shared.update(model.shared, message)
+        #(model, effect.map(effect, SharedMessage))
+      }
+
+      #(Model(..model, shared:), shared_effect)
     }
 
     PageMessage(message) -> {
