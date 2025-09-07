@@ -5,6 +5,11 @@ import gleam/result
 import gleam/string
 import gleam/uri.{type Uri}
 
+pub type Visibility {
+  Visible
+  Hidden
+}
+
 pub fn identity(value: v) -> v {
   value
 }
