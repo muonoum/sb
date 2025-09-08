@@ -1,18 +1,21 @@
 import filepath
 import gleam/dict.{type Dict}
+import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/erlang/process
 import gleam/list
 import gleam/otp/actor
 import gleam/otp/supervision
 import gleam/result
+import sb/extra
 import sb/extra/dots
 import sb/extra/path
 import sb/extra/report.{type Report}
 import sb/extra/yaml
-import sb/forms/custom
+import sb/forms/custom.{type Custom}
+import sb/forms/decoder
 import sb/forms/error.{type Error}
-import sb/forms/file
+import sb/forms/file.{type File, File}
 import sb/forms/props
 import sb/forms/task.{type Task}
 
@@ -123,80 +126,20 @@ fn schedule(
   }
 }
 
-// TODO: IndexContext
-fn load(_model: Model, config: Config) -> Model {
-  let #(files, file_errors) =
+fn load(model: Model, config: Config) -> Model {
+  let #(files, model) = load_files(config, model)
+  let #(filters, model) = load_custom(files, file.fields, custom.Filters, model)
+  let #(fields, model) = load_custom(files, file.filters, custom.Fields, model)
+  let #(sources, model) =
+    load_custom(files, file.sources, custom.Sources, model)
+
+  let #(tasks, errors) =
     result.partition({
-      use path <- list.map(path.wildcard(config.prefix, config.pattern))
-
-      use dynamic <- result.try(
-        yaml.decode_file(filepath.join(config.prefix, path))
-        |> report.map_error(error.YamlError)
-        |> report.error_context(error.PathContext(path)),
-      )
-
-      use docs <- result.try(
-        decode.run(dynamic, decode.list(decode.dynamic))
-        |> report.map_error(error.DecodeError)
-        |> report.error_context(error.PathContext(path)),
-      )
-
-      case docs {
-        [] -> report.error(error.EmptyFile)
-
-        [header, ..docs] -> {
-          props.decode(dots.split(header), file.kind_decoder())
-          |> result.map(file.File(kind: _, path:, docs:))
-          |> report.error_context(error.PathContext(path))
-        }
-      }
+      let docs = list.flatten(list.filter_map(files, file.tasks))
+      use doc, index <- list.index_map(docs)
+      props.decode(doc, task.decoder(fields, sources, filters))
+      |> report.error_context(error.IndexContext(index))
     })
-
-  let #(tasks, task_errors) = {
-    let #(filters, filter_errors) = {
-      let #(custom, errors) =
-        result.partition(
-          list.flatten(list.filter_map(files, file.filters))
-          |> list.map(custom.decode),
-        )
-
-      #(custom.Filters(list.fold(custom, dict.new(), dict.merge)), errors)
-    }
-
-    let #(fields, field_errors) = {
-      let #(custom, errors) =
-        result.partition(
-          list.flatten(list.filter_map(files, file.fields))
-          |> list.map(custom.decode),
-        )
-
-      #(custom.Fields(list.fold(custom, dict.new(), dict.merge)), errors)
-    }
-
-    let #(sources, source_errors) = {
-      let #(custom, errors) =
-        result.partition(
-          list.flatten(list.filter_map(files, file.sources))
-          |> list.map(custom.decode),
-        )
-
-      #(custom.Sources(list.fold(custom, dict.new(), dict.merge)), errors)
-    }
-
-    let #(tasks, task_errors) =
-      result.partition({
-        let docs = list.flatten(list.filter_map(files, file.tasks))
-        list.map(docs, props.decode(_, task.decoder(fields, sources, filters)))
-      })
-
-    let errors =
-      task_errors
-      |> list.append(filter_errors)
-      |> list.append(field_errors)
-      |> list.append(source_errors)
-
-    #(tasks, errors)
-  }
 
   let tasks =
     dict.from_list({
@@ -204,6 +147,48 @@ fn load(_model: Model, config: Config) -> Model {
       #(task.id, task)
     })
 
-  let errors = list.append(file_errors, task_errors)
-  Model(tasks:, errors:)
+  Model(tasks:, errors: list.append(model.errors, errors))
+}
+
+fn load_files(config: Config, model: Model) -> #(List(File), Model) {
+  let #(files, errors) =
+    result.partition({
+      use path <- list.map(path.wildcard(config.prefix, config.pattern))
+      use <- extra.return(report.error_context(_, error.PathContext(path)))
+
+      use dynamic <- result.try(
+        yaml.decode_file(filepath.join(config.prefix, path))
+        |> report.map_error(error.YamlError),
+      )
+
+      use docs <- result.try(decoder.run(dynamic, decode.list(decode.dynamic)))
+
+      case docs {
+        [] -> report.error(error.EmptyFile)
+
+        [header, ..docs] -> {
+          props.decode(dots.split(header), file.kind_decoder())
+          |> result.map(File(kind: _, path:, docs:))
+        }
+      }
+    })
+
+  #(files, Model(..model, errors:))
+}
+
+fn load_custom(
+  files: List(File),
+  filter: fn(File) -> Result(List(Dynamic), a),
+  construct: fn(Dict(String, Custom)) -> custom,
+  model: Model,
+) -> #(custom, Model) {
+  let #(custom, errors) =
+    list.filter_map(files, filter)
+    |> list.flatten
+    |> list.map(custom.decode)
+    |> result.partition
+
+  let errors = list.append(model.errors, errors)
+  let custom = construct(list.fold(custom, dict.new(), dict.merge))
+  #(custom, Model(..model, errors:))
 }
