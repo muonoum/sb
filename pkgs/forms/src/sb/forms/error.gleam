@@ -34,6 +34,7 @@ pub type Error {
   BadValue(Value)
   BadCondition(String)
 
+  FileError
   DecodeError(List(decode.DecodeError))
   JsonError(json.DecodeError)
   RegexError(regexp.CompileError)

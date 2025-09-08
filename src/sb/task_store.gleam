@@ -6,6 +6,7 @@ import gleam/erlang/process
 import gleam/list
 import gleam/otp/actor
 import gleam/otp/supervision
+import gleam/pair
 import gleam/result
 import sb/extra
 import sb/extra/dots
@@ -146,14 +147,15 @@ fn load(model: Model, config: Config) -> Model {
 }
 
 fn load_files(config: Config, model: Model) -> #(List(File), Model) {
-  let #(files, errors) =
+  use errors <- pair.map_second(
     result.partition({
       use path <- list.map(path.wildcard(config.prefix, config.pattern))
       use <- extra.return(report.error_context(_, error.PathContext(path)))
       load_file(config.prefix, path)
-    })
+    }),
+  )
 
-  #(files, Model(..model, errors:))
+  Model(..model, errors:)
 }
 
 fn load_file(prefix: String, path: String) -> Result(File, Report(Error)) {
@@ -168,6 +170,7 @@ fn load_file(prefix: String, path: String) -> Result(File, Report(Error)) {
     [] -> report.error(error.EmptyFile)
 
     [header, ..docs] -> {
+      use <- extra.return(report.error_context(_, error.FileError))
       let header = dots.split(header)
       use kind <- result.map(props.decode(header, file.decoder()))
       File(kind:, path:, docs:)
@@ -184,7 +187,7 @@ fn load_docs(
     use doc, index <- list.index_map(file.docs)
 
     then(doc)
-    |> report.error_context(error.IndexContext(index))
+    |> report.error_context(error.IndexContext(index + 1))
     |> report.error_context(error.PathContext(file.path))
   })
 }
