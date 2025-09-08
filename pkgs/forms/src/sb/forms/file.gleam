@@ -49,14 +49,14 @@ pub fn is_sources(file: File) -> Bool {
 }
 
 pub fn decoder() {
-  use identifier <- props.get("kind", decoder.from(decode.string))
+  use kind <- props.get("kind", decoder.from(decode.string))
 
-  case identifier {
+  case kind {
     "fields/v1" -> state.succeed(FieldsV1)
     "filters/v1" -> state.succeed(FiltersV1)
     "sources/v1" -> state.succeed(SourcesV1)
     "tasks/v1" -> tasks_v1_decoder()
-    _bad -> state.fail(report.new(error.BadKind(identifier)))
+    _bad -> state.fail(report.new(error.BadKind(kind)))
   }
 }
 
