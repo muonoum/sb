@@ -175,23 +175,27 @@ fn load_files(config: Config, model: Model) -> #(List(File), Model) {
     result.partition({
       use path <- list.map(path.wildcard(config.prefix, config.pattern))
       use <- extra.return(report.error_context(_, error.PathContext(path)))
-
-      use dynamic <- result.try(
-        yaml.decode_file(filepath.join(config.prefix, path))
-        |> report.map_error(error.YamlError),
-      )
-
-      use docs <- result.try(decoder.run(dynamic, decode.list(decode.dynamic)))
-
-      case docs {
-        [] -> report.error(error.EmptyFile)
-
-        [header, ..docs] -> {
-          props.decode(dots.split(header), file.kind_decoder())
-          |> result.map(File(kind: _, path:, docs:))
-        }
-      }
+      load_file(config.prefix, path)
     })
 
   #(files, Model(..model, errors:))
+}
+
+fn load_file(prefix: String, path: String) -> Result(File, Report(Error)) {
+  use dynamic <- result.try(
+    yaml.decode_file(filepath.join(prefix, path))
+    |> report.map_error(error.YamlError),
+  )
+
+  use docs <- result.try(decoder.run(dynamic, decode.list(decode.dynamic)))
+
+  case docs {
+    [] -> report.error(error.EmptyFile)
+
+    [header, ..docs] -> {
+      let header = dots.split(header)
+      use kind <- result.map(props.decode(header, file.kind_decoder()))
+      File(kind:, path:, docs:)
+    }
+  }
 }
