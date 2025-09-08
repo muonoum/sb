@@ -145,31 +145,6 @@ fn load(model: Model, config: Config) -> Model {
   Model(tasks:, errors: list.append(model.errors, errors))
 }
 
-fn load_custom(
-  files: List(File),
-  model: Model,
-  construct: fn(Dict(String, Custom)) -> custom,
-) -> #(custom, Model) {
-  let #(custom, errors) = load_docs(files, custom.decode)
-  let errors = list.append(model.errors, errors)
-  let custom = list.fold(custom, dict.new(), dict.merge)
-  #(construct(custom), Model(..model, errors:))
-}
-
-fn load_docs(
-  files: List(File),
-  then: fn(Dynamic) -> Result(v, Report(Error)),
-) -> #(List(v), List(Report(Error))) {
-  result.partition({
-    use file <- list.flat_map(files)
-    use doc, index <- list.index_map(file.docs)
-
-    then(doc)
-    |> report.error_context(error.IndexContext(index))
-    |> report.error_context(error.PathContext(file.path))
-  })
-}
-
 fn load_files(config: Config, model: Model) -> #(List(File), Model) {
   let #(files, errors) =
     result.partition({
@@ -194,8 +169,33 @@ fn load_file(prefix: String, path: String) -> Result(File, Report(Error)) {
 
     [header, ..docs] -> {
       let header = dots.split(header)
-      use kind <- result.map(props.decode(header, file.kind_decoder()))
+      use kind <- result.map(props.decode(header, file.decoder()))
       File(kind:, path:, docs:)
     }
   }
+}
+
+fn load_docs(
+  files: List(File),
+  then: fn(Dynamic) -> Result(v, Report(Error)),
+) -> #(List(v), List(Report(Error))) {
+  result.partition({
+    use file <- list.flat_map(files)
+    use doc, index <- list.index_map(file.docs)
+
+    then(doc)
+    |> report.error_context(error.IndexContext(index))
+    |> report.error_context(error.PathContext(file.path))
+  })
+}
+
+fn load_custom(
+  files: List(File),
+  model: Model,
+  construct: fn(Dict(String, Custom)) -> custom,
+) -> #(custom, Model) {
+  let #(custom, errors) = load_docs(files, custom.decode)
+  let errors = list.append(model.errors, errors)
+  let custom = list.fold(custom, dict.new(), dict.merge)
+  #(construct(custom), Model(..model, errors:))
 }

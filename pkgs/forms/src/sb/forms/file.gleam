@@ -76,7 +76,7 @@ pub fn filters(file: File) -> Result(List(Dynamic), Nil) {
   }
 }
 
-pub fn kind_decoder() {
+pub fn decoder() {
   use identifier <- props.get("kind", decoder.from(decode.string))
 
   case identifier {
