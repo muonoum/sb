@@ -21,7 +21,7 @@ pub fn lazy(value: fn() -> v, decoder: Decoder(v)) -> Zero(v) {
   Lazy(value:, decoder:)
 }
 
-pub fn string(decoder: decoder.Decoder(String)) -> Zero(String) {
+pub fn string(decoder: Decoder(String)) -> Zero(String) {
   new("", decoder)
 }
 

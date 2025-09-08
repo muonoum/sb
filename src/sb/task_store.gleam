@@ -6,6 +6,7 @@ import gleam/erlang/process
 import gleam/list
 import gleam/otp/actor
 import gleam/otp/supervision
+import gleam/pair
 import gleam/result
 import sb/extra
 import sb/extra/dots
@@ -128,15 +129,22 @@ fn schedule(
 
 fn load(model: Model, config: Config) -> Model {
   let #(files, model) = load_files(config, model)
-  let #(filters, model) = load_custom(files, file.fields, custom.Filters, model)
-  let #(fields, model) = load_custom(files, file.filters, custom.Fields, model)
+
+  let #(filters, model) =
+    load_custom(get_docs(files, file.filters), model)
+    |> pair.map_first(custom.Filters)
+
+  let #(fields, model) =
+    load_custom(get_docs(files, file.fields), model)
+    |> pair.map_first(custom.Fields)
+
   let #(sources, model) =
-    load_custom(files, file.sources, custom.Sources, model)
+    load_custom(get_docs(files, file.sources), model)
+    |> pair.map_first(custom.Sources)
 
   let #(tasks, errors) =
     result.partition({
-      let docs = list.flatten(list.filter_map(files, file.tasks))
-      use doc, index <- list.index_map(docs)
+      use doc, index <- list.index_map(get_docs(files, file.tasks))
       props.decode(doc, task.decoder(fields, sources, filters))
       |> report.error_context(error.IndexContext(index))
     })
@@ -148,6 +156,13 @@ fn load(model: Model, config: Config) -> Model {
     })
 
   Model(tasks:, errors: list.append(model.errors, errors))
+}
+
+fn get_docs(
+  files: List(File),
+  filter: fn(File) -> Result(List(Dynamic), _),
+) -> List(Dynamic) {
+  list.flatten(list.filter_map(files, filter))
 }
 
 fn load_files(config: Config, model: Model) -> #(List(File), Model) {
@@ -177,18 +192,13 @@ fn load_files(config: Config, model: Model) -> #(List(File), Model) {
 }
 
 fn load_custom(
-  files: List(File),
-  filter: fn(File) -> Result(List(Dynamic), a),
-  construct: fn(Dict(String, Custom)) -> custom,
+  docs: List(Dynamic),
   model: Model,
-) -> #(custom, Model) {
+) -> #(Dict(String, Custom), Model) {
   let #(custom, errors) =
-    list.filter_map(files, filter)
-    |> list.flatten
-    |> list.map(custom.decode)
+    list.map(docs, custom.decode)
     |> result.partition
 
   let errors = list.append(model.errors, errors)
-  let custom = construct(list.fold(custom, dict.new(), dict.merge))
-  #(custom, Model(..model, errors:))
+  #(list.fold(custom, dict.new(), dict.merge), Model(..model, errors:))
 }
