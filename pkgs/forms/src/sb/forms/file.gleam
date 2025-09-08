@@ -20,6 +20,34 @@ pub type Kind {
   TasksV1(category: List(String), runners: Access, approvers: Access)
 }
 
+pub fn is_tasks(file: File) -> Bool {
+  case file {
+    File(kind: TasksV1(..), ..) -> True
+    _else -> False
+  }
+}
+
+pub fn is_fields(file: File) -> Bool {
+  case file {
+    File(kind: FieldsV1, ..) -> True
+    _else -> False
+  }
+}
+
+pub fn is_filters(file: File) -> Bool {
+  case file {
+    File(kind: FiltersV1, ..) -> True
+    _else -> False
+  }
+}
+
+pub fn is_sources(file: File) -> Bool {
+  case file {
+    File(kind: SourcesV1, ..) -> True
+    _else -> False
+  }
+}
+
 pub fn tasks(file: File) -> Result(List(Dynamic), Nil) {
   case file {
     File(kind: TasksV1(..), path: _, docs:) -> Ok(docs)

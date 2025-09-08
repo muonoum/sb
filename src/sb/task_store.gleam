@@ -6,7 +6,6 @@ import gleam/erlang/process
 import gleam/list
 import gleam/otp/actor
 import gleam/otp/supervision
-import gleam/pair
 import gleam/result
 import sb/extra
 import sb/extra/dots
@@ -130,39 +129,45 @@ fn schedule(
 fn load(model: Model, config: Config) -> Model {
   let #(files, model) = load_files(config, model)
 
-  let #(filters, model) =
-    load_custom(get_docs(files, file.filters), model)
-    |> pair.map_first(custom.Filters)
+  let #(tasks, files) = list.partition(files, file.is_tasks)
+  let #(sources, files) = list.partition(files, file.is_sources)
+  let #(filters, files) = list.partition(files, file.is_filters)
+  let #(fields, _files) = list.partition(files, file.is_fields)
 
-  let #(fields, model) =
-    load_custom(get_docs(files, file.fields), model)
-    |> pair.map_first(custom.Fields)
-
-  let #(sources, model) =
-    load_custom(get_docs(files, file.sources), model)
-    |> pair.map_first(custom.Sources)
+  let #(filters, model) = load_custom(filters, model, custom.Filters)
+  let #(fields, model) = load_custom(fields, model, custom.Fields)
+  let #(sources, model) = load_custom(sources, model, custom.Sources)
 
   let #(tasks, errors) =
-    result.partition({
-      use doc, index <- list.index_map(get_docs(files, file.tasks))
-      props.decode(doc, task.decoder(fields, sources, filters))
-      |> report.error_context(error.IndexContext(index))
-    })
+    load_docs(tasks, props.decode(_, task.decoder(fields, sources, filters)))
 
-  let tasks =
-    dict.from_list({
-      use task <- list.map(tasks)
-      #(task.id, task)
-    })
-
+  let tasks = dict.from_list(list.map(tasks, fn(task) { #(task.id, task) }))
   Model(tasks:, errors: list.append(model.errors, errors))
 }
 
-fn get_docs(
+fn load_custom(
   files: List(File),
-  filter: fn(File) -> Result(List(Dynamic), _),
-) -> List(Dynamic) {
-  list.flatten(list.filter_map(files, filter))
+  model: Model,
+  construct: fn(Dict(String, Custom)) -> custom,
+) -> #(custom, Model) {
+  let #(custom, errors) = load_docs(files, custom.decode)
+  let errors = list.append(model.errors, errors)
+  let custom = list.fold(custom, dict.new(), dict.merge)
+  #(construct(custom), Model(..model, errors:))
+}
+
+fn load_docs(
+  files: List(File),
+  then: fn(Dynamic) -> Result(v, Report(Error)),
+) -> #(List(v), List(Report(Error))) {
+  result.partition({
+    use file <- list.flat_map(files)
+    use doc, index <- list.index_map(file.docs)
+
+    then(doc)
+    |> report.error_context(error.IndexContext(index))
+    |> report.error_context(error.PathContext(file.path))
+  })
 }
 
 fn load_files(config: Config, model: Model) -> #(List(File), Model) {
@@ -189,16 +194,4 @@ fn load_files(config: Config, model: Model) -> #(List(File), Model) {
     })
 
   #(files, Model(..model, errors:))
-}
-
-fn load_custom(
-  docs: List(Dynamic),
-  model: Model,
-) -> #(Dict(String, Custom), Model) {
-  let #(custom, errors) =
-    list.map(docs, custom.decode)
-    |> result.partition
-
-  let errors = list.append(model.errors, errors)
-  #(list.fold(custom, dict.new(), dict.merge), Model(..model, errors:))
 }
