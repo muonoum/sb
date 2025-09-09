@@ -207,13 +207,15 @@ fn load_docs2(
     Result(#(Dups, Result(v, Report(Error))), Report(Error)),
 ) -> #(List(v), List(Report(Error))) {
   result.partition({
-    let seen = dups.new()
-    use file <- list.flat_map(files)
+    let docs = {
+      use file <- list.flat_map(files)
+      use doc, index <- list.index_map(file.docs)
+      #(file.path, index, doc)
+    }
 
     pair.second({
-      let docs = list.index_map(file.docs, pair.new)
-      use seen, #(doc, index) <- list.map_fold(docs, seen)
-      use <- extra.return(error_context(_, file.path, index + 1))
+      use seen, #(path, index, doc) <- list.map_fold(docs, dups.new())
+      use <- extra.return(error_context(_, path, index + 1))
 
       case then(seen, doc) {
         Error(report) -> #(seen, Error(report))
