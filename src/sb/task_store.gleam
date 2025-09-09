@@ -141,7 +141,11 @@ fn load(model: Model, config: Config) -> Model {
 
   let #(sources, files) = list.partition(files, file.is_sources)
   let #(fields, files) = list.partition(files, file.is_fields)
-  let #(filters, _rest) = list.partition(files, file.is_filters)
+  // let #(filters, _rest) = list.partition(files, file.is_filters)
+
+  let #(filters, _rest) =
+    list.partition(files, file.is_filters)
+    |> pair.map_first(docs)
 
   let #(sources, model) = {
     let #(custom, errors) = load_docs(sources, custom.decode)
@@ -157,14 +161,25 @@ fn load(model: Model, config: Config) -> Model {
     #(custom.Fields(custom), Model(..model, errors:))
   }
 
-  let #(filters, model) = {
-    let #(custom, errors) = load_docs(filters, custom.decode)
-    let errors = list.append(model.errors, errors)
-    let custom = list.fold(custom, dict.new(), dict.merge)
-    #(custom.Filters(custom), Model(..model, errors:))
-  }
+  // let #(filters, model) = {
+  //   let #(custom, errors) = load_docs(filters, custom.decode)
+  //   let errors = list.append(model.errors, errors)
+  //   let custom = list.fold(custom, dict.new(), dict.merge)
+  //   #(custom.Filters(custom), Model(..model, errors:))
+  // }
 
-  let #(tasks, errors) =
+  let #(filters, filter_errors) =
+    result.partition({
+      let decoder = custom.decoder()
+      use seen, doc <- load_docs2(filters)
+      use #(id, custom) <- result.map(props.decode(doc, decoder))
+      use seen <- dups.id(seen, id)
+      #(seen, Ok(#(id, custom)))
+    })
+
+  let filters = custom.Filters(dict.from_list(filters))
+
+  let #(tasks, task_errors) =
     result.partition({
       let decoder = task.decoder(fields, sources, filters)
       use seen, doc <- load_docs2(tasks)
@@ -175,7 +190,10 @@ fn load(model: Model, config: Config) -> Model {
     })
 
   let tasks = dict.from_list(tasks)
-  let errors = list.append(model.errors, errors)
+  let errors =
+    model.errors
+    |> list.append(filter_errors)
+    |> list.append(task_errors)
   Model(tasks:, errors:)
 }
 

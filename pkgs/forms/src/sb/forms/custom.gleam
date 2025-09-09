@@ -54,6 +54,12 @@ fn custom_decoder() -> Decoder(Dict(String, Dynamic)) {
   decode.dict(decode.string, decode.dynamic)
 }
 
+pub fn decoder() {
+  use id <- props.get("id", decoder.from(decode.string))
+  use dict <- props.get_dict()
+  state.succeed(#(id, dict.drop(dict, [id])))
+}
+
 pub fn kind_decoder(
   seen: Set(String),
   custom: custom,
