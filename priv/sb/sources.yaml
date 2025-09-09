@@ -2,3 +2,13 @@ kind: sources/v1
 ---
 id: source1
 literal: value
+---
+id: source2
+reference: id
+---
+id: source3
+fetch: url
+---
+id: source4
+fetch:
+  url: url
