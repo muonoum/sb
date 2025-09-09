@@ -125,13 +125,14 @@ fn view_tree(tree: Tree(Node), depth depth: Int) -> Element(message) {
       html.section(
         [
           core.classes(case count < 5 {
-            // True -> grid_layout
             True -> flex_layout
             False -> grid_layout
           }),
         ],
-        tree.children(tree)
-          |> list.map(view_tree(_, depth: 0)),
+        {
+          use tree <- list.map(tree.children(tree))
+          view_tree(tree, depth: 0)
+        },
       )
 
     nodes.Category(Hidden, _name) -> element.none()

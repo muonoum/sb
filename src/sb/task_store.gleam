@@ -15,6 +15,7 @@ import sb/extra/report.{type Report}
 import sb/extra/yaml
 import sb/forms/custom.{type Custom}
 import sb/forms/decoder
+import sb/forms/dups.{type Dups}
 import sb/forms/error.{type Error}
 import sb/forms/file.{type File, File}
 import sb/forms/props
@@ -131,19 +132,27 @@ fn load(model: Model, config: Config) -> Model {
   let #(files, model) = load_files(config, model)
 
   let #(tasks, files) = list.partition(files, file.is_tasks)
+
   let #(sources, files) = list.partition(files, file.is_sources)
-  let #(filters, files) = list.partition(files, file.is_filters)
-  let #(fields, _files) = list.partition(files, file.is_fields)
+  let #(fields, files) = list.partition(files, file.is_fields)
+  let #(filters, _rest) = list.partition(files, file.is_filters)
 
-  let #(filters, model) = load_custom(filters, model, custom.Filters)
-  let #(fields, model) = load_custom(fields, model, custom.Fields)
   let #(sources, model) = load_custom(sources, model, custom.Sources)
+  let #(fields, model) = load_custom(fields, model, custom.Fields)
+  let #(filters, model) = load_custom(filters, model, custom.Filters)
 
-  let #(tasks, errors) =
-    load_docs(tasks, props.decode(_, task.decoder(fields, sources, filters)))
+  let #(tasks, errors) = {
+    let decoder = task.decoder(fields, sources, filters)
+    use seen, doc <- load_docs2(tasks)
+    use task <- result.map(props.decode(doc, decoder))
+    use seen <- dups.names(seen, task.name, task.category)
+    use seen <- dups.id(seen, task.id)
+    #(seen, Ok(#(task.id, task)))
+  }
 
-  let tasks = dict.from_list(list.map(tasks, fn(task) { #(task.id, task) }))
-  Model(tasks:, errors: list.append(model.errors, errors))
+  let tasks = dict.from_list(tasks)
+  let errors = list.append(model.errors, errors)
+  Model(tasks:, errors:)
 }
 
 fn load_files(config: Config, model: Model) -> #(List(File), Model) {
@@ -192,6 +201,28 @@ fn load_docs(
   })
 }
 
+fn load_docs2(
+  files: List(File),
+  then: fn(Dups, Dynamic) ->
+    Result(#(Dups, Result(v, Report(Error))), Report(Error)),
+) -> #(List(v), List(Report(Error))) {
+  result.partition({
+    let seen = dups.new()
+    use file <- list.flat_map(files)
+
+    pair.second({
+      let docs = list.index_map(file.docs, pair.new)
+      use seen, #(doc, index) <- list.map_fold(docs, seen)
+      use <- extra.return(error_context(_, file.path, index + 1))
+
+      case then(seen, doc) {
+        Error(report) -> #(seen, Error(report))
+        Ok(#(seen, result)) -> #(seen, result)
+      }
+    })
+  })
+}
+
 fn load_custom(
   files: List(File),
   model: Model,
@@ -201,4 +232,14 @@ fn load_custom(
   let errors = list.append(model.errors, errors)
   let custom = list.fold(custom, dict.new(), dict.merge)
   #(construct(custom), Model(..model, errors:))
+}
+
+fn error_context(
+  pair: #(_, Result(v, Report(Error))),
+  path: String,
+  index: Int,
+) -> #(_, Result(v, Report(Error))) {
+  use result <- pair.map_second(pair)
+  report.error_context(result, error.IndexContext(index))
+  |> report.error_context(error.PathContext(path))
 }

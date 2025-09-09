@@ -14,6 +14,10 @@ pub fn identity(value: v) -> v {
   value
 }
 
+pub fn id2(f: fn(a, b) -> c, then: b) -> fn(a) -> c {
+  fn(a) { f(a, then) }
+}
+
 pub fn nullary(value: v) -> fn() -> v {
   fn() { value }
 }

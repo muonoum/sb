@@ -16,6 +16,7 @@ pub type Error {
 
   Recursive(String)
   DuplicateId(String)
+  DuplicateNames(name: String, category: List(String))
   Expected(Value)
   Message(String)
   NotFound(String)
