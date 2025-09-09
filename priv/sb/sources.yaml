@@ -1,0 +1,4 @@
+kind: sources/v1
+---
+id: source1
+literal: value
