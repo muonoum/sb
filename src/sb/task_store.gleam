@@ -27,6 +27,10 @@ const call_timeout = 1000
 
 const shutdown_timeout = 1000
 
+type Document {
+  Document(path: String, index: Int, data: Dynamic)
+}
+
 pub type Config {
   Config(prefix: String, pattern: String, interval: Int)
 }
@@ -131,24 +135,28 @@ fn schedule(
 fn load(model: Model, config: Config) -> Model {
   let #(files, model) = load_files(config, model)
 
-  let #(tasks, files) = list.partition(files, file.is_tasks)
+  let #(tasks, files) =
+    list.partition(files, file.is_tasks)
+    |> pair.map_first(docs)
 
   let #(sources, files) = list.partition(files, file.is_sources)
-  let #(fields, files) = list.partition(files, file.is_fields)
-  let #(filters, _rest) = list.partition(files, file.is_filters)
-
   let #(sources, model) = load_custom(sources, model, custom.Sources)
+
+  let #(fields, files) = list.partition(files, file.is_fields)
   let #(fields, model) = load_custom(fields, model, custom.Fields)
+
+  let #(filters, _rest) = list.partition(files, file.is_filters)
   let #(filters, model) = load_custom(filters, model, custom.Filters)
 
-  let #(tasks, errors) = {
-    let decoder = task.decoder(fields, sources, filters)
-    use seen, doc <- load_docs2(tasks)
-    use task <- result.map(props.decode(doc, decoder))
-    use seen <- dups.names(seen, task.name, task.category)
-    use seen <- dups.id(seen, task.id)
-    #(seen, Ok(#(task.id, task)))
-  }
+  let #(tasks, errors) =
+    result.partition({
+      let decoder = task.decoder(fields, sources, filters)
+      use seen, doc <- load_docs2(tasks)
+      use task <- result.map(props.decode(doc, decoder))
+      use seen <- dups.names(seen, task.name, task.category)
+      use seen <- dups.id(seen, task.id)
+      #(seen, Ok(#(task.id, task)))
+    })
 
   let tasks = dict.from_list(tasks)
   let errors = list.append(model.errors, errors)
@@ -201,27 +209,32 @@ fn load_docs(
   })
 }
 
-fn load_docs2(
+fn kind(
   files: List(File),
-  then: fn(Dups, Dynamic) ->
-    Result(#(Dups, Result(v, Report(Error))), Report(Error)),
-) -> #(List(v), List(Report(Error))) {
-  result.partition({
-    let docs = {
-      use file <- list.flat_map(files)
-      use doc, index <- list.index_map(file.docs)
-      #(file.path, index, doc)
+  filter: fn(File) -> Bool,
+) -> #(List(Document), List(File)) {
+  list.partition(files, filter)
+  |> pair.map_first(docs)
+}
+
+fn docs(files: List(File)) -> List(Document) {
+  use file <- list.flat_map(files)
+  use data, index <- list.index_map(file.docs)
+  Document(path: file.path, index: index + 1, data:)
+}
+
+fn load_docs2(
+  docs: List(Document),
+  then: fn(Dups, Dynamic) -> Result(#(Dups, Result(v, _report)), _report),
+) -> List(Result(v, _report)) {
+  pair.second({
+    use seen, doc <- list.map_fold(docs, dups.new())
+    use <- extra.return(error_context(_, doc.path, doc.index))
+
+    case then(seen, doc.data) {
+      Error(report) -> #(seen, Error(report))
+      Ok(#(seen, result)) -> #(seen, result)
     }
-
-    pair.second({
-      use seen, #(path, index, doc) <- list.map_fold(docs, dups.new())
-      use <- extra.return(error_context(_, path, index + 1))
-
-      case then(seen, doc) {
-        Error(report) -> #(seen, Error(report))
-        Ok(#(seen, result)) -> #(seen, result)
-      }
-    })
   })
 }
 
