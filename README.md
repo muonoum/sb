@@ -17,25 +17,31 @@ approvers: Access # optional
 Task
 ```
 
-### custom fields
+### custom field
 
 ```yaml
 kind: fields/v1
 ---
+id: String
+Field
 ```
 
-### custom filters
+### custom filter
 
 ```yaml
 kind: filters/v1
 ---
+id: String
+Filter
 ```
 
-### custom sources
+### custom source
 
 ```yaml
 kind: sources/v1
 ---
+id: String
+Source
 ```
 
 ## Text

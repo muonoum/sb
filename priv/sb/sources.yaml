@@ -1,14 +1,13 @@
 kind: sources/v1
 ---
-id: source1
+id: custom-literal
+kind: literal
 literal: value
 ---
-id: source2
+id: custom-reference
+kind: reference
 reference: id
 ---
-id: source3
-fetch: url
----
-id: source4
-fetch:
-  url: url
+id: custom-reference
+kind: reference
+reference: id
