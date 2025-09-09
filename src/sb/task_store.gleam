@@ -13,7 +13,7 @@ import sb/extra/dots
 import sb/extra/path
 import sb/extra/report.{type Report}
 import sb/extra/yaml
-import sb/forms/custom.{type Custom}
+import sb/forms/custom
 import sb/forms/decoder
 import sb/forms/dups.{type Dups}
 import sb/forms/error.{type Error}
@@ -140,13 +140,29 @@ fn load(model: Model, config: Config) -> Model {
     |> pair.map_first(docs)
 
   let #(sources, files) = list.partition(files, file.is_sources)
-  let #(sources, model) = load_custom(sources, model, custom.Sources)
-
   let #(fields, files) = list.partition(files, file.is_fields)
-  let #(fields, model) = load_custom(fields, model, custom.Fields)
-
   let #(filters, _rest) = list.partition(files, file.is_filters)
-  let #(filters, model) = load_custom(filters, model, custom.Filters)
+
+  let #(sources, model) = {
+    let #(custom, errors) = load_docs(sources, custom.decode)
+    let errors = list.append(model.errors, errors)
+    let custom = list.fold(custom, dict.new(), dict.merge)
+    #(custom.Sources(custom), Model(..model, errors:))
+  }
+
+  let #(fields, model) = {
+    let #(custom, errors) = load_docs(fields, custom.decode)
+    let errors = list.append(model.errors, errors)
+    let custom = list.fold(custom, dict.new(), dict.merge)
+    #(custom.Fields(custom), Model(..model, errors:))
+  }
+
+  let #(filters, model) = {
+    let #(custom, errors) = load_docs(filters, custom.decode)
+    let errors = list.append(model.errors, errors)
+    let custom = list.fold(custom, dict.new(), dict.merge)
+    #(custom.Filters(custom), Model(..model, errors:))
+  }
 
   let #(tasks, errors) =
     result.partition({
@@ -209,14 +225,6 @@ fn load_docs(
   })
 }
 
-fn kind(
-  files: List(File),
-  filter: fn(File) -> Bool,
-) -> #(List(Document), List(File)) {
-  list.partition(files, filter)
-  |> pair.map_first(docs)
-}
-
 fn docs(files: List(File)) -> List(Document) {
   use file <- list.flat_map(files)
   use data, index <- list.index_map(file.docs)
@@ -236,17 +244,6 @@ fn load_docs2(
       Ok(#(seen, result)) -> #(seen, result)
     }
   })
-}
-
-fn load_custom(
-  files: List(File),
-  model: Model,
-  construct: fn(Dict(String, Custom)) -> custom,
-) -> #(custom, Model) {
-  let #(custom, errors) = load_docs(files, custom.decode)
-  let errors = list.append(model.errors, errors)
-  let custom = list.fold(custom, dict.new(), dict.merge)
-  #(construct(custom), Model(..model, errors:))
 }
 
 fn error_context(
