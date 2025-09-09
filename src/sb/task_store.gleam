@@ -3,7 +3,6 @@ import gleam/erlang/process
 import gleam/list
 import gleam/otp/actor
 import gleam/otp/supervision
-import gleam/pair
 import gleam/result
 import sb/extra
 import sb/extra/path
@@ -12,7 +11,7 @@ import sb/extra/yaml
 import sb/forms/custom
 import sb/forms/dups
 import sb/forms/error.{type Error}
-import sb/forms/file.{type File}
+import sb/forms/file
 import sb/forms/props
 import sb/forms/task.{type Task}
 
