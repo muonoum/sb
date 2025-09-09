@@ -237,6 +237,7 @@ fn seen_decoder(seen: Set(String), sources: custom.Sources) -> Props(Source) {
       })
 
     [#("kind", _dynamic)] -> kind_decoder(seen, sources)
+    // TODO: Slå opp custom her og feile neste?
     [#(name, _)] -> state.fail(report.new(error.UnknownKind(name)))
     _else -> kind_decoder(seen, sources)
   }
