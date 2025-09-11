@@ -1,3 +1,4 @@
+import exception.{type Exception}
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
@@ -30,7 +31,7 @@ pub fn load_documents(
 
 pub fn load_custom(
   data: String,
-  loader: fn(String) -> Result(Dynamic, Dynamic),
+  loader: fn(String) -> Result(Dynamic, Exception),
 ) -> Result(Dict(String, dict.Dict(String, Dynamic)), Report(Error)) {
   use docs <- result.try(load_documents(data, loader))
   use dict, dynamic <- list.try_fold(docs, dict.new())

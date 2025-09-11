@@ -1,0 +1,157 @@
+kind: tasks/v1
+---
+name: Unresolved groups
+category: [Groups]
+
+fields:
+  - id: input
+    kind: text
+
+  - id: groups
+    kind: select
+    source.groups:
+      - label: Literal
+        source.literal:
+          - Esse voluptate consequat excepteur sunt amet mollit culpa nostrud mollit ullamco cillum quis.
+          - Veniam velit Lorem enim eiusmod commodo eu.
+          - Aliqua culpa mollit sunt fugiat ut eu voluptate nisi Lorem elit fugiat commodo labore.
+
+      - label: Bad reference
+        source.reference: nope
+
+      - label: Placeholder fetch
+        source.fetch: http://localhost:1980/mock/{{_}}/sentences/3/3?delay=500
+
+      - label: Reference fetch
+        source.fetch: http://localhost:1980/mock/{{input}}/sentences/3/3?delay=500
+
+      - label: Bad fetch
+        source.fetch: bad
+
+      - label: Another literal
+        source.literal:
+          - Elit quis consequat dolore quis ad adipisicing cupidatat et.
+          - Ut esse excepteur tempor consectetur excepteur.
+          - Et Lorem esse adipisicing laboris aliqua ea duis.
+---
+name: Fetch groups
+category: [Groups]
+
+fields:
+  - id: groups
+    kind: select
+    multiple: true
+    source.groups:
+      - label: Group1
+        source.reference: source1
+
+      - label: Group2
+        source.reference: source2
+
+      - label: Group3
+        source.reference: source3
+
+  - id: source1
+    kind: data
+    source.fetch: http://localhost:1980/mock/lorem/sentences/5/5?delay=100
+
+  - id: source2
+    kind: data
+    source.fetch: http://localhost:1980/mock/lorem/sentences/5/5?delay=300
+
+  - id: source3
+    kind: data
+    source.fetch: http://localhost:1980/mock/lorem/sentences/5/5?delay=500
+---
+name: Radio groups
+category: [Groups]
+
+fields:
+  - id: radio
+    kind: radio
+    label: In deserunt nisi ea laboris velit occaecat quis pariatur.
+    description: |
+      Duis ex id anim laboris labore qui aliquip sit amet ullamco qui quis. Consectetur magna ut non aute duis nisi officia sint mollit consectetur reprehenderit consequat. Quis pariatur ea mollit minim sunt. Commodo adipisicing fugiat sit exercitation anim qui eu laboris irure pariatur occaecat nisi occaecat enim laboris. Elit exercitation dolor aliqua reprehenderit labore ad adipisicing sint dolore do consequat non tempor minim pariatur. Eiusmod deserunt eiusmod aliquip duis enim culpa. Mollit veniam non excepteur consequat reprehenderit minim.
+    default: Aliqua laborum do non in voluptate reprehenderit reprehenderit elit pariatur incididunt culpa velit in id enim.
+    source.groups:
+      - label: Group1
+        source.literal:
+          - Irure dolor labore est ipsum irure culpa ad nostrud consectetur.
+          - Aliqua laborum do non in voluptate reprehenderit reprehenderit elit pariatur incididunt culpa velit in id enim.
+          - Cupidatat laborum adipisicing labore elit mollit dolor.
+      - label: Group2
+        source.literal:
+          - Dolore fugiat enim occaecat dolor voluptate cillum laboris incididunt ea sunt tempor ad amet.
+          - Velit quis consequat minim mollit quis occaecat est labore velit proident aute reprehenderit elit anim eiusmod.
+          - Sunt proident pariatur velit velit ullamco ex id proident laboris Lorem non.
+---
+name: Checkbox groups
+category: [Groups]
+
+fields:
+  - id: checkbox
+    kind: checkbox
+    label: In deserunt nisi ea laboris velit occaecat quis pariatur.
+    description: |
+      Duis ex id anim laboris labore qui aliquip sit amet ullamco qui quis. Consectetur magna ut non aute duis nisi officia sint mollit consectetur reprehenderit consequat. Quis pariatur ea mollit minim sunt. Commodo adipisicing fugiat sit exercitation anim qui eu laboris irure pariatur occaecat nisi occaecat enim laboris. Elit exercitation dolor aliqua reprehenderit labore ad adipisicing sint dolore do consequat non tempor minim pariatur. Eiusmod deserunt eiusmod aliquip duis enim culpa. Mollit veniam non excepteur consequat reprehenderit minim.
+    default:
+      - Irure dolor labore est ipsum irure culpa ad nostrud consectetur.
+      - Velit quis consequat minim mollit quis occaecat est labore velit proident aute reprehenderit elit anim eiusmod.
+    source.groups:
+      - label: Group1
+        source.literal:
+          - Irure dolor labore est ipsum irure culpa ad nostrud consectetur.
+          - Aliqua laborum do non in voluptate reprehenderit reprehenderit elit pariatur incididunt culpa velit in id enim.
+          - Cupidatat laborum adipisicing labore elit mollit dolor.
+      - label: Group2
+        source.literal:
+          - Dolore fugiat enim occaecat dolor voluptate cillum laboris incididunt ea sunt tempor ad amet.
+          - Velit quis consequat minim mollit quis occaecat est labore velit proident aute reprehenderit elit anim eiusmod.
+          - Sunt proident pariatur velit velit ullamco ex id proident laboris Lorem non.
+---
+name: Select groups
+category: [Groups]
+
+fields:
+  - id: select
+    kind: select
+    source.groups:
+      - label: Group1
+        source.literal:
+          - Irure dolor labore est ipsum irure culpa ad nostrud consectetur.
+          - Aliqua laborum do non in voluptate reprehenderit reprehenderit elit pariatur incididunt culpa velit in id enim.
+          - Cupidatat laborum adipisicing labore elit mollit dolor.
+      - label: Group2
+        source.literal:
+          - Dolore fugiat enim occaecat dolor voluptate cillum laboris incididunt ea sunt tempor ad amet.
+          - Velit quis consequat minim mollit quis occaecat est labore velit proident aute reprehenderit elit anim eiusmod.
+          - Sunt proident pariatur velit velit ullamco ex id proident laboris Lorem non.
+      - label: Group3
+        source.literal:
+          - Nulla fugiat voluptate consectetur ipsum nostrud.
+          - Sunt ut exercitation exercitation ullamco minim nostrud proident sint qui deserunt consectetur ex ullamco.
+          - Irure ipsum proident commodo et nulla amet consequat.
+---
+name: Multiselect groups
+category: [Groups]
+
+fields:
+  - id: select
+    multiple: true
+    kind: select
+    source.groups:
+      - label: Group1
+        source.literal:
+          - Irure dolor labore est ipsum irure culpa ad nostrud consectetur.
+          - Aliqua laborum do non in voluptate reprehenderit reprehenderit elit pariatur incididunt culpa velit in id enim.
+          - Cupidatat laborum adipisicing labore elit mollit dolor.
+      - label: Group2
+        source.literal:
+          - Dolore fugiat enim occaecat dolor voluptate cillum laboris incididunt ea sunt tempor ad amet.
+          - Velit quis consequat minim mollit quis occaecat est labore velit proident aute reprehenderit elit anim eiusmod.
+          - Sunt proident pariatur velit velit ullamco ex id proident laboris Lorem non.
+      - label: Group3
+        source.literal:
+          - Nulla fugiat voluptate consectetur ipsum nostrud.
+          - Sunt ut exercitation exercitation ullamco minim nostrud proident sint qui deserunt consectetur ex ullamco.
+          - Irure ipsum proident commodo et nulla amet consequat.

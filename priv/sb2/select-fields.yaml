@@ -1,0 +1,124 @@
+kind: tasks/v1
+---
+name: Select
+category: [Fields, Select]
+
+fields:
+  - id: 2-select
+    kind: select
+    source.reference: 1-fetch
+  
+  - id: 3-reference
+    kind: data
+    source.reference: 2-select
+  
+  - id: 1-fetch
+    kind: data
+    source.fetch: http://localhost:1980/mock/lorem/sentences/3/3
+---
+name: Select with delay
+category: [Fields, Select]
+
+fields:
+  - id: 2-select
+    kind: select
+    source.reference: 1-fetch
+  
+  - id: 4-select
+    kind: select
+    source.reference: 3-fetch
+  
+  - id: 5-reference
+    kind: data
+    source.reference: 4-select
+  
+  - id: 3-fetch
+    kind: data
+    source.fetch:
+      method: post
+      url: http://localhost:1980/mock/echo?delay=500
+      body.reference: 2-select
+  
+  - id: 1-fetch
+    kind: data
+    source.fetch: http://localhost:1980/mock/lorem/sentences/3/3?delay=500    
+---
+name: Multiselect
+category: [Fields, Select]
+
+fields:
+  - id: 2-select
+    kind: select
+    multiple: true
+    source.reference: 1-fetch
+  
+  - id: 4-select
+    kind: select
+    multiple: true
+    source.reference: 3-fetch
+  
+  - id: 5-reference
+    kind: data
+    source.reference: 4-select
+  
+  - id: 3-fetch
+    kind: data
+    source.fetch:
+      method: post
+      url: http://localhost:1980/mock/echo
+      body.reference: 2-select
+  
+  - id: 1-fetch
+    kind: data
+    source.fetch: http://localhost:1980/mock/lorem/sentences/3/3
+---
+name: Multiselect with delay
+category: [Fields, Select]
+
+fields:
+  - id: 2-select
+    kind: select
+    multiple: true
+    source.reference: 1-fetch
+  
+  - id: 4-select
+    kind: select
+    multiple: true
+    source.reference: 3-fetch
+  
+  - id: 5-reference
+    kind: data
+    source.reference: 4-select
+  
+  - id: 3-fetch
+    kind: data
+    source.fetch:
+      method: post
+      url: http://localhost:1980/mock/echo?delay=500
+      body.reference: 2-select
+  
+  - id: 1-fetch
+    kind: data
+    source.fetch: http://localhost:1980/mock/lorem/sentences/3/3?delay=500    
+---
+name: Multiselect with search
+category: [Fields, Select]
+
+fields:
+  - id: select
+    kind: select
+    multiple: true
+    source.fetch: http://localhost:1980/mock/{{_}}/sentences/3/3?delay=500    
+---
+name: Multiselect with search from input
+category: [Fields, Select]
+
+fields:
+  - id: input
+    kind: text
+    default: lorem
+
+  - id: select
+    kind: select
+    multiple: true
+    source.fetch: http://localhost:1980/mock/{{input}}/sentences/3/3?delay=500    

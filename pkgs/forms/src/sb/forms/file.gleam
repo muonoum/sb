@@ -9,7 +9,7 @@ import sb/forms/props
 import sb/forms/zero
 
 pub type File {
-  File(kind: Kind, path: String, docs: List(Dynamic))
+  File(kind: Kind, path: String, documents: List(Dynamic))
 }
 
 pub type Kind {

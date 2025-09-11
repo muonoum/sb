@@ -1,0 +1,120 @@
+kind: tasks/v1
+---
+name: Text defaults
+category: [Defaults]
+
+fields:
+  - id: text-with-default
+    kind: text
+    default: some default
+
+  - id: textarea-with-default
+    kind: textarea
+    default: some default
+
+---
+name: Radio buttons default
+category: [Defaults]
+
+fields:
+  - id: radio
+    kind: radio
+    default: Curabitur pretium metus
+    source.literal:
+      - Lorem ipsum dolor sit amet: Lorem!
+      - Curabitur pretium metus
+      - Vestibulum vitae arcu eu mauris
+---
+name: Radio buttons bad default
+category: [Defaults]
+
+fields:
+  - id: radio
+    kind: radio
+    default: Nurabitur pretium metus
+    source.literal:
+      - Lorem ipsum dolor sit amet: Lorem!
+      - Curabitur pretium metus
+      - Vestibulum vitae arcu eu mauris
+---
+name: Checkbox defaults
+category: [Defaults]
+
+fields:
+  - id: checkbox
+    kind: checkbox
+    source.literal:
+      - Lorem ipsum dolor sit amet: Lorem!
+      - Curabitur pretium metus
+      - Vestibulum vitae arcu eu mauris
+    default:
+      - Lorem ipsum dolor sit amet
+      - Vestibulum vitae arcu eu mauris
+---
+name: Checkbox bad default
+category: [Defaults]
+
+fields:
+  - id: checkbox
+    kind: checkbox
+    source.literal:
+      - Lorem ipsum dolor sit amet: Lorem!
+      - Curabitur pretium metus
+      - Vestibulum vitae arcu eu mauris
+    default:
+      - Norem ipsum dolor sit amet
+      - Vestibulum vitae arcu eu mauris
+---
+name: Select default
+category: [Defaults]
+
+fields:
+  - id: select
+    kind: select
+    default: Lorem ipsum dolor sit amet
+    source.literal:
+      - Lorem ipsum dolor sit amet: Lorem!
+      - Curabitur pretium metus
+      - Vestibulum vitae arcu eu mauris
+---
+name: Multiselect defaults
+category: [Defaults]
+
+fields:
+  - id: select
+    kind: select
+    multiple: true
+    default:
+      - Lorem ipsum dolor sit amet
+      - Vestibulum vitae arcu eu mauris
+    source.literal:
+      - Lorem ipsum dolor sit amet: Lorem!
+      - Curabitur pretium metus
+      - Vestibulum vitae arcu eu mauris
+---
+name: Select bad default
+category: [Defaults]
+
+fields:
+  - id: select
+    kind: select
+    default: Norem ipsum dolor sit amet
+    source.literal:
+      - Lorem ipsum dolor sit amet: Lorem!
+      - Curabitur pretium metus
+      - Vestibulum vitae arcu eu mauris
+---
+name: Multiselect bad default
+category: [Defaults]
+
+fields:
+  - id: select
+    kind: select
+    multiple: true
+    default:
+      - Norem ipsum dolor sit amet
+      - Vestibulum vitae arcu eu mauris
+    source.literal:
+      - Lorem ipsum dolor sit amet: Lorem!
+      - Curabitur pretium metus
+      - Vestibulum vitae arcu eu mauris
