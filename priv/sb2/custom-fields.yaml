@@ -1,0 +1,5 @@
+kind: fields/v1
+---
+environment:
+  kind: radio
+  source.literal: [test, qa, prod]

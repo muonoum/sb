@@ -1,0 +1,117 @@
+kind: tasks/v1
+---
+name: Static
+category: [Filters]
+
+fields:
+  - id: always-succeeds
+    kind: data
+    source.literal: hei
+    filters:
+      - kind: succeed
+
+  - id: always-fails
+    kind: data
+    source.literal: hei
+    filters:
+      - kind: fail
+        error-message: nope
+
+  - id: expect-ok
+    kind: data
+    source.literal: hei
+    filters:
+      - kind: expect
+        value: hei
+
+  - id: expect-fail
+    kind: data
+    source.literal: hei
+    filters:
+      - kind: expect
+        value: hello
+---
+name: Parse integer
+category: [Filters]
+
+fields:
+  - id: parse-ok-string
+    kind: data
+    source.literal: "10"
+    filters: [kind: parse-integer]
+
+  - id: parse-ok-int
+    kind: data
+    source.literal: 10
+    filters: 
+      - kind: parse-integer
+
+  - id: parse-bad-float
+    kind: data
+    source.literal: 10.0
+    filters: 
+      - kind: parse-integer
+
+  - id: parse-bad-string
+    kind: data
+    source.literal: nope
+    filters: 
+      - kind: parse-integer
+---
+name: Parse float
+category: [Filters]
+
+fields:
+  - id: parse-ok-string
+    kind: data
+    source.literal: "3.14"
+    filters: [kind: parse-float]
+
+  - id: parse-ok-int
+    kind: data
+    source.literal: 42
+    filters: [kind: parse-float]
+
+  - id: parse-bad-string
+    kind: data
+    source.literal: nope
+    filters: [kind: parse-float]
+---
+name: Regex
+category: [Filters]
+
+fields:
+  - id: regex-match-succeeds
+    kind: data
+    source.literal: hei
+    filters:
+      - kind: regex-match
+        pattern: hei
+        error-message: nope
+
+  - id: regex-match-fails
+    kind: data
+    source.literal: ja
+    filters:
+      - kind: regex-match
+        pattern: hei
+        error-message: nope
+
+  - id: input-pattern
+    kind: text
+    filters:
+      - kind: regex-match
+        pattern: ^(1?[0-9]{1,2}|2[0-4][0-9]|25[0-6])$
+        error-message: Expected an integer between 0 and 256
+      - kind: parse-integer
+---
+name: Custom
+category: [Filters]
+
+fields:
+  - id: field1
+    kind: text
+    filters:
+      - kind: weight
+        error-message: Ugyldig vekt
+      - kind: parse-integer

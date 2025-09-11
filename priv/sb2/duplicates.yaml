@@ -1,0 +1,38 @@
+kind: tasks/v1
+---
+name: Select
+category: [Duplicates]
+
+fields:
+  - id: select
+    kind: select
+    source.literal:
+      - Commodo aliqua minim eu reprehenderit veniam velit nulla in do est magna ex labore consequat aliquip.
+      - Consequat in ullamco officia nisi id ea sit consequat eiusmod.
+      - Consequat in ullamco officia nisi id ea sit consequat eiusmod.
+      - Laboris amet minim aliquip veniam pariatur nulla sint ea dolore exercitation labore in id.
+---
+name: Radio
+category: [Duplicates]
+
+fields:
+  - id: radio
+    kind: radio
+    source.literal:
+      - Commodo aliqua minim eu reprehenderit veniam velit nulla in do est magna ex labore consequat aliquip.
+      - Consequat in ullamco officia nisi id ea sit consequat eiusmod.
+      - Consequat in ullamco officia nisi id ea sit consequat eiusmod.
+      - Laboris amet minim aliquip veniam pariatur nulla sint ea dolore exercitation labore in id.
+---
+name: Checkbox
+category: [Duplicates]
+
+fields:
+  - id: checkbox
+    kind: checkbox
+    source.literal:
+      - Commodo aliqua minim eu reprehenderit veniam velit nulla in do est magna ex labore consequat aliquip.
+      - Consequat in ullamco officia nisi id ea sit consequat eiusmod.
+      - Consequat in ullamco officia nisi id ea sit consequat eiusmod.
+      - Laboris amet minim aliquip veniam pariatur nulla sint ea dolore exercitation labore in id.
+

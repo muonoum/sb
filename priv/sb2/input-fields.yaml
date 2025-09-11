@@ -1,0 +1,13 @@
+kind: tasks/v1
+---
+name: Text input
+category: [Fields]
+
+fields:
+  - id: text
+    label: Text field
+    kind: text
+
+  - id: textarea
+    label: Textarea field
+    kind: textarea

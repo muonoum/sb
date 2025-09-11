@@ -1,0 +1,65 @@
+kind: tasks/v1
+---
+name: Simple radio buttons
+category: [Fields, Radio]
+
+fields:
+  - id: radio
+    kind: radio
+    source.literal:
+      - Irure dolor labore est ipsum irure culpa ad nostrud consectetur.
+      - Aliqua laborum do non in voluptate reprehenderit reprehenderit elit pariatur incididunt culpa velit in id enim.
+      - Cupidatat laborum adipisicing labore elit mollit dolor.
+---
+name: Radio buttons
+category: [Fields, Radio]
+
+fields:
+  - id: 2-select
+    kind: radio
+    source.reference: 1-fetch
+  
+  - id: 3-reference
+    kind: data
+    source.reference: 2-select
+  
+  - id: 1-fetch
+    kind: data
+    source.fetch: http://localhost:1980/mock/lorem/sentences/3/3
+---
+name: Nested radio buttons
+category: [Fields, Radio]
+
+fields:
+  - id: radio2
+    kind: radio
+    source.reference: radio1
+
+  - id: radio1
+    kind: radio
+    source.literal:
+      - Nulla anim irure aute aliqua mollit velit cupidatat:
+          - Ipsum minim in laboris veniam ea est occaecat occaecat ex.
+          - Cillum tempor duis enim nulla reprehenderit in incididunt id mollit sunt magna mollit quis ullamco.
+          - Dolore incididunt amet commodo elit est aliqua sunt est id consectetur sint.
+      - Adipisicing ex adipisicing amet et magna sit velit velit nulla consectetur minim occaecat id:
+          - Officia veniam velit culpa veniam ea.
+          - Et eu consequat nisi irure.
+          - Est consectetur nulla laborum id et enim aliqua non ad sint ipsum ea.
+
+---
+name: Radio buttons with delay
+category: [Fields, Radio]
+
+fields:
+  - id: 2-select
+    kind: radio
+    source.reference: 1-fetch
+  
+  - id: 3-reference
+    kind: data
+    source.reference: 2-select
+  
+  - id: 1-fetch
+    kind: data
+    source.fetch: http://localhost:1980/mock/lorem/sentences/3/3?delay=500    

@@ -1,0 +1,13 @@
+kind: sources/v1
+---
+id: source1
+kind: literal
+literal: value
+---
+id: source2
+kind: reference
+reference: id
+---
+id: source3
+kind: literal
+literal: value

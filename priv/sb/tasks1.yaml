@@ -1,0 +1,10 @@
+kind: tasks/v1
+---
+name: Task1
+category: [Test]
+---
+name: Task2
+category: [Test]
+---
+name: Task3
+category: [Test]

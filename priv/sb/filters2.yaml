@@ -1,0 +1,4 @@
+kind: filters/v1
+---
+id: filter1
+kind: succeed

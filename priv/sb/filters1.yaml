@@ -1,0 +1,10 @@
+kind: filters/v1
+---
+id: filter1
+kind: succeed
+---
+id: filter2
+kind: succeed
+---
+id: filter3
+kind: succeed

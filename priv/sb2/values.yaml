@@ -1,0 +1,43 @@
+kind: tasks/v1
+# TODO: Definere felles sources her?
+---
+name: Radio values
+category: [Values]
+
+fields:
+  - id: radio
+    kind: radio
+    source.literal:
+      - 10
+      - 3.14
+      - true
+      - false
+      - [hei, mega, 10, {foo: bar, baz: sup}, true, 3.14]
+---
+name: Checkbox values
+category: [Values]
+
+fields:
+  - id: checkbox
+    kind: checkbox
+    source.literal:
+      - 10
+      - 3.14
+      - true
+      - false
+      - [hei, mega, 10, {foo: bar, baz: sup}, true, 3.14]
+---
+name: Select values
+category: [Values]
+
+fields:
+  - id: select
+    kind: select
+    multiple: true
+    source.literal:
+      - 10
+      - 3.14
+      - true
+      - false
+      - [hei, mega, 10, {foo: bar, baz: sup}, true, 3.14]
+
