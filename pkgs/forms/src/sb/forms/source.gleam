@@ -237,7 +237,7 @@ fn seen_decoder(seen: Set(String), sources: custom.Sources) -> Props(Source) {
       })
 
     [#("kind", _dynamic)] -> kind_decoder(seen, sources)
-    [#(name, _)] -> state.fail(report.new(error.UnknownKind(name)))
+    [#(name, _)] -> props.fail(report.new(error.UnknownKind(name)))
     _else -> kind_decoder(seen, sources)
   }
 }
@@ -251,29 +251,29 @@ fn kind_decoder(seen: Set(String), sources: custom.Sources) -> Props(Source) {
     "literal" -> {
       use <- state.do(props.check_keys(literal_keys))
       use value <- props.get("literal", decoder.from(value.decoder()))
-      state.succeed(Literal(value))
+      props.succeed(Literal(value))
     }
 
     "reference" -> {
       use <- state.do(props.check_keys(reference_keys))
       use id <- props.get("reference", text.id_decoder)
-      state.succeed(Reference(id))
+      props.succeed(Reference(id))
     }
 
     "template" -> {
       use <- state.do(props.check_keys(template_keys))
       use text <- props.get("template", text.decoder)
-      state.succeed(Template(text))
+      props.succeed(Template(text))
     }
 
     "command" -> {
       use <- state.do(props.check_keys(command_keys))
       use command <- props.get("command", text.decoder)
-      state.succeed(Command(command))
+      props.succeed(Command(command))
     }
 
     "fetch" -> fetch_decoder(seen, sources)
-    name -> state.fail(report.new(error.UnknownKind(name)))
+    name -> props.fail(report.new(error.UnknownKind(name)))
   }
 }
 
@@ -300,5 +300,5 @@ fn fetch_decoder(seen: Set(String), sources: custom.Sources) -> Props(Source) {
     zero.option(props.decode(_, seen_decoder(seen, sources)))
   })
 
-  state.succeed(Fetch(method:, uri:, headers:, body:))
+  props.succeed(Fetch(method:, uri:, headers:, body:))
 }

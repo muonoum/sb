@@ -47,10 +47,10 @@ pub fn short_recursive_source_test() {
     helpers.decode_source_property("source", dynamic, sources)
     |> should.be_error
 
-  report.issue
+  report.issue(report)
   |> should.equal(error.BadProperty("source"))
 
-  report.context
+  report.get_context(report)
   |> should.equal([
     error.BadKind("fetch"),
     error.BadProperty("body"),
@@ -64,10 +64,10 @@ pub fn short_recursive_source_test() {
     helpers.decode_source_property("source", dynamic, sources)
     |> should.be_error
 
-  report.issue
+  report.issue(report)
   |> should.equal(error.BadProperty("source"))
 
-  report.context
+  report.get_context(report)
   |> should.equal([
     error.Recursive("recursive-source2"),
   ])
@@ -85,10 +85,10 @@ pub fn long_recursive_source_test() {
     helpers.decode_source_property("source", dynamic, sources)
     |> should.be_error
 
-  report.issue
+  report.issue(report)
   |> should.equal(error.BadProperty("source"))
 
-  report.context
+  report.get_context(report)
   |> should.equal([
     error.BadKind("fetch"),
     error.BadProperty("body"),
@@ -102,10 +102,10 @@ pub fn long_recursive_source_test() {
     helpers.decode_source_property("source", dynamic, sources)
     |> should.be_error
 
-  report.issue
+  report.issue(report)
   |> should.equal(error.BadProperty("source"))
 
-  report.context
+  report.get_context(report)
   |> should.equal([
     error.Recursive("recursive-source2"),
   ])

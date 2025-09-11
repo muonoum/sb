@@ -1,0 +1,9 @@
+kind: filters/v1
+---
+id: filter1
+kind: expect
+value: 10
+---
+id: filter1
+kind: expect
+value: 10

@@ -52,8 +52,8 @@ Source
 
 ```
 users: everyone | List(String)
-groups: List(String)
 keys: List(String)
+groups: List(String)
 ```
 
 ## Condition
@@ -155,9 +155,8 @@ source: Source
 ### custom
 
 ```yaml
-custom-field:
-  kind: data
-  source.reference: Id
+id: String
+Filter
 ```
 
 ### kind
@@ -220,16 +219,15 @@ source.<kind>: [..]
 
 ```yaml
 source:
-  kind: <kind>
+  kind: String
   [..]
 ```
 
 ### custom
 
 ```yaml
-custom-source:
-  kind: reference
-  reference: <id>
+id: String
+Source
 ```
 
 ### kind
@@ -285,13 +283,13 @@ source:
 #### fetch
 
 ```yaml
-source.fetch: Url
+source.fetch: Text
 ```
 
 ```yaml
 source.fetch:
-  url: Url
-  method: Method
+  url: Text
+  method: String
   headers: Dict(String, String)
   body: Source
 ```
@@ -299,8 +297,8 @@ source.fetch:
 ```yaml
 source:
   kind: fetch
-  url: Url
-  method: Method
+  url: Text
+  method: String
   headers: Dict(String, String)
   body: Source
 ```

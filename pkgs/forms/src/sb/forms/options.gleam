@@ -147,5 +147,5 @@ fn group_decoder(sources: custom.Sources) -> Props(Group) {
     })
   })
 
-  state.succeed(Group(label:, source:))
+  props.succeed(Group(label:, source:))
 }

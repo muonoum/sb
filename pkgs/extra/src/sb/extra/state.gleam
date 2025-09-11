@@ -1,3 +1,5 @@
+import gleam/list
+
 pub type State(v, err, ctx) {
   State(run: fn(ctx) -> #(ctx, Result(v, err)))
 }
@@ -14,6 +16,10 @@ pub fn run(
   context context: ctx,
 ) -> Result(v, err) {
   step(state, context).1
+}
+
+pub fn context(state state: State(v, err, ctx), context context: ctx) -> ctx {
+  step(state, context).0
 }
 
 pub fn step(state: State(v, err, ctx), context: ctx) -> #(ctx, Result(v, err)) {
@@ -76,6 +82,28 @@ pub fn map(state: State(a, _, _), mapper: fn(a) -> b) -> State(b, _, _) {
   }
 }
 
+pub fn map2(
+  state1: State(a, _, _),
+  state2: State(b, _, _),
+  mapper: fn(a, b) -> c,
+) -> State(c, _, _) {
+  use context <- State
+  let #(context, result) = state1.run(context)
+
+  case result {
+    Error(error) -> #(context, Error(error))
+
+    Ok(a) -> {
+      let #(context, result) = state2.run(context)
+
+      case result {
+        Error(error) -> #(context, Error(error))
+        Ok(b) -> #(context, Ok(mapper(a, b)))
+      }
+    }
+  }
+}
+
 pub fn map_error(state: State(_, a, _), mapper: fn(a) -> b) -> State(_, b, _) {
   use context <- State
   let #(context, result) = state.run(context)
@@ -134,4 +162,11 @@ pub fn attempt(
 
 pub fn catch_error(_ctx: _, error: err) -> State(Result(_, err), err, _) {
   succeed(Error(error))
+}
+
+pub fn sequence(states: List(State(v, _, _))) -> State(List(v), _, _) {
+  let prepend = fn(list, a) { [a, ..list] }
+  let callback = fn(a, list) { map2(a, list, prepend) }
+  list.fold(states, succeed([]), callback)
+  |> map(list.reverse)
 }

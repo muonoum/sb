@@ -57,7 +57,7 @@ fn custom_decoder() -> Decoder(Dict(String, Dynamic)) {
 pub fn decoder() {
   use id <- props.get("id", decoder.from(decode.string))
   use dict <- props.get_dict()
-  state.succeed(#(id, dict.drop(dict, [id])))
+  props.succeed(#(id, dict.drop(dict, ["id"])))
 }
 
 pub fn kind_decoder(
@@ -70,7 +70,7 @@ pub fn kind_decoder(
 
   use <- bool.guard(
     set.contains(seen, name),
-    state.fail(report.new(error.Recursive(name))),
+    props.fail(report.new(error.Recursive(name))),
   )
 
   use <- result.lazy_unwrap({

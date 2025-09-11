@@ -191,7 +191,7 @@ pub fn decoder(
       |> props.error_context(error.BadKind(name))
     }
 
-    unknown -> state.fail(report.new(error.UnknownKind(unknown)))
+    unknown -> props.fail(report.new(error.UnknownKind(unknown)))
   }
 }
 
@@ -204,7 +204,7 @@ fn data_decoder(sources: custom.Sources) -> Props(Kind) {
     })
   })
 
-  state.succeed(Data(source:))
+  props.succeed(Data(source:))
 }
 
 fn text_decoder() -> Props(Kind) {
@@ -213,7 +213,7 @@ fn text_decoder() -> Props(Kind) {
   })
 
   use string <- props.try("default", zero.string(decoder.from(decode.string)))
-  state.succeed(Text(string:, placeholder:))
+  props.succeed(Text(string:, placeholder:))
 }
 
 fn textarea_decoder() -> Props(Kind) {
@@ -222,7 +222,7 @@ fn textarea_decoder() -> Props(Kind) {
   })
 
   use string <- props.try("default", zero.string(decoder.from(decode.string)))
-  state.succeed(Textarea(string:, placeholder:))
+  props.succeed(Textarea(string:, placeholder:))
 }
 
 fn radio_decoder(sources: custom.Sources) -> Props(Kind) {
@@ -232,14 +232,14 @@ fn radio_decoder(sources: custom.Sources) -> Props(Kind) {
 
   // TODO: radio
   use options <- props.get("source", props.decode(_, options.decoder(sources)))
-  state.succeed(Select(choice: None, placeholder:, options:))
+  props.succeed(Select(choice: None, placeholder:, options:))
 }
 
 fn checkbox_decoder(sources: custom.Sources) -> Props(Kind) {
   use options <- props.get("source", props.decode(_, options.decoder(sources)))
 
   // TODO: checkbox
-  state.succeed(MultiSelect([], options:))
+  props.succeed(MultiSelect([], options:))
 }
 
 fn select_decoder(sources: custom.Sources) -> Props(Kind) {
@@ -249,6 +249,6 @@ fn select_decoder(sources: custom.Sources) -> Props(Kind) {
 
   use multiple <- props.try("multiple", zero.bool(decoder.from(decode.bool)))
   use options <- props.get("source", props.decode(_, options.decoder(sources)))
-  use <- bool.guard(multiple, state.succeed(MultiSelect([], options:)))
-  state.succeed(Select(choice: None, placeholder:, options:))
+  use <- bool.guard(multiple, props.succeed(MultiSelect([], options:)))
+  props.succeed(Select(choice: None, placeholder:, options:))
 }

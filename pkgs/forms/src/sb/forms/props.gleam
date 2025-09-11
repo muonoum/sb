@@ -15,6 +15,14 @@ pub type Context {
 pub type Props(v) =
   State(v, Report(Error), Context)
 
+pub fn succeed(value: v) -> Props(v) {
+  state.succeed(value)
+}
+
+pub fn fail(error: Report(Error)) -> Props(v) {
+  state.fail(error)
+}
+
 pub fn error_context(error: Error) -> fn(Props(v)) -> Props(v) {
   fn(result) {
     use report <- state.map_error(result)

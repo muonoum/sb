@@ -149,7 +149,7 @@ pub fn decoder(
     |> error.try_duplicate_ids(seen)
   })
 
-  state.succeed(Task(
+  props.succeed(Task(
     id:,
     name:,
     category:,

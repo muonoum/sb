@@ -2,7 +2,6 @@ import gleam/result
 import helpers
 import pprint
 import sb/extra/dots
-import sb/extra/state
 import sb/extra/yaml
 import sb/forms/custom
 import sb/forms/props
@@ -37,7 +36,7 @@ pub fn main() {
     props.decode(dots.split(dynamic), {
       let decoder = props.decode(_, source.decoder(sources))
       use source <- props.get("source", decoder)
-      state.succeed(source)
+      props.succeed(source)
     }),
   )
 }

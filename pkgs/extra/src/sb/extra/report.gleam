@@ -1,9 +1,17 @@
-pub type Report(issue) {
+pub opaque type Report(issue) {
   Report(issue: issue, context: List(issue))
 }
 
 pub fn new(issue: issue) -> Report(issue) {
   Report(issue:, context: [])
+}
+
+pub fn issue(report: Report(issue)) -> issue {
+  report.issue
+}
+
+pub fn get_context(report: Report(issue)) -> List(issue) {
+  report.context
 }
 
 pub fn error(issue: issue) -> Result(success, Report(issue)) {

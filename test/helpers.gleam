@@ -5,7 +5,6 @@ import gleam/list
 import gleam/result
 import sb/extra/dots
 import sb/extra/report.{type Report}
-import sb/extra/state
 import sb/forms/custom
 import sb/forms/error.{type Error}
 import sb/forms/field.{type Field}
@@ -47,7 +46,7 @@ pub fn decode_source_property(
   props.decode(dots.split(dynamic), {
     let decoder = props.decode(_, source.decoder(sources))
     use source <- props.get(name, decoder)
-    state.succeed(source)
+    props.succeed(source)
   })
 }
 

@@ -141,5 +141,5 @@ pub fn decoder(
       filters:,
     )
 
-  state.succeed(#(id, field))
+  props.succeed(#(id, field))
 }

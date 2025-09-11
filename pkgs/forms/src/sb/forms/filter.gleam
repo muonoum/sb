@@ -147,17 +147,17 @@ pub fn decoder(
       state.do(check_keys(parse_float_keys), parse_float_decoder)
       |> props.error_context(error.BadKind(name))
 
-    unknown -> state.fail(report.new(error.UnknownKind(unknown)))
+    unknown -> props.fail(report.new(error.UnknownKind(unknown)))
   }
 }
 
 fn succeed_decoder() -> Props(Filter) {
-  state.succeed(Succeed)
+  props.succeed(Succeed)
 }
 
 fn fail_decoder() -> Props(Filter) {
   use error_message <- props.get("error-message", decoder.from(decode.string))
-  state.succeed(Fail(error_message:))
+  props.succeed(Fail(error_message:))
 }
 
 fn expect_decoder() -> Props(Filter) {
@@ -167,7 +167,7 @@ fn expect_decoder() -> Props(Filter) {
     zero.option(decoder.from(decode.string))
   })
 
-  state.succeed(Expect(value:, error_message:))
+  props.succeed(Expect(value:, error_message:))
 }
 
 fn regex_match_decoder() -> Props(Filter) {
@@ -181,7 +181,7 @@ fn regex_match_decoder() -> Props(Filter) {
     zero.option(decoder.from(decode.string))
   })
 
-  state.succeed(RegexMatch(pattern:, error_message:))
+  props.succeed(RegexMatch(pattern:, error_message:))
 }
 
 fn regex_replace_decoder() -> Props(Filter) {
@@ -199,15 +199,15 @@ fn regex_replace_decoder() -> Props(Filter) {
     zero.option(decoder.from(decode.string))
   })
 
-  state.succeed(RegexReplace(pattern:, replacements:, error_message:))
+  props.succeed(RegexReplace(pattern:, replacements:, error_message:))
 }
 
 fn parse_integer_decoder() -> Props(Filter) {
-  state.succeed(ParseInteger)
+  props.succeed(ParseInteger)
 }
 
 fn parse_float_decoder() -> Props(Filter) {
-  state.succeed(ParseFloat)
+  props.succeed(ParseFloat)
 }
 
 fn regex_decoder(

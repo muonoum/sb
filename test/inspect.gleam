@@ -76,7 +76,7 @@ fn inspect_kind(kind: Kind) -> String {
 }
 
 fn inspect_report(report: Report(Error)) -> String {
-  ansi.red(string.inspect(report.issue))
+  ansi.red(string.inspect(report.issue(report)))
 }
 
 fn inspect_choice(choice: Choice) -> String {
