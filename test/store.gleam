@@ -1,10 +1,12 @@
 import filepath
+import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/list
 import gleam/option.{type Option, None}
 import gleam/result
+import gleam/set
 import pprint
 import sb/extra/dots
 import sb/extra/path
@@ -76,28 +78,59 @@ fn add_report(
 }
 
 pub fn main() {
-  let v =
-    load("priv/sb", "**/*.yaml")
-    |> state.step(
-      Context(
-        task_data: [],
-        custom_data: dict.new(),
-        custom: dict.new(),
-        reports: [],
-      ),
-    )
-
-  // pprint.debug(v.0)
-  // pprint.debug(dict.get({ v.1 }.files, Custom(FiltersV1)))
-  pprint.debug(v.1)
-  // pprint.debug({ v.1 }.task_data)
-  // pprint.debug({ v.1 }.reports)
+  load("priv/sb", "**/*.yaml")
+  |> state.step(
+    Context(
+      task_data: [],
+      custom_data: dict.new(),
+      custom: dict.new(),
+      reports: [],
+    ),
+  )
+  |> pprint.debug
 }
 
 fn load(prefix: String, pattern: String) {
   path.wildcard(prefix, pattern)
   |> list.map(load_path(prefix, _))
   |> state.sequence
+  |> state.do(decode_custom)
+}
+
+fn decode_custom() -> State(_, Context) {
+  use context: Context <- state.with(state.get())
+
+  let sources =
+    dict.get(context.custom_data, SourcesV1)
+    |> result.unwrap([])
+
+  let custom =
+    state.run(
+      context: set.new(),
+      state: state.sequence({
+        use file <- list.flat_map(sources)
+        use dynamic <- list.map(file.documents)
+
+        case props.decode(dynamic, custom.decoder()) {
+          Error(report) -> state.return(Error(report))
+
+          Ok(#(id, custom)) -> {
+            use context <- state.with(state.get())
+
+            use <- bool.guard(
+              set.contains(context, id),
+              state.return(report.error(error.DuplicateId(id))),
+            )
+
+            use <- state.do(state.put(set.insert(context, id)))
+            state.return(Ok(#(id, custom)))
+          }
+        }
+      }),
+    )
+    |> echo
+
+  todo
 }
 
 fn load_path(prefix: String, path: String) -> State(Nil, Context) {
