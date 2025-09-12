@@ -12,11 +12,16 @@ pub type File {
 }
 
 pub type Kind {
+  Empty
   CommandsV1
   FieldsV1
   FiltersV1
   SourcesV1
   TasksV1(category: List(String), runners: Access, approvers: Access)
+}
+
+pub fn empty(path: String) -> File {
+  File(kind: Empty, path:, documents: [])
 }
 
 pub fn is_tasks(file: File) -> Bool {
