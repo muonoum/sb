@@ -211,18 +211,12 @@ fn load_file(prefix: String, path: String) -> Result(File, Report(Error)) {
   )
 
   use documents <- result.try(decoder.run(dynamic, decode.list(decode.dynamic)))
-
-  case documents {
-    [] -> Ok(file.empty(path))
-
-    [header, ..documents] -> {
-      use <- return(report.error_context(_, error.FileError))
-      let header = dots.split(header)
-      use kind <- result.try(props.decode(header, file.decoder()))
-      let documents = list.map(documents, dots.split)
-      Ok(File(kind:, path:, documents:))
-    }
-  }
+  use header, documents <- extra.non_empty_list(documents, Ok(file.empty(path)))
+  use <- return(report.error_context(_, error.FileError))
+  let header = dots.split(header)
+  use kind <- result.try(props.decode(header, file.decoder()))
+  let documents = list.map(documents, dots.split)
+  Ok(File(kind:, path:, documents:))
 }
 
 fn load_documents(

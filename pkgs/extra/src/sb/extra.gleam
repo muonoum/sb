@@ -10,6 +10,13 @@ pub type Visibility {
   Hidden
 }
 
+pub fn non_empty_list(list: List(a), empty: b, then: fn(a, List(a)) -> b) -> b {
+  case list {
+    [] -> empty
+    [first, ..rest] -> then(first, rest)
+  }
+}
+
 pub fn compose(a: fn(a) -> b, b: fn(b) -> c) -> fn(a) -> c {
   fn(v) { b(a(v)) }
 }
