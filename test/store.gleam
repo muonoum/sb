@@ -12,7 +12,7 @@ import sb/extra
 import sb/extra/dots
 import sb/extra/path
 import sb/extra/report.{type Report}
-import sb/extra/state2.{type State} as state
+import sb/extra/state.{type State}
 import sb/extra/yaml
 import sb/forms/access.{type Access}
 import sb/forms/custom

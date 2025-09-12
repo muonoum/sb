@@ -13,7 +13,7 @@ import gleam/string
 import gleam/uri
 import sb/extra
 import sb/extra/report.{type Report}
-import sb/extra/state
+import sb/extra/state_eval as state
 import sb/forms/custom
 import sb/forms/decoder
 import sb/forms/error.{type Error}

@@ -3,7 +3,7 @@ import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/result
 import sb/extra
-import sb/extra/state
+import sb/extra/state_eval as state
 import sb/forms/decoder
 import sb/forms/error
 import sb/forms/props.{type Props}

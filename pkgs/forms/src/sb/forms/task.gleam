@@ -9,7 +9,7 @@ import gleam/set.{type Set}
 import gleam/string
 import sb/extra
 import sb/extra/report.{type Report}
-import sb/extra/state
+import sb/extra/state_eval as state
 import sb/forms/access.{type Access}
 import sb/forms/custom
 import sb/forms/decoder

@@ -14,7 +14,7 @@ import sb/extra.{compose, return}
 import sb/extra/dots
 import sb/extra/path
 import sb/extra/report.{type Report}
-import sb/extra/state2.{type State} as state
+import sb/extra/state.{type State}
 import sb/extra/yaml
 import sb/forms/custom.{type Custom}
 import sb/forms/decoder
@@ -138,41 +138,20 @@ fn dups() -> Dups {
   Dups(ids: set.new(), names: set.new())
 }
 
-fn check_id(
-  dups: Dups,
-  id: String,
-  then: fn(Dups) -> #(Dups, Result(v, Report(Error))),
-) -> #(Dups, Result(v, Report(Error))) {
-  use <- bool.lazy_guard(set.contains(dups.ids, id), fn() {
-    #(dups, report.error(error.DuplicateId(id)))
-  })
-
-  then(Dups(..dups, ids: set.insert(dups.ids, id)))
-}
-
-fn check_id2(id: String, value: v) -> State(Result(v, Report(Error)), Dups) {
+fn check_id(id, then) {
   use dups: Dups <- state.with(state.get())
-
-  use <- bool.guard(
-    set.contains(dups.ids, id),
-    state.return(report.error(error.DuplicateId(id))),
-  )
-
-  use <- state.do(state.put(Dups(..dups, ids: set.insert(dups.ids, id))))
-  state.return(Ok(value))
+  let error = state.return(report.error(error.DuplicateId(id)))
+  use <- bool.guard(set.contains(dups.ids, id), error)
+  let dups = Dups(..dups, ids: set.insert(dups.ids, id))
+  state.do(state.put(dups), then)
 }
 
-fn check_names(
-  dups: Dups,
-  name: String,
-  category: List(String),
-  then: fn(Dups) -> #(Dups, Result(v, Report(Error))),
-) -> #(Dups, Result(v, Report(Error))) {
-  use <- bool.lazy_guard(set.contains(dups.names, #(name, category)), fn() {
-    #(dups, report.error(error.DuplicateNames(name, category)))
-  })
-
-  then(Dups(..dups, names: set.insert(dups.names, #(name, category))))
+fn check_names(name, category, then) {
+  use dups: Dups <- state.with(state.get())
+  let error = state.return(report.error(error.DuplicateNames(name, category)))
+  use <- bool.guard(set.contains(dups.names, #(name, category)), error)
+  let dups = Dups(..dups, names: set.insert(dups.names, #(name, category)))
+  state.do(state.put(dups), then)
 }
 
 type Document {
@@ -243,27 +222,21 @@ fn load_documents(
 
 fn load_custom(
   documents: List(Document),
-  construct: fn(Dict(String, Custom)) -> custom,
+  custom: fn(Dict(String, Custom)) -> custom,
 ) -> State(custom, List(Report(Error))) {
-  use <- return(state.map(_, compose(dict.from_list, construct)))
+  use <- return(state.map(_, compose(dict.from_list, custom)))
   use <- return(partition_results)
-  use <- return(state.run(context: dups(), state: _))
-  use <- return(state.sequence)
-
-  // let decoder = custom.decoder()
-  // use dups, doc <- decode_documents(documents)
-  // use #(id, custom) <- result.map(props.decode(doc, decoder))
-  // use dups <- check_id(dups, id)
-  // #(dups, Ok(#(id, custom)))
+  use <- return(compose(state.sequence, state.run(_, context: dups())))
 
   use document <- list.map(documents)
-  use <- return(state.map(_, error_context2(document)))
+  use <- return(state.map(_, error_context(document)))
   case props.decode(document.data, custom.decoder()) {
     Error(report) -> state.return(Error(report))
 
-    Ok(#(id, custom)) ->
-      check_id2(id, custom)
-      |> state.map(result.map(_, fn(custom) { #(id, custom) }))
+    Ok(#(id, custom)) -> {
+      use <- check_id(id)
+      state.return(Ok(#(id, custom)))
+    }
   }
 }
 
@@ -274,39 +247,23 @@ fn load_tasks(
   filters filters: custom.Filters,
 ) -> State(List(#(String, Task)), List(Report(Error))) {
   use <- return(partition_results)
-  let decoder = task.decoder(filters:, fields:, sources:)
-  use dups, doc <- decode_documents(documents)
-  use task <- result.map(props.decode(doc, decoder))
-  use dups <- check_names(dups, task.name, task.category)
-  use dups <- check_id(dups, task.id)
-  #(dups, Ok(#(task.id, task)))
-}
+  use <- return(compose(state.sequence, state.run(_, context: dups())))
 
-fn decode_documents(
-  documents: List(Document),
-  then: fn(Dups, Dynamic) -> Result(#(Dups, Result(v, _report)), _report),
-) -> List(Result(v, _report)) {
-  pair.second({
-    use dups, doc <- list.map_fold(documents, dups())
-    use <- return(error_context(_, doc.path, doc.index))
-    case then(dups, doc.data) {
-      Error(report) -> #(dups, Error(report))
-      Ok(#(dups, result)) -> #(dups, result)
+  use document <- list.map(documents)
+  use <- return(state.map(_, error_context(document)))
+  let decoder = task.decoder(sources:, fields:, filters:)
+  case props.decode(document.data, decoder) {
+    Error(report) -> state.return(Error(report))
+
+    Ok(task) -> {
+      use <- check_names(task.name, task.category)
+      use <- check_id(task.id)
+      state.return(Ok(#(task.id, task)))
     }
-  })
+  }
 }
 
 fn error_context(
-  pair: #(_, Result(v, Report(Error))),
-  path: String,
-  index: Int,
-) -> #(_, Result(v, Report(Error))) {
-  use result <- pair.map_second(pair)
-  report.error_context(result, error.IndexContext(index))
-  |> report.error_context(error.PathContext(path))
-}
-
-fn error_context2(
   document: Document,
 ) -> fn(Result(a, Report(Error))) -> Result(a, Report(Error)) {
   use result <- extra.identity
