@@ -26,7 +26,7 @@ pub fn main() {
     load_custom("test_data/filters.yaml")
     |> result.map(custom.Filters)
 
-  let decoder = task.decoder(custom_fields, custom_sources, custom_filters)
+  let decoder = task.decoder(custom_filters, custom_fields, custom_sources)
 
   case props.decode(task_data, decoder) {
     Ok(task) -> {

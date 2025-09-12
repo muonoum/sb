@@ -1,6 +1,6 @@
 kind: filters/v1
 ---
-weight:
-  kind: regex-match
-  pattern: ^(1?[0-9]{1,2}|2[0-4][0-9]|25[0-6])$
-  error-message: Expected an integer between 0 and 256
+id: weight
+kind: regex-match
+pattern: ^(1?[0-9]{1,2}|2[0-4][0-9]|25[0-6])$
+error-message: Expected an integer between 0 and 256
