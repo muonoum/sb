@@ -171,19 +171,16 @@ fn load(_model: Model, config: Config) -> Model {
   use <- return(state.run(context: [], state: _))
   use files <- state.with(load_files(config.prefix, config.pattern))
 
-  let #(task_documents, files) = load_documents(files, file.is_tasks)
-  let #(source_documents, files) = load_documents(files, file.is_sources)
-  let #(field_documents, files) = load_documents(files, file.is_fields)
-  let #(filter_documents, _rest) = load_documents(files, file.is_filters)
+  let #(tasks, files) = load_documents(files, file.is_tasks)
+  let #(sources, files) = load_documents(files, file.is_sources)
+  let #(fields, files) = load_documents(files, file.is_fields)
+  let #(filters, _rest) = load_documents(files, file.is_filters)
 
-  use sources <- state.with(load_custom(source_documents, custom.Sources))
-  use fields <- state.with(load_custom(field_documents, custom.Fields))
-  use filters <- state.with(load_custom(filter_documents, custom.Filters))
+  use sources <- state.with(load_custom(sources, custom.Sources))
+  use fields <- state.with(load_custom(fields, custom.Fields))
+  use filters <- state.with(load_custom(filters, custom.Filters))
 
-  use tasks <- state.with({
-    load_tasks(task_documents, sources:, fields:, filters:)
-  })
-
+  use tasks <- state.with(load_tasks(tasks, sources:, fields:, filters:))
   use errors <- state.with(state.get())
   state.return(Model(tasks: dict.from_list(tasks), errors:))
 }
