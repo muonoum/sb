@@ -138,7 +138,10 @@ fn dups() -> Dups {
   Dups(ids: set.new(), names: set.new())
 }
 
-fn check_id(id, then) {
+fn check_id(
+  id: String,
+  then: fn() -> State(Result(v, Report(Error)), Dups),
+) -> State(Result(v, Report(Error)), Dups) {
   use dups: Dups <- state.with(state.get())
   let error = state.return(report.error(error.DuplicateId(id)))
   use <- bool.guard(set.contains(dups.ids, id), error)
@@ -146,7 +149,11 @@ fn check_id(id, then) {
   state.do(state.put(dups), then)
 }
 
-fn check_names(name, category, then) {
+fn check_names(
+  name: String,
+  category: List(String),
+  then: fn() -> State(Result(v, Report(Error)), Dups),
+) -> State(Result(v, Report(Error)), Dups) {
   use dups: Dups <- state.with(state.get())
   let error = state.return(report.error(error.DuplicateNames(name, category)))
   use <- bool.guard(set.contains(dups.names, #(name, category)), error)
@@ -159,7 +166,7 @@ type Document {
 }
 
 fn load(_model: Model, config: Config) -> Model {
-  use <- return(state.run(context: [], state: _))
+  use <- return(state.run(_, context: []))
   use files <- state.with(load_files(config.prefix, config.pattern))
 
   let #(tasks, files) = load_documents(files, file.is_tasks)
