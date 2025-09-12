@@ -86,6 +86,7 @@ pub fn succeed(value: v) -> State(Result(v, err), ctx) {
 }
 
 pub fn fail(error: err) -> State(Result(v, err), ctx) {
+  // TODO?
   return(Error(error))
 }
 

@@ -150,10 +150,7 @@ fn check_id(
   then(Dups(..dups, ids: set.insert(dups.ids, id)))
 }
 
-fn check_id2(
-  id: String,
-  data: v,
-) -> State(Result(#(String, v), Report(Error)), Dups) {
+fn check_id2(id: String, value: v) -> State(Result(v, Report(Error)), Dups) {
   use dups: Dups <- state.with(state.get())
 
   use <- bool.guard(
@@ -162,7 +159,7 @@ fn check_id2(
   )
 
   use <- state.do(state.put(Dups(..dups, ids: set.insert(dups.ids, id))))
-  state.return(Ok(#(id, data)))
+  state.return(Ok(value))
 }
 
 fn check_names(
@@ -263,7 +260,10 @@ fn load_custom(
   use <- return(state.map(_, error_context2(document)))
   case props.decode(document.data, custom.decoder()) {
     Error(report) -> state.return(Error(report))
-    Ok(#(id, custom)) -> check_id2(id, custom)
+
+    Ok(#(id, custom)) ->
+      check_id2(id, custom)
+      |> state.map(result.map(_, fn(custom) { #(id, custom) }))
   }
 }
 

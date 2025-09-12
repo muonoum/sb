@@ -2,4 +2,12 @@ kind: tasks/v1
 ---
 name: Task1
 category: [Test]
+---
+id: dup
+name: Task4
+category: [Test]
+---
+id: dup
+name: Task5
+category: [Test]
 
