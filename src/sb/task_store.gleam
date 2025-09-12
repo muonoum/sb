@@ -138,7 +138,7 @@ fn dups() -> Dups {
   Dups(ids: set.new(), names: set.new())
 }
 
-fn duplicate_id(
+fn check_id(
   dups: Dups,
   id: String,
   then: fn(Dups) -> #(Dups, Result(v, Report(Error))),
@@ -150,7 +150,7 @@ fn duplicate_id(
   then(Dups(..dups, ids: set.insert(dups.ids, id)))
 }
 
-fn duplicate_names(
+fn check_names(
   dups: Dups,
   name: String,
   category: List(String),
@@ -238,7 +238,7 @@ fn load_custom(
   let decoder = custom.decoder()
   use dups, doc <- decode_documents(documents)
   use #(id, custom) <- result.map(props.decode(doc, decoder))
-  use dups <- duplicate_id(dups, id)
+  use dups <- check_id(dups, id)
   #(dups, Ok(#(id, custom)))
 }
 
@@ -252,8 +252,8 @@ fn load_tasks(
   let decoder = task.decoder(filters:, fields:, sources:)
   use dups, doc <- decode_documents(documents)
   use task <- result.map(props.decode(doc, decoder))
-  use dups <- duplicate_names(dups, task.name, task.category)
-  use dups <- duplicate_id(dups, task.id)
+  use dups <- check_names(dups, task.name, task.category)
+  use dups <- check_id(dups, task.id)
   #(dups, Ok(#(task.id, task)))
 }
 
