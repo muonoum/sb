@@ -213,7 +213,7 @@ fn load_file(prefix: String, path: String) -> Result(File, Report(Error)) {
   use documents <- result.try(decoder.run(dynamic, decode.list(decode.dynamic)))
 
   case documents {
-    [] -> report.error(error.EmptyFile)
+    [] -> Ok(file.empty(path))
 
     [header, ..documents] -> {
       use <- return(report.error_context(_, error.FileError))
@@ -242,10 +242,10 @@ fn load_custom(
   use <- return(state.map(_, compose(dict.from_list, construct)))
   use <- return(partition_results)
   let decoder = custom.decoder()
-  use seen, doc <- decode_documents(documents)
+  use dups, doc <- decode_documents(documents)
   use #(id, custom) <- result.map(props.decode(doc, decoder))
-  use seen <- duplicate_id(seen, id)
-  #(seen, Ok(#(id, custom)))
+  use dups <- duplicate_id(dups, id)
+  #(dups, Ok(#(id, custom)))
 }
 
 fn load_tasks(
@@ -256,11 +256,11 @@ fn load_tasks(
 ) -> State(List(#(String, Task)), List(Report(Error))) {
   use <- return(partition_results)
   let decoder = task.decoder(filters:, fields:, sources:)
-  use seen, doc <- decode_documents(documents)
+  use dups, doc <- decode_documents(documents)
   use task <- result.map(props.decode(doc, decoder))
-  use seen <- duplicate_names(seen, task.name, task.category)
-  use seen <- duplicate_id(seen, task.id)
-  #(seen, Ok(#(task.id, task)))
+  use dups <- duplicate_names(dups, task.name, task.category)
+  use dups <- duplicate_id(dups, task.id)
+  #(dups, Ok(#(task.id, task)))
 }
 
 fn decode_documents(
@@ -268,12 +268,11 @@ fn decode_documents(
   then: fn(Dups, Dynamic) -> Result(#(Dups, Result(v, _report)), _report),
 ) -> List(Result(v, _report)) {
   pair.second({
-    use seen, doc <- list.map_fold(documents, dups())
+    use dups, doc <- list.map_fold(documents, dups())
     use <- return(error_context(_, doc.path, doc.index))
-
-    case then(seen, doc.data) {
-      Error(report) -> #(seen, Error(report))
-      Ok(#(seen, result)) -> #(seen, result)
+    case then(dups, doc.data) {
+      Error(report) -> #(dups, Error(report))
+      Ok(#(dups, result)) -> #(dups, result)
     }
   })
 }
