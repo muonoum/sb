@@ -10,6 +10,10 @@ pub type Visibility {
   Hidden
 }
 
+pub fn compose(a: fn(a) -> b, b: fn(b) -> c) -> fn(a) -> c {
+  fn(v) { b(a(v)) }
+}
+
 pub fn identity(value: v) -> v {
   value
 }

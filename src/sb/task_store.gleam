@@ -1,4 +1,5 @@
 import filepath
+import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
@@ -8,7 +9,8 @@ import gleam/otp/actor
 import gleam/otp/supervision
 import gleam/pair
 import gleam/result
-import sb/extra
+import gleam/set.{type Set}
+import sb/extra.{compose, return}
 import sb/extra/dots
 import sb/extra/path
 import sb/extra/report.{type Report}
@@ -16,7 +18,6 @@ import sb/extra/state2.{type State} as state
 import sb/extra/yaml
 import sb/forms/custom.{type Custom}
 import sb/forms/decoder
-import sb/forms/dups.{type Dups}
 import sb/forms/error.{type Error}
 import sb/forms/file.{type File, File}
 import sb/forms/props
@@ -129,12 +130,45 @@ fn schedule(
   }
 }
 
+type Dups {
+  Dups(ids: Set(String), names: Set(#(String, List(String))))
+}
+
+fn dups() -> Dups {
+  Dups(ids: set.new(), names: set.new())
+}
+
+fn duplicate_id(
+  dups: Dups,
+  id: String,
+  then: fn(Dups) -> #(Dups, Result(v, Report(Error))),
+) -> #(Dups, Result(v, Report(Error))) {
+  use <- bool.lazy_guard(set.contains(dups.ids, id), fn() {
+    #(dups, report.error(error.DuplicateId(id)))
+  })
+
+  then(Dups(..dups, ids: set.insert(dups.ids, id)))
+}
+
+fn duplicate_names(
+  dups: Dups,
+  name: String,
+  category: List(String),
+  then: fn(Dups) -> #(Dups, Result(v, Report(Error))),
+) -> #(Dups, Result(v, Report(Error))) {
+  use <- bool.lazy_guard(set.contains(dups.names, #(name, category)), fn() {
+    #(dups, report.error(error.DuplicateNames(name, category)))
+  })
+
+  then(Dups(..dups, names: set.insert(dups.names, #(name, category))))
+}
+
 type Document {
   Document(path: String, index: Int, data: Dynamic)
 }
 
 fn load(_model: Model, config: Config) -> Model {
-  use <- extra.return(state.run(context: [], state: _))
+  use <- return(state.run(context: [], state: _))
   use files <- state.with(load_files(config.prefix, config.pattern))
 
   let #(task_documents, files) = load_documents(files, file.is_tasks)
@@ -154,7 +188,7 @@ fn load(_model: Model, config: Config) -> Model {
   state.return(Model(tasks: dict.from_list(tasks), errors:))
 }
 
-fn partition(
+fn partition_results(
   results: List(Result(v, Report(Error))),
 ) -> State(List(v), List(Report(Error))) {
   use context <- state.with(state.get())
@@ -167,9 +201,9 @@ fn load_files(
   prefix: String,
   pattern: String,
 ) -> State(List(File), List(Report(Error))) {
-  use <- extra.return(partition)
+  use <- return(partition_results)
   use path <- list.map(path.wildcard(prefix, pattern))
-  use <- extra.return(report.error_context(_, error.PathContext(path)))
+  use <- return(report.error_context(_, error.PathContext(path)))
   load_file(prefix, path)
 }
 
@@ -185,7 +219,7 @@ fn load_file(prefix: String, path: String) -> Result(File, Report(Error)) {
     [] -> report.error(error.EmptyFile)
 
     [header, ..documents] -> {
-      use <- extra.return(report.error_context(_, error.FileError))
+      use <- return(report.error_context(_, error.FileError))
       let header = dots.split(header)
       use kind <- result.try(props.decode(header, file.decoder()))
       let documents = list.map(documents, dots.split)
@@ -208,13 +242,12 @@ fn load_custom(
   documents: List(Document),
   construct: fn(Dict(String, Custom)) -> custom,
 ) -> State(custom, List(Report(Error))) {
-  use <- extra.return(state.map(_, construct))
-  use <- extra.return(state.map(_, dict.from_list))
-  use <- extra.return(partition)
+  use <- return(state.map(_, compose(dict.from_list, construct)))
+  use <- return(partition_results)
   let decoder = custom.decoder()
   use seen, doc <- decode_documents(documents)
   use #(id, custom) <- result.map(props.decode(doc, decoder))
-  use seen <- dups.id(seen, id)
+  use seen <- duplicate_id(seen, id)
   #(seen, Ok(#(id, custom)))
 }
 
@@ -224,12 +257,12 @@ fn load_tasks(
   fields fields: custom.Fields,
   filters filters: custom.Filters,
 ) -> State(List(#(String, Task)), List(Report(Error))) {
-  use <- extra.return(partition)
+  use <- return(partition_results)
   let decoder = task.decoder(filters:, fields:, sources:)
   use seen, doc <- decode_documents(documents)
   use task <- result.map(props.decode(doc, decoder))
-  use seen <- dups.names(seen, task.name, task.category)
-  use seen <- dups.id(seen, task.id)
+  use seen <- duplicate_names(seen, task.name, task.category)
+  use seen <- duplicate_id(seen, task.id)
   #(seen, Ok(#(task.id, task)))
 }
 
@@ -238,8 +271,8 @@ fn decode_documents(
   then: fn(Dups, Dynamic) -> Result(#(Dups, Result(v, _report)), _report),
 ) -> List(Result(v, _report)) {
   pair.second({
-    use seen, doc <- list.map_fold(documents, dups.new())
-    use <- extra.return(error_context(_, doc.path, doc.index))
+    use seen, doc <- list.map_fold(documents, dups())
+    use <- return(error_context(_, doc.path, doc.index))
 
     case then(seen, doc.data) {
       Error(report) -> #(seen, Error(report))
