@@ -150,6 +150,21 @@ fn check_id(
   then(Dups(..dups, ids: set.insert(dups.ids, id)))
 }
 
+fn check_id2(
+  id: String,
+  data: v,
+) -> State(Result(#(String, v), Report(Error)), Set(String)) {
+  use dups <- state.with(state.get())
+
+  use <- bool.guard(
+    set.contains(dups, id),
+    state.return(report.error(error.DuplicateId(id))),
+  )
+
+  use <- state.do(state.put(set.insert(dups, id)))
+  state.return(Ok(#(id, data)))
+}
+
 fn check_names(
   dups: Dups,
   name: String,
@@ -235,11 +250,25 @@ fn load_custom(
 ) -> State(custom, List(Report(Error))) {
   use <- return(state.map(_, compose(dict.from_list, construct)))
   use <- return(partition_results)
-  let decoder = custom.decoder()
-  use dups, doc <- decode_documents(documents)
-  use #(id, custom) <- result.map(props.decode(doc, decoder))
-  use dups <- check_id(dups, id)
-  #(dups, Ok(#(id, custom)))
+
+  // let decoder = custom.decoder()
+  // use dups, doc <- decode_documents(documents)
+  // use #(id, custom) <- result.map(props.decode(doc, decoder))
+  // use dups <- check_id(dups, id)
+  // #(dups, Ok(#(id, custom)))
+
+  state.run(
+    context: set.new(),
+    state: state.sequence({
+      use document <- list.map(documents)
+      use <- return(state.map(_, error_context2(document)))
+
+      case props.decode(document.data, custom.decoder()) {
+        Error(report) -> state.return(Error(report))
+        Ok(#(id, custom)) -> check_id2(id, custom)
+      }
+    }),
+  )
 }
 
 fn load_tasks(
@@ -279,4 +308,12 @@ fn error_context(
   use result <- pair.map_second(pair)
   report.error_context(result, error.IndexContext(index))
   |> report.error_context(error.PathContext(path))
+}
+
+fn error_context2(
+  document: Document,
+) -> fn(Result(a, Report(Error))) -> Result(a, Report(Error)) {
+  use result <- extra.identity
+  report.error_context(result, error.IndexContext(document.index))
+  |> report.error_context(error.PathContext(document.path))
 }
