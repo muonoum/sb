@@ -4,10 +4,11 @@ import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/list
-import gleam/option.{type Option, None}
+import gleam/option
 import gleam/result
 import gleam/set
 import pprint
+import sb/extra
 import sb/extra/dots
 import sb/extra/path
 import sb/extra/report.{type Report}
@@ -18,6 +19,7 @@ import sb/forms/custom
 import sb/forms/decoder
 import sb/forms/error.{type Error}
 import sb/forms/props.{type Props}
+import sb/forms/task.{type Task}
 import sb/forms/zero
 
 pub type File {
@@ -40,19 +42,31 @@ pub type Context {
   Context(
     task_data: List(File),
     custom_data: Dict(Custom, List(File)),
-    custom: Dict(Custom, #(String, custom.Custom)),
+    custom: Dict(Custom, List(#(String, custom.Custom))),
     reports: List(Report(Error)),
   )
 }
 
-fn add_custom(kind: Custom, file: File) -> State(Nil, Context) {
+fn add_custom_data(kind: Custom, file: File) -> State(Nil, Context) {
   use context <- state.update()
 
   Context(..context, custom_data: {
     use kind <- dict.upsert(context.custom_data, kind)
-
     option.map(kind, list.prepend(_, file))
     |> option.unwrap([file])
+  })
+}
+
+fn add_custom(
+  kind: Custom,
+  custom: #(String, custom.Custom),
+) -> State(Nil, Context) {
+  use context <- state.update()
+
+  Context(..context, custom: {
+    use kind <- dict.upsert(context.custom, kind)
+    option.map(kind, list.prepend(_, custom))
+    |> option.unwrap([custom])
   })
 }
 
@@ -61,20 +75,19 @@ fn add_task(file: File) {
   Context(..context, task_data: [file, ..context.task_data])
 }
 
-fn add_report(
-  report: Report(Error),
-  path path: String,
-  index index: Option(Int),
-) -> State(Nil, Context) {
+fn add_report(report: Report(Error), path path: String) -> State(Nil, Context) {
   use context <- state.update()
   let report = report.context(report, error.PathContext(path))
+  Context(..context, reports: [report, ..context.reports])
+}
 
-  Context(..context, reports: {
-    option.map(index, error.IndexContext)
-    |> option.map(report.context(report, _))
-    |> option.unwrap(report)
-    |> list.prepend(context.reports, _)
-  })
+fn add_indexed_report(
+  report: Report(Error),
+  path path: String,
+  index index: Int,
+) -> State(Nil, Context) {
+  report.context(report, error.IndexContext(index))
+  |> add_report(path)
 }
 
 pub fn main() {
@@ -90,54 +103,30 @@ pub fn main() {
   |> pprint.debug
 }
 
-fn load(prefix: String, pattern: String) {
-  path.wildcard(prefix, pattern)
-  |> list.map(load_path(prefix, _))
-  |> state.sequence
-  |> state.do(decode_custom)
-}
+fn load(
+  prefix: String,
+  pattern: String,
+) -> State(List(#(String, Task)), Context) {
+  use <- state.do(
+    state.sequence({
+      use path <- list.map(path.wildcard(prefix, pattern))
+      load_path(prefix, path)
+    }),
+  )
 
-fn decode_custom() -> State(_, Context) {
-  use context: Context <- state.with(state.get())
+  use <- state.do(decode_custom(CommandsV1))
+  use <- state.do(decode_custom(FiltersV1))
+  use <- state.do(decode_custom(FieldsV1))
+  use <- state.do(decode_custom(SourcesV1))
 
-  let sources =
-    dict.get(context.custom_data, SourcesV1)
-    |> result.unwrap([])
-
-  let custom =
-    state.run(
-      context: set.new(),
-      state: state.sequence({
-        use file <- list.flat_map(sources)
-        use dynamic <- list.map(file.documents)
-
-        case props.decode(dynamic, custom.decoder()) {
-          Error(report) -> state.return(Error(report))
-
-          Ok(#(id, custom)) -> {
-            use context <- state.with(state.get())
-
-            use <- bool.guard(
-              set.contains(context, id),
-              state.return(report.error(error.DuplicateId(id))),
-            )
-
-            use <- state.do(state.put(set.insert(context, id)))
-            state.return(Ok(#(id, custom)))
-          }
-        }
-      }),
-    )
-    |> echo
-
-  todo
+  decode_tasks()
 }
 
 fn load_path(prefix: String, path: String) -> State(Nil, Context) {
   case load_file(prefix, path) {
-    Ok(File(kind: Custom(kind), ..) as file) -> add_custom(kind, file)
+    Ok(File(kind: Custom(kind), ..) as file) -> add_custom_data(kind, file)
     Ok(File(kind: TasksV1(..), ..) as file) -> add_task(file)
-    Error(report) -> add_report(report, path, index: None)
+    Error(report) -> add_report(report, path)
   }
 }
 
@@ -159,6 +148,75 @@ fn load_file(prefix: String, path: String) -> Result(File, Report(Error)) {
       Ok(File(kind:, path:, documents:))
     }
   }
+}
+
+fn decode_tasks() -> State(List(#(String, Task)), Context) {
+  use context: Context <- state.with(state.get())
+
+  let sources =
+    custom.Sources(dict.from_list(
+      dict.get(context.custom, SourcesV1)
+      |> result.unwrap([]),
+    ))
+
+  let fields =
+    custom.Fields(dict.from_list(
+      dict.get(context.custom, FieldsV1)
+      |> result.unwrap([]),
+    ))
+
+  let filters =
+    custom.Filters(dict.from_list(
+      dict.get(context.custom, FiltersV1)
+      |> result.unwrap([]),
+    ))
+
+  use <- extra.return(state.map(_, list.filter_map(_, extra.identity)))
+  use <- extra.return(state.sequence)
+  use file <- list.flat_map(context.task_data)
+  use document, index <- list.index_map(file.documents)
+  let add_report = add_indexed_report(_, file.path, index)
+  case props.decode(document, task.decoder(filters:, fields:, sources:)) {
+    Ok(task) -> state.return(Ok(#(task.id, task)))
+
+    Error(report) -> {
+      use <- state.do(add_report(report))
+      state.return(Error(Nil))
+    }
+  }
+}
+
+fn decode_custom(kind: Custom) -> State(List(Nil), Context) {
+  use context: Context <- state.with(state.get())
+
+  let sources =
+    dict.get(context.custom_data, kind)
+    |> result.unwrap([])
+
+  state.sequence(state.run(
+    context: set.new(),
+    state: state.sequence({
+      use file <- list.flat_map(sources)
+      use document, index <- list.index_map(file.documents)
+      let add_report = add_indexed_report(_, file.path, index)
+
+      case props.decode(document, custom.decoder()) {
+        Error(report) -> state.return(add_report(report))
+
+        Ok(#(id, custom)) -> {
+          use context <- state.with(state.get())
+
+          use <- bool.guard(
+            set.contains(context, id),
+            state.return(add_report(report.new(error.DuplicateId(id)))),
+          )
+
+          use <- state.do(state.put(set.insert(context, id)))
+          state.return(add_custom(kind, #(id, custom)))
+        }
+      }
+    }),
+  ))
 }
 
 fn kind_decoder() -> Props(Kind) {

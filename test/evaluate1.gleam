@@ -23,9 +23,9 @@ pub fn main() -> Nil {
 
     dots.split(doc)
     |> props.decode(task.decoder(
+      custom.Filters(dict.new()),
       custom.Fields(dict.new()),
       custom.Sources(dict.new()),
-      custom.Filters(dict.new()),
     ))
   }
 

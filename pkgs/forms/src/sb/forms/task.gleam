@@ -109,9 +109,9 @@ pub fn update(
 }
 
 pub fn decoder(
-  fields: custom.Fields,
-  sources: custom.Sources,
-  filters: custom.Filters,
+  filters filters: custom.Filters,
+  fields fields: custom.Fields,
+  sources sources: custom.Sources,
 ) -> Props(Task) {
   use <- state.do(props.check_keys(task_keys))
 

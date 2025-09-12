@@ -1,11 +1,10 @@
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
-import sb/extra/report.{type Report}
-import sb/extra/state
+import sb/extra/report
 import sb/forms/access.{type Access}
 import sb/forms/decoder
-import sb/forms/error.{type Error}
-import sb/forms/props
+import sb/forms/error
+import sb/forms/props.{type Props}
 import sb/forms/zero
 
 pub type File {
@@ -60,7 +59,7 @@ pub fn decoder() {
   }
 }
 
-fn tasks_v1_decoder() -> state.State(Kind, Report(Error), props.Context) {
+fn tasks_v1_decoder() -> Props(Kind) {
   use category <- props.try("category", {
     zero.list(decoder.from(decode.list(decode.string)))
   })

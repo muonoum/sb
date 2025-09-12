@@ -1,22 +1,17 @@
 import filepath
-import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/erlang/process
 import gleam/list
-import gleam/option
 import gleam/otp/actor
 import gleam/otp/supervision
 import gleam/pair
 import gleam/result
-import gleam/set.{type Set}
-import pprint
 import sb/extra
 import sb/extra/dots
 import sb/extra/path
 import sb/extra/report.{type Report}
-import sb/extra/state2.{type State} as state
 import sb/extra/yaml
 import sb/forms/custom.{type Custom}
 import sb/forms/decoder
@@ -133,182 +128,49 @@ fn schedule(
   }
 }
 
-pub type Document {
+type Document {
   Document(path: String, index: Int, data: Dynamic)
 }
 
-pub type Context {
-  Context(
-    custom: Dict(file.Kind, List(#(String, Custom))),
-    tasks: List(File),
-    reports: List(Report(Error)),
-  )
-}
-
-fn state_load_path(prefix: String, path: String) -> State(Nil, Context) {
-  use context <- state.with(state.get())
-
-  case load_file(prefix, path) {
-    Error(report) -> {
-      let report = report.context(report, error.PathContext(path))
-      state.put(Context(..context, reports: [report, ..context.reports]))
-    }
-
-    Ok(File(kind: file.TasksV1(..), ..) as file) ->
-      state.put(Context(..context, tasks: [file, ..context.tasks]))
-
-    Ok(File(kind: file.CommandsV1, ..) as file)
-    | Ok(File(kind: file.SourcesV1, ..) as file)
-    | Ok(File(kind: file.FieldsV1, ..) as file)
-    | Ok(File(kind: file.FiltersV1, ..) as file) -> {
-      state_load_custom(file)
-    }
-  }
-}
-
-// TODO: Bruke ny state for dups?
-fn state_load_custom(file: File) -> State(Nil, Context) {
-  let state = state.return(Nil)
-  use _state, data, index <- list.index_fold(file.documents, state)
-  use context <- state.update()
-
-  let result =
-    props.decode(data, custom.decoder())
-    |> report.error_context(error.IndexContext(index))
-    |> report.error_context(error.PathContext(file.path))
-
-  case result {
-    Error(report) -> {
-      Context(..context, reports: [report, ..context.reports])
-    }
-
-    Ok(custom) -> {
-      Context(..context, custom: {
-        use kind <- dict.upsert(context.custom, file.kind)
-
-        option.map(kind, list.prepend(_, custom))
-        |> option.unwrap([custom])
-      })
-    }
-  }
-}
-
-fn state_validate() -> State(Nil, Context) {
-  use context: Context <- state.update()
-
-  let _results = {
-    use _kind, custom <- dict.map_values(context.custom)
-    validate_kind(custom)
-  }
-
-  context
-}
-
-fn validate_kind(
-  custom: List(#(String, Custom)),
-) -> List(Result(#(String, Custom), Report(Error))) {
-  use <- extra.return(pair.second)
-  use seen, #(id, custom) <- list.map_fold(custom, set.new())
-  use <- check_duplicate(seen, id)
-  Ok(#(id, custom))
-}
-
-fn check_duplicate(
-  seen: Set(String),
-  key: String,
-  then: fn() -> Result(v, Report(Error)),
-) -> #(Set(String), Result(v, Report(Error))) {
-  let duplicate = set.contains(seen, key)
-  use <- bool.guard(duplicate, #(seen, report.error(error.DuplicateId(key))))
-  #(set.insert(seen, key), then())
-}
-
-fn state_load_tasks() -> State(List(_), Context) {
-  use context: Context <- state.with(state.get())
-
-  let sources =
-    custom.Sources(dict.from_list(
-      dict.get(context.custom, file.SourcesV1)
-      |> result.unwrap([]),
-    ))
-
-  let fields =
-    custom.Fields(dict.from_list(
-      dict.get(context.custom, file.FieldsV1)
-      |> result.unwrap([]),
-    ))
-
-  let filters =
-    custom.Filters(dict.from_list(
-      dict.get(context.custom, file.FiltersV1)
-      |> result.unwrap([]),
-    ))
-
-  // TODO: Bruke ny state for dups?
-  let #(tasks, reports) =
-    result.partition({
-      use file <- list.flat_map(context.tasks)
-      use doc <- list.map(file.documents)
-      props.decode(doc, task.decoder(fields, sources, filters))
-    })
-
-  use context <- state.with(state.get())
-
-  use <- state.do(state.put(
-    Context(..context, reports: list.append(context.reports, reports)),
-  ))
-
-  state.return({
-    use task <- list.map(tasks)
-    #(task.id, task)
-  })
-}
-
 fn load(_model: Model, config: Config) -> Model {
-  let state =
-    state.step(
-      context: Context(custom: dict.new(), tasks: [], reports: []),
-      state: path.wildcard(config.prefix, config.pattern)
-        |> list.map(state_load_path(config.prefix, _))
-        |> state.sequence
-        |> state.do(state_validate)
-        |> state.do(state_load_tasks),
+  let #(files, file_errors) = load_files(config.prefix, config.pattern)
+
+  let #(task_documents, files) = load_documents(files, file.is_tasks)
+  let #(source_documents, files) = load_documents(files, file.is_sources)
+  let #(field_documents, files) = load_documents(files, file.is_fields)
+  let #(filter_documents, _rest) = load_documents(files, file.is_filters)
+
+  let #(sources, source_errors) = load_custom(source_documents)
+  let #(fields, field_errors) = load_custom(field_documents)
+  let #(filters, filter_errors) = load_custom(filter_documents)
+
+  let #(tasks, task_errors) =
+    load_tasks(
+      task_documents,
+      custom.Sources(sources),
+      custom.Fields(fields),
+      custom.Filters(filters),
     )
 
-  // pprint.debug(state.0)
-  Model(tasks: dict.from_list(state.0), errors: { state.1 }.reports)
-  // let #(files, file_errors) =
-  //   result.partition({
-  //     use path <- list.map(path.wildcard(config.prefix, config.pattern))
-  //     use <- extra.return(report.error_context(_, error.PathContext(path)))
-  //     load_file(config.prefix, path)
-  //   })
+  let errors =
+    file_errors
+    |> list.append(filter_errors)
+    |> list.append(field_errors)
+    |> list.append(source_errors)
+    |> list.append(task_errors)
 
-  // let #(task_documents, files) = load_documents(files, file.is_tasks)
-  // let #(source_documents, files) = load_documents(files, file.is_sources)
-  // let #(field_documents, files) = load_documents(files, file.is_fields)
-  // let #(filter_documents, _rest) = load_documents(files, file.is_filters)
+  Model(tasks: dict.from_list(tasks), errors:)
+}
 
-  // let #(sources, source_errors) = load_custom(source_documents)
-  // let #(fields, field_errors) = load_custom(field_documents)
-  // let #(filters, filter_errors) = load_custom(filter_documents)
-
-  // let #(tasks, task_errors) =
-  //   load_tasks(
-  //     task_documents,
-  //     custom.Sources(dict.from_list(sources)),
-  //     custom.Fields(dict.from_list(fields)),
-  //     custom.Filters(dict.from_list(filters)),
-  //   )
-
-  // let errors =
-  //   file_errors
-  //   |> list.append(filter_errors)
-  //   |> list.append(field_errors)
-  //   |> list.append(source_errors)
-  //   |> list.append(task_errors)
-
-  // Model(tasks: dict.from_list(tasks), errors:)
+fn load_files(
+  prefix: String,
+  pattern: String,
+) -> #(List(File), List(Report(Error))) {
+  result.partition({
+    use path <- list.map(path.wildcard(prefix, pattern))
+    use <- extra.return(report.error_context(_, error.PathContext(path)))
+    load_file(prefix, path)
+  })
 }
 
 fn load_file(prefix: String, path: String) -> Result(File, Report(Error)) {
@@ -325,16 +187,28 @@ fn load_file(prefix: String, path: String) -> Result(File, Report(Error)) {
     [header, ..documents] -> {
       use <- extra.return(report.error_context(_, error.FileError))
       let header = dots.split(header)
-      use kind <- result.map(props.decode(header, file.decoder()))
+      use kind <- result.try(props.decode(header, file.decoder()))
       let documents = list.map(documents, dots.split)
-      File(kind:, path:, documents:)
+      Ok(File(kind:, path:, documents:))
     }
   }
 }
 
+fn load_documents(
+  files: List(File),
+  filter: fn(File) -> Bool,
+) -> #(List(Document), List(File)) {
+  use files <- pair.map_first(list.partition(files, filter))
+  use file <- list.flat_map(files)
+  use data, index <- list.index_map(file.documents)
+  Document(path: file.path, index: index + 1, data:)
+}
+
 fn load_custom(
   documents: List(Document),
-) -> #(List(#(String, Custom)), List(Report(Error))) {
+) -> #(Dict(String, Custom), List(Report(Error))) {
+  use <- extra.return(pair.map_first(_, dict.from_list))
+
   result.partition({
     let decoder = custom.decoder()
     use seen, doc <- decode_documents(documents)
@@ -351,23 +225,13 @@ fn load_tasks(
   filters: custom.Filters,
 ) -> #(List(#(String, Task)), List(Report(Error))) {
   result.partition({
-    let decoder = task.decoder(fields, sources, filters)
+    let decoder = task.decoder(filters:, fields:, sources:)
     use seen, doc <- decode_documents(documents)
     use task <- result.map(props.decode(doc, decoder))
     use seen <- dups.names(seen, task.name, task.category)
     use seen <- dups.id(seen, task.id)
     #(seen, Ok(#(task.id, task)))
   })
-}
-
-fn load_documents(
-  files: List(File),
-  filter: fn(File) -> Bool,
-) -> #(List(Document), List(File)) {
-  use files <- pair.map_first(list.partition(files, filter))
-  use file <- list.flat_map(files)
-  use data, index <- list.index_map(file.documents)
-  Document(path: file.path, index: index + 1, data:)
 }
 
 fn decode_documents(
