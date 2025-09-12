@@ -12,6 +12,7 @@ import sb/extra
 import sb/extra/dots
 import sb/extra/path
 import sb/extra/report.{type Report}
+import sb/extra/state2.{type State} as state
 import sb/extra/yaml
 import sb/forms/custom.{type Custom}
 import sb/forms/decoder
@@ -133,44 +134,43 @@ type Document {
 }
 
 fn load(_model: Model, config: Config) -> Model {
-  let #(files, file_errors) = load_files(config.prefix, config.pattern)
+  use <- extra.return(state.run(context: [], state: _))
+  use files <- state.with(load_files(config.prefix, config.pattern))
 
   let #(task_documents, files) = load_documents(files, file.is_tasks)
   let #(source_documents, files) = load_documents(files, file.is_sources)
   let #(field_documents, files) = load_documents(files, file.is_fields)
   let #(filter_documents, _rest) = load_documents(files, file.is_filters)
 
-  let #(sources, source_errors) = load_custom(source_documents)
-  let #(fields, field_errors) = load_custom(field_documents)
-  let #(filters, filter_errors) = load_custom(filter_documents)
+  use sources <- state.with(load_custom(source_documents, custom.Sources))
+  use fields <- state.with(load_custom(field_documents, custom.Fields))
+  use filters <- state.with(load_custom(filter_documents, custom.Filters))
 
-  let #(tasks, task_errors) =
-    load_tasks(
-      task_documents,
-      custom.Sources(sources),
-      custom.Fields(fields),
-      custom.Filters(filters),
-    )
+  use tasks <- state.with({
+    load_tasks(task_documents, sources:, fields:, filters:)
+  })
 
-  let errors =
-    file_errors
-    |> list.append(filter_errors)
-    |> list.append(field_errors)
-    |> list.append(source_errors)
-    |> list.append(task_errors)
+  use errors <- state.with(state.get())
+  state.return(Model(tasks: dict.from_list(tasks), errors:))
+}
 
-  Model(tasks: dict.from_list(tasks), errors:)
+fn partition(
+  results: List(Result(v, Report(Error))),
+) -> State(List(v), List(Report(Error))) {
+  use context <- state.with(state.get())
+  let #(oks, errors) = result.partition(results)
+  use <- state.do(state.put(list.append(context, errors)))
+  state.return(oks)
 }
 
 fn load_files(
   prefix: String,
   pattern: String,
-) -> #(List(File), List(Report(Error))) {
-  result.partition({
-    use path <- list.map(path.wildcard(prefix, pattern))
-    use <- extra.return(report.error_context(_, error.PathContext(path)))
-    load_file(prefix, path)
-  })
+) -> State(List(File), List(Report(Error))) {
+  use <- extra.return(partition)
+  use path <- list.map(path.wildcard(prefix, pattern))
+  use <- extra.return(report.error_context(_, error.PathContext(path)))
+  load_file(prefix, path)
 }
 
 fn load_file(prefix: String, path: String) -> Result(File, Report(Error)) {
@@ -206,32 +206,31 @@ fn load_documents(
 
 fn load_custom(
   documents: List(Document),
-) -> #(Dict(String, Custom), List(Report(Error))) {
-  use <- extra.return(pair.map_first(_, dict.from_list))
-
-  result.partition({
-    let decoder = custom.decoder()
-    use seen, doc <- decode_documents(documents)
-    use #(id, custom) <- result.map(props.decode(doc, decoder))
-    use seen <- dups.id(seen, id)
-    #(seen, Ok(#(id, custom)))
-  })
+  construct: fn(Dict(String, Custom)) -> custom,
+) -> State(custom, List(Report(Error))) {
+  use <- extra.return(state.map(_, construct))
+  use <- extra.return(state.map(_, dict.from_list))
+  use <- extra.return(partition)
+  let decoder = custom.decoder()
+  use seen, doc <- decode_documents(documents)
+  use #(id, custom) <- result.map(props.decode(doc, decoder))
+  use seen <- dups.id(seen, id)
+  #(seen, Ok(#(id, custom)))
 }
 
 fn load_tasks(
   documents: List(Document),
-  sources: custom.Sources,
-  fields: custom.Fields,
-  filters: custom.Filters,
-) -> #(List(#(String, Task)), List(Report(Error))) {
-  result.partition({
-    let decoder = task.decoder(filters:, fields:, sources:)
-    use seen, doc <- decode_documents(documents)
-    use task <- result.map(props.decode(doc, decoder))
-    use seen <- dups.names(seen, task.name, task.category)
-    use seen <- dups.id(seen, task.id)
-    #(seen, Ok(#(task.id, task)))
-  })
+  sources sources: custom.Sources,
+  fields fields: custom.Fields,
+  filters filters: custom.Filters,
+) -> State(List(#(String, Task)), List(Report(Error))) {
+  use <- extra.return(partition)
+  let decoder = task.decoder(filters:, fields:, sources:)
+  use seen, doc <- decode_documents(documents)
+  use task <- result.map(props.decode(doc, decoder))
+  use seen <- dups.names(seen, task.name, task.category)
+  use seen <- dups.id(seen, task.id)
+  #(seen, Ok(#(task.id, task)))
 }
 
 fn decode_documents(
