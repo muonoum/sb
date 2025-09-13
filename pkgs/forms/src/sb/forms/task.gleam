@@ -114,7 +114,7 @@ pub fn update(
 }
 
 pub fn decoder(
-  defaults _defaults: Defaults,
+  defaults defaults: Defaults,
   commands commands: custom.Commands,
   filters filters: custom.Filters,
   fields fields: custom.Fields,
@@ -124,8 +124,17 @@ pub fn decoder(
 
   use name <- props.get("name", decoder.from(decode.string))
 
-  use category <- props.get("category", {
-    decoder.from(decode.list(decode.string))
+  use category <- state.bind({
+    case defaults.category {
+      [] ->
+        props.get(
+          "category",
+          decoder.from(decode.list(decode.string)),
+          props.succeed,
+        )
+
+      _category -> props.succeed(defaults.category)
+    }
   })
 
   use id <- props.try("id", {
@@ -144,8 +153,10 @@ pub fn decoder(
     zero.list(decoder.from(decode.list(decode.string)))
   })
 
-  use runners <- props.try("runners", access.decoder())
-  use approvers <- props.try("approvers", access.decoder())
+  use runners <- props.try("runners", access.decoder(fn() { defaults.runners }))
+  use approvers <- props.try("approvers", {
+    access.decoder(fn() { defaults.approvers })
+  })
 
   use fields <- props.try("fields", {
     use dynamic <- zero.list

@@ -1,7 +1,12 @@
 kind: tasks/v1
+category: [Tests]
 ---
 name: Input
-category: [Tests]
+layout:
+  - checkbox-row
+  - checkbox-column
+  - radio-row
+  - radio-column
 
 fields:
   - id: data1
@@ -15,7 +20,7 @@ fields:
     kind: data
     source.literal:
       - Tempor id adipisicing voluptate nulla et incididunt cillum Lorem sit ad.
-      - Voluptate nulla deserunt qui pariatur laboris velit quis cupidatat proident dolor pariatur adipisicing.
+      - Voluptate nulla deserunt qui pariatur laboris velit quis cupidatat proident dolor pariatur.
       - Ut qui sint ex eiusmod officia cillum.
 
   - id: checkbox-row
