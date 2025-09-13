@@ -9,7 +9,7 @@ import lustre/effect
 import lustre/element
 import mist
 import sb/component
-import sb/extra
+import sb/extra/function.{identity}
 import sb/extra_erlang
 import sb/frontend
 import sb/frontend/components/errors
@@ -38,7 +38,7 @@ pub fn websocket_router(
   store_interval store_interval: Int,
   task_store task_store: process.Subject(task_store.Message),
 ) -> fn(Request(_)) -> Response(_) {
-  use request <- extra.identity
+  use request <- identity
 
   case wisp.path_segments(request) {
     ["components", "errors"] ->

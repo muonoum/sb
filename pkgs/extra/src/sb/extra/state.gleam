@@ -1,5 +1,5 @@
 import gleam/list
-import sb/extra
+import sb/extra/function
 
 pub type State(v, ctx) {
   State(run: fn(ctx) -> #(v, ctx))
@@ -74,7 +74,7 @@ pub fn map2(
 }
 
 pub fn sequence(states: List(State(v, ctx))) -> State(List(v), ctx) {
-  use <- extra.return(map(_, list.reverse))
+  use <- function.return(map(_, list.reverse))
   use list, state <- list.fold(states, return([]))
   map2(list, state, list.prepend)
 }

@@ -10,8 +10,8 @@ import gleam/otp/supervision
 import gleam/pair
 import gleam/result
 import gleam/set.{type Set}
-import sb/extra.{compose, return}
 import sb/extra/dots
+import sb/extra/function.{compose, identity, return}
 import sb/extra/list as list_extra
 import sb/extra/path
 import sb/extra/report.{type Report}
@@ -293,7 +293,7 @@ fn load_tasks(
 fn error_context(
   document: Document,
 ) -> fn(Result(a, Report(Error))) -> Result(a, Report(Error)) {
-  use result <- extra.identity
+  use result <- identity
   report.error_context(result, error.IndexContext(document.index))
   |> report.error_context(error.PathContext(document.path))
 }

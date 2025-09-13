@@ -2,7 +2,7 @@ import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/result
-import sb/extra
+import sb/extra/function.{return}
 import sb/extra/state_eval as state
 import sb/forms/decoder
 import sb/forms/error
@@ -82,12 +82,12 @@ fn kind_decoder() -> Props(Condition) {
 
   case dict.to_list(dict) {
     [#("when", dynamic)] -> {
-      use <- extra.return(props.error_context(error.BadCondition("when")))
+      use <- return(props.error_context(error.BadCondition("when")))
       condition_decoder(dynamic, Defined, Equal)
     }
 
     [#("unless", dynamic)] -> {
-      use <- extra.return(props.error_context(error.BadCondition("unless")))
+      use <- return(props.error_context(error.BadCondition("unless")))
       condition_decoder(dynamic, NotDefined, NotEqual)
     }
 
@@ -101,14 +101,14 @@ fn condition_decoder(
   defined: fn(String) -> Condition,
   equal: fn(String, Value) -> Condition,
 ) -> Props(Condition) {
-  use <- extra.return(state.from_result)
+  use <- return(state.from_result)
 
   use <- result.lazy_or(
     decoder.run(dynamic, decode.string)
     |> result.map(defined),
   )
 
-  use <- extra.return(props.decode(dynamic, _))
+  use <- return(props.decode(dynamic, _))
   use dict <- props.get_dict
 
   case dict.to_list(dict) {

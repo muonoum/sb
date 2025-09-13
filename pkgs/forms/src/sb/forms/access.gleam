@@ -1,5 +1,5 @@
 import gleam/dynamic/decode.{type Decoder}
-import sb/extra
+import sb/extra/function.{return}
 import sb/extra/state_eval as state
 import sb/forms/decoder
 import sb/forms/props
@@ -30,7 +30,7 @@ pub fn none() -> Access {
 
 pub fn decoder() -> Zero(Access) {
   use dynamic <- zero.lazy(none)
-  use <- extra.return(props.decode(dynamic, _))
+  use <- return(props.decode(dynamic, _))
   use <- state.do(props.check_keys(access_keys))
 
   use users <- props.try("users", {

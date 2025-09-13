@@ -3,7 +3,7 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/set.{type Set}
-import sb/extra
+import sb/extra/function.{return}
 import sb/extra/report.{type Report}
 import sb/extra/reset.{type Reset}
 import sb/extra/state_eval as state
@@ -93,7 +93,7 @@ pub fn decoder(
   filters filters: custom.Filters,
 ) -> Props(#(String, Field)) {
   use id <- props.get("id", text.id_decoder)
-  use <- extra.return(props.error_context(error.FieldContext(id)))
+  use <- return(props.error_context(error.FieldContext(id)))
 
   use kind <- state.with({
     use _seen, name <- custom.kind_decoder(set.new(), fields, custom.get_field)

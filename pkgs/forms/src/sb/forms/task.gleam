@@ -7,7 +7,7 @@ import gleam/pair
 import gleam/result
 import gleam/set.{type Set}
 import gleam/string
-import sb/extra
+import sb/extra/function.{identity, return}
 import sb/extra/report.{type Report}
 import sb/extra/state_eval as state
 import sb/forms/access.{type Access}
@@ -148,7 +148,7 @@ pub fn decoder(
   use fields <- props.try("fields", {
     use dynamic <- zero.list
     use list <- result.map(decoder.run(dynamic, decode.list(decode.dynamic)))
-    use <- extra.return(pair.second)
+    use <- return(pair.second)
     use seen, dynamic <- list.map_fold(list, set.new())
     let decoder = field.decoder(sources:, fields:, filters:)
     props.decode(dynamic, decoder)
@@ -172,7 +172,7 @@ pub fn decoder(
 const valid_id = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 
 fn make_id(category: List(String), name: String) -> fn() -> String {
-  use <- extra.identity
+  use <- identity
   let category = string.join(list.map(category, into_id), "-")
   string.join([category, into_id(name)], "-")
 }

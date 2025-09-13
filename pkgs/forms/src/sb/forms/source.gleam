@@ -11,7 +11,7 @@ import gleam/result
 import gleam/set.{type Set}
 import gleam/string
 import gleam/uri
-import sb/extra
+import sb/extra/function.{return}
 import sb/extra/report.{type Report}
 import sb/extra/state_eval as state
 import sb/forms/custom
@@ -244,7 +244,7 @@ fn seen_decoder(seen: Set(String), sources: custom.Sources) -> Props(Source) {
 
 fn kind_decoder(seen: Set(String), sources: custom.Sources) -> Props(Source) {
   use seen, name <- custom.kind_decoder(seen, sources, custom.get_source)
-  use <- extra.return(props.error_context(error.BadKind(name)))
+  use <- return(props.error_context(error.BadKind(name)))
   use <- state.do(props.drop(["kind"]))
 
   case name {

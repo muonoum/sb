@@ -6,7 +6,7 @@ import gleam/int
 import gleam/otp/static_supervisor as supervisor
 import gleam/result
 import mist
-import sb/extra
+import sb/extra/function.{identity}
 import sb/router
 import sb/task_store
 import wisp
@@ -53,7 +53,7 @@ pub fn main() {
       application.priv_directory("lustre_portal")
       |> result.map(filepath.join(_, "static"))
 
-    use request, next <- extra.identity
+    use request, next <- identity
 
     use <- wisp.serve_static(request, under: "/", from: sb)
     use <- wisp.serve_static(request, under: "/lustre", from: lustre)
