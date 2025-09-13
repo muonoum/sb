@@ -11,7 +11,7 @@ import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
 import lustre/server_component as server
-import sb/extra/function.{compose, return}
+import sb/extra/function.{return}
 import sb/extra/report.{type Report}
 import sb/extra/reset.{type Reset}
 import sb/extra/state.{type State}
@@ -115,7 +115,7 @@ pub fn checkbox(
   )
 }
 
-fn field() {
+fn field() -> State(Element(message), Context(message)) {
   use context <- state.bind(context())
   use config <- state.bind(config())
 
@@ -123,7 +123,8 @@ fn field() {
     options.SingleSource(source) -> state.sequence([group_source(source)])
 
     options.SourceGroups(groups) -> {
-      use <- return(compose(state.sequence, state.map(_, list.flatten)))
+      use <- return(state.map(_, list.flatten))
+      use <- return(state.sequence)
       use group, group_index <- list.index_map(groups)
       let options.Group(label:, source:) = group
       use <- state.do(state.put(Context(..context, group_index:)))

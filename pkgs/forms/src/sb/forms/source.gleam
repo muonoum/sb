@@ -75,6 +75,7 @@ pub fn refs(source: Source) -> List(String) {
   }
 }
 
+// TODO
 pub fn value(source: Source) -> Result(Value, Nil) {
   case source {
     Literal(value) -> Ok(value)
@@ -82,6 +83,7 @@ pub fn value(source: Source) -> Result(Value, Nil) {
   }
 }
 
+// TODO
 pub fn keys(source: Source) -> List(Value) {
   value(source)
   |> result.try(value.keys)
