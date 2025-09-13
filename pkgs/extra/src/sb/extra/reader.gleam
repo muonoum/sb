@@ -51,7 +51,3 @@ pub fn sequence(states: List(Reader(v, ctx))) -> Reader(List(v), ctx) {
   use list, state <- list.fold(states, return([]))
   map2(list, state, list.prepend)
 }
-
-pub fn main() {
-  todo
-}
