@@ -40,8 +40,7 @@ pub fn do(
   with state: State(a, err, ctx),
   then then: fn() -> State(b, err, ctx),
 ) -> State(b, err, ctx) {
-  use _ <- with(state)
-  then()
+  with(state, fn(_) { then() })
 }
 
 pub fn with(

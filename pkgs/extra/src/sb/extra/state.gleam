@@ -22,8 +22,7 @@ pub fn do(
   with state: State(a, ctx),
   then then: fn() -> State(b, ctx),
 ) -> State(b, ctx) {
-  use _ <- with(state)
-  then()
+  with(state, fn(_) { then() })
 }
 
 pub fn with(
