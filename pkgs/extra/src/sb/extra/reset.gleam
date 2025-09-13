@@ -10,6 +10,10 @@ pub fn new(value: v, refs: fn(v) -> List(String)) -> Reset(v) {
   Reset(value:, initial: fn() { value }, refs: set.from_list(refs(value)))
 }
 
+pub fn initial(reset: Reset(v)) -> Reset(v) {
+  Reset(..reset, value: reset.initial())
+}
+
 pub fn try_new(
   value: Result(v, e),
   refs: fn(v) -> List(String),

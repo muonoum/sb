@@ -39,6 +39,25 @@ pub fn sources(options: Options) -> List(Reset(Result(Source, Report(Error)))) {
   }
 }
 
+pub fn is_loading(options: Options, is_loading: fn(Source) -> Bool) -> Bool {
+  case options {
+    SingleSource(source) ->
+      case reset.unwrap(source) {
+        Ok(source) -> is_loading(source)
+        Error(_report) -> False
+      }
+
+    SourceGroups(groups) -> {
+      use Group(_label, source) <- list.any(groups)
+
+      case reset.unwrap(source) {
+        Ok(source) -> is_loading(source)
+        Error(_report) -> False
+      }
+    }
+  }
+}
+
 pub fn reset(options: Options, refs: Set(String)) -> Options {
   case options {
     SingleSource(source) -> SingleSource(reset.maybe(source, refs))

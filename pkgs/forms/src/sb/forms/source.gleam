@@ -49,6 +49,15 @@ pub type Source {
   )
 }
 
+pub fn is_loading(source: Source) -> Bool {
+  case source {
+    Loading(..) -> True
+    Fetch(body: option.Some(body), ..) -> is_loading(body)
+    Literal(..) | Reference(..) | Template(..) -> False
+    Command(..) | Fetch(..) -> False
+  }
+}
+
 pub fn refs(source: Source) -> List(String) {
   case source {
     Literal(..) -> []

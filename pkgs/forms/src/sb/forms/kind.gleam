@@ -43,6 +43,28 @@ pub type Kind {
   MultiSelect(choice: List(Choice), options: Options)
 }
 
+pub fn sources(kind: Kind) -> List(Reset(Result(Source, Report(Error)))) {
+  case kind {
+    Text(..) | Textarea(..) -> []
+    Data(source) -> [source]
+    Select(options:, ..) | MultiSelect(options:, ..) -> options.sources(options)
+  }
+}
+
+pub fn is_loading(kind: Kind, is_loading: fn(Source) -> Bool) -> Bool {
+  case kind {
+    Text(..) | Textarea(..) -> False
+
+    Data(source) ->
+      reset.unwrap(source)
+      |> result.map(is_loading)
+      |> result.unwrap(False)
+
+    Select(options:, ..) | MultiSelect(options:, ..) ->
+      options.is_loading(options, is_loading)
+  }
+}
+
 pub fn reset(kind: Kind, refs: Set(String)) -> Kind {
   case kind {
     Text(..) | Textarea(..) -> kind
