@@ -1,33 +1,37 @@
-pub type Reader(e, a) {
-  Reader(run: fn(e) -> a)
+import sb/extra/function.{compose, identity}
+
+pub type Reader(v, ctx) {
+  Reader(run: fn(ctx) -> v)
 }
 
-pub fn return(a: a) -> Reader(e, a) {
+pub const ask = Reader(identity)
+
+// pub fn ask() -> Reader(ctx, ctx) {
+//   Reader(identity)
+// }
+
+// pub fn asks(sel: fn(Reader(c, d)) -> Reader(e, c)) -> Reader(e, c) {
+//   do(ask, compose(return, sel))
+// }
+
+// pub fn local(r: Reader(v, ctx), f: fn(ctx) -> ctx) -> Reader(v, ctx) {
+//   use context <- Reader
+//   r.run(f(context))
+// }
+
+pub fn return(value: v) -> Reader(v, ctx) {
   use _ <- Reader
-  a
+  value
 }
 
-pub fn do(reader: Reader(e, a), then: fn(a) -> Reader(e, b)) -> Reader(e, b) {
-  use v <- Reader
-  let a = reader.run(v)
-  let b = then(a)
-  b.run(v)
-}
-
-pub fn ask(e: e) -> e {
-  e
+pub fn do(
+  reader: Reader(a, ctx),
+  then: fn(a) -> Reader(b, ctx),
+) -> Reader(b, ctx) {
+  use context <- Reader
+  then(reader.run(context)).run(context)
 }
 
 pub fn main() {
-  let r =
-    Reader({
-      use x <- ask
-      echo x
-      use x <- ask
-      echo x
-      return(99)
-    })
-
-  r.run(10)
-  |> echo
+  todo
 }

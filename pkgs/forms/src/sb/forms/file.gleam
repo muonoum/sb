@@ -25,13 +25,10 @@ pub fn empty(path: String) -> File {
   File(kind: Empty, path:, documents: [])
 }
 
-pub fn tasks(
-  file: File,
-  then: fn(task.Defaults, String, List(Dynamic)) -> v,
-) -> Result(v, Nil) {
+pub fn tasks(file: File) -> Result(#(String, List(Dynamic), task.Defaults), Nil) {
   case file {
     File(kind: TasksV1(defaults), path:, documents:) ->
-      Ok(then(defaults, path, documents))
+      Ok(#(path, documents, defaults))
     _else -> Error(Nil)
   }
 }
@@ -39,6 +36,13 @@ pub fn tasks(
 pub fn is_tasks(file: File) -> Bool {
   case file {
     File(kind: TasksV1(..), ..) -> True
+    _else -> False
+  }
+}
+
+pub fn is_commands(file: File) -> Bool {
+  case file {
+    File(kind: CommandsV1, ..) -> True
     _else -> False
   }
 }

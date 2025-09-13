@@ -13,6 +13,10 @@ import sb/forms/props.{type Props}
 pub type Custom =
   Dict(String, Dynamic)
 
+pub type Commands {
+  Commands(custom: Dict(String, Custom))
+}
+
 pub type Fields {
   Fields(custom: Dict(String, Custom))
 }
