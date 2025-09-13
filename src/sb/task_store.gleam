@@ -176,20 +176,15 @@ fn load(_model: Model, config: Config) -> Model {
   use files <- state.bind(load_files(config.prefix, config.pattern))
 
   let #(tasks, files) = load_task_documents(files)
-  let #(commands, files) = load_documents(files, file.is_commands)
   let #(sources, files) = load_documents(files, file.is_sources)
   let #(fields, files) = load_documents(files, file.is_fields)
-  let #(filters, files) = load_documents(files, file.is_filters)
-  let #(_notifiers, _rest) = load_documents(files, file.is_notifiers)
+  let #(filters, _rest) = load_documents(files, file.is_filters)
 
-  use commands <- state.bind(load_custom(commands, custom.Commands))
   use sources <- state.bind(load_custom(sources, custom.Sources))
   use fields <- state.bind(load_custom(fields, custom.Fields))
   use filters <- state.bind(load_custom(filters, custom.Filters))
 
-  use tasks <- state.bind({
-    load_tasks(tasks, commands:, sources:, fields:, filters:)
-  })
+  use tasks <- state.bind(load_tasks(tasks, sources:, fields:, filters:))
 
   use errors <- state.bind(state.get())
   state.return(Model(tasks: dict.from_list(tasks), errors:))
@@ -275,7 +270,6 @@ fn load_custom(
 
 fn load_tasks(
   documents: List(TaskDocument),
-  commands commands: custom.Commands,
   sources sources: custom.Sources,
   fields fields: custom.Fields,
   filters filters: custom.Filters,
@@ -285,7 +279,7 @@ fn load_tasks(
 
   use TaskDocument(document:, defaults:) <- list.map(documents)
   use <- return(state.map(_, error_context(document)))
-  let decoder = task.decoder(defaults:, commands:, sources:, fields:, filters:)
+  let decoder = task.decoder(defaults:, sources:, fields:, filters:)
   case props.decode(document.data, decoder) {
     Error(report) -> state.return(Error(report))
 

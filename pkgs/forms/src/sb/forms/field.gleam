@@ -88,7 +88,6 @@ pub fn value(field: Field) -> Option(Result(Value, Report(Error))) {
 }
 
 pub fn decoder(
-  commands commands: custom.Commands,
   sources sources: custom.Sources,
   fields fields: custom.Fields,
   filters filters: custom.Filters,
@@ -98,7 +97,7 @@ pub fn decoder(
 
   use kind <- state.bind({
     use _seen, name <- custom.kind_decoder(set.new(), fields, custom.get_field)
-    use kind_keys <- kind.decoder(name, commands:, sources:)
+    use kind_keys <- kind.decoder(name, sources:)
     props.check_keys(list.append(field_keys, kind_keys))
   })
 

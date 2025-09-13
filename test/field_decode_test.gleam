@@ -27,7 +27,6 @@ pub fn decode_custom_field_test() {
   let #(_id, _field) =
     helpers.decode_field(
       dynamic,
-      commands: custom.Commands(dict.new()),
       fields:,
       sources: custom.Sources(dict.new()),
       filters: custom.Filters(dict.new()),

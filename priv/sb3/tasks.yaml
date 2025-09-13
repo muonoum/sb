@@ -8,6 +8,16 @@ layout:
   - radio-row
   - radio-column
 
+# notify:
+#   pending-approval:
+#     notifier: ..
+#     template: |
+#       ..
+
+#   job-started: ..
+#   job-failed: ..
+#   job-succeeded: ..
+
 fields:
   - id: data1
     kind: data

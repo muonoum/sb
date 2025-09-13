@@ -145,10 +145,7 @@ fn select_object(
   Ok(choice.new(value.String(have), value))
 }
 
-pub fn decoder(
-  commands commands: custom.Commands,
-  sources sources: custom.Sources,
-) -> Props(Options) {
+pub fn decoder(sources sources: custom.Sources) -> Props(Options) {
   use dict <- props.get_dict
 
   case dict.to_list(dict) {
@@ -156,26 +153,23 @@ pub fn decoder(
       use <- return(state.from_result)
       use list <- result.try(decoder.run(dynamic, decode.list(decode.dynamic)))
       use <- return(result.map(_, SourceGroups))
-      list.try_map(list, props.decode(_, group_decoder(commands:, sources:)))
+      list.try_map(list, props.decode(_, group_decoder(sources:)))
     }
 
     _else ->
-      state.map(source.decoder(commands:, sources:), Ok)
+      state.map(source.decoder(sources:), Ok)
       |> state.attempt(state.catch_error)
       |> state.map(reset.try_new(_, source.refs))
       |> state.map(SingleSource)
   }
 }
 
-fn group_decoder(
-  commands commands: custom.Commands,
-  sources sources: custom.Sources,
-) -> Props(Group) {
+fn group_decoder(sources sources: custom.Sources) -> Props(Group) {
   use label <- props.get("label", decoder.from(decode.string))
 
   use source <- props.get("source", {
     props.decode(_, {
-      state.map(source.decoder(commands:, sources:), Ok)
+      state.map(source.decoder(sources:), Ok)
       |> state.attempt(state.catch_error)
       |> state.map(reset.try_new(_, source.refs))
     })

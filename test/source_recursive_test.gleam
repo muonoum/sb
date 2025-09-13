@@ -1,4 +1,3 @@
-import gleam/dict
 import gleam/result
 import gleeunit/should
 import helpers
@@ -37,8 +36,6 @@ source:
 "
 
 pub fn short_recursive_source_test() {
-  let commands = custom.Commands(dict.new())
-
   let assert Ok(sources) =
     helpers.load_custom(custom_sources, yaml.decode_string)
     |> result.map(custom.Sources)
@@ -47,7 +44,7 @@ pub fn short_recursive_source_test() {
     helpers.load_documents(short_recursive_source1, yaml.decode_string)
 
   let report =
-    helpers.decode_source_property("source", dynamic, commands:, sources:)
+    helpers.decode_source_property("source", dynamic, sources:)
     |> should.be_error
 
   report.issue(report)
@@ -64,7 +61,7 @@ pub fn short_recursive_source_test() {
     helpers.load_documents(short_recursive_source2, yaml.decode_string)
 
   let report =
-    helpers.decode_source_property("source", dynamic, commands:, sources:)
+    helpers.decode_source_property("source", dynamic, sources:)
     |> should.be_error
 
   report.issue(report)
@@ -77,8 +74,6 @@ pub fn short_recursive_source_test() {
 }
 
 pub fn long_recursive_source_test() {
-  let commands = custom.Commands(dict.new())
-
   let assert Ok(sources) =
     helpers.load_custom(custom_sources, yaml.decode_string)
     |> result.map(custom.Sources)
@@ -87,7 +82,7 @@ pub fn long_recursive_source_test() {
     helpers.load_documents(long_recursive_source1, yaml.decode_string)
 
   let report =
-    helpers.decode_source_property("source", dynamic, commands:, sources:)
+    helpers.decode_source_property("source", dynamic, sources:)
     |> should.be_error
 
   report.issue(report)
@@ -104,7 +99,7 @@ pub fn long_recursive_source_test() {
     helpers.load_documents(long_recursive_source2, yaml.decode_string)
 
   let report =
-    helpers.decode_source_property("source", dynamic, commands:, sources:)
+    helpers.decode_source_property("source", dynamic, sources:)
     |> should.be_error
 
   report.issue(report)

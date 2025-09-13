@@ -32,7 +32,6 @@ pub fn short_fetch_test() {
   helpers.decode_source_property(
     "source",
     dynamic,
-    commands: custom.Commands(dict.new()),
     sources: custom.Sources(dict.new()),
   )
   |> should.be_ok
@@ -45,7 +44,6 @@ pub fn long_fetch_test() {
   helpers.decode_source_property(
     "source",
     dynamic,
-    commands: custom.Commands(dict.new()),
     sources: custom.Sources(dict.new()),
   )
   |> should.be_ok
@@ -58,7 +56,6 @@ pub fn longest_fetch_test() {
   helpers.decode_source_property(
     "source",
     dynamic,
-    commands: custom.Commands(dict.new()),
     sources: custom.Sources(dict.new()),
   )
   |> should.be_ok
@@ -71,7 +68,6 @@ pub fn double_fetch_test() {
   helpers.decode_source_property(
     "source",
     dynamic,
-    commands: custom.Commands(dict.new()),
     sources: custom.Sources(dict.new()),
   )
   |> should.be_ok
