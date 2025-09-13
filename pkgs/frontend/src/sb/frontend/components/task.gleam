@@ -365,13 +365,11 @@ fn task_fields() -> Reader(List(Element(Message)), Context) {
 
 fn list_layout(list: List(String)) -> Reader(List(Element(Message)), Context) {
   use task <- reader.bind(task())
-
-  results_layout({
-    use id <- list.map(list)
-    dict.get(task.fields, id)
-    |> report.replace_error(error.BadId(id))
-    |> result.replace(id)
-  })
+  use <- return(results_layout)
+  use id <- list.map(list)
+  dict.get(task.fields, id)
+  |> report.replace_error(error.BadId(id))
+  |> result.replace(id)
 }
 
 fn grid_layout(

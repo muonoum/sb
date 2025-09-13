@@ -30,8 +30,8 @@ pub fn decoder(dynamic: Dynamic) -> Result(Layout, Report(Error)) {
     use areas <- props.get("areas", decoder.from(decode.list(decode.string)))
 
     use style <- props.try("style", {
-      zero.new(
-        dict.new(),
+      zero.lazy(
+        dict.new,
         decoder.from(decode.dict(decode.string, decode.string)),
       )
     })
