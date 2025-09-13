@@ -1,9 +1,45 @@
 kind: tasks/v1
+sources:
+  lorem-ipsum:
+    kind: literal
+    literal:
+      - Tempor id adipisicing voluptate nulla et incididunt cillum Lorem sit ad.
+      - Voluptate nulla deserunt qui pariatur laboris velit quis cupidatat proident dolor pariatur adipisicing.
+      - Qui irure non dolor.
 ---
-name: Checkbox
+name: Input
 category: [Tests]
+
 fields:
-  - id: a
+  - id: checkbox-row
     kind: checkbox
-    source.literal: [1, 2, 3]
+    layout: row
+    source.literal:
+      - Tempor id adipisicing voluptate nulla et incididunt cillum Lorem sit ad.
+      - Voluptate nulla deserunt qui pariatur laboris velit quis cupidatat proident dolor pariatur adipisicing.
+      - Qui irure non dolor.
+
+  - id: checkbox-column
+    kind: checkbox
+    layout: column
+    source.literal:
+      - Tempor id adipisicing voluptate nulla et incididunt cillum Lorem sit ad.
+      - Voluptate nulla deserunt qui pariatur laboris velit quis cupidatat proident dolor pariatur adipisicing.
+      - Qui irure non dolor.
+
+  - id: radio-row
+    kind: radio
+    layout: row
+    source.literal:
+      - Tempor id adipisicing voluptate nulla et incididunt cillum Lorem sit ad.
+      - Voluptate nulla deserunt qui pariatur laboris velit quis cupidatat proident dolor pariatur adipisicing.
+      - Qui irure non dolor.
+
+  - id: radio-column
+    kind: radio
+    layout: column
+    source.literal:
+      - Tempor id adipisicing voluptate nulla et incididunt cillum Lorem sit ad.
+      - Voluptate nulla deserunt qui pariatur laboris velit quis cupidatat proident dolor pariatur adipisicing.
+      - Qui irure non dolor.
 

@@ -163,8 +163,7 @@ fn group_members(value: Value) -> State(Element(message), Context(message)) {
 
   case keys {
     Error(report) ->
-      core.inspect([attr.class("text-red-800")], report)
-      |> state.return
+      state.return(core.inspect([attr.class("text-red-800")], report))
 
     Ok(keys) -> {
       use choices <- state.bind({
@@ -176,18 +175,15 @@ fn group_members(value: Value) -> State(Element(message), Context(message)) {
         group_choice(choice, dom_id)
       })
 
-      use <- return(state.return)
+      let attr = [
+        attr.class("flex flex-wrap"),
+        case config.layout {
+          kind.Column -> attr.class("flex-col w-fit")
+          kind.Row -> attr.class("flex-row")
+        },
+      ]
 
-      html.div(
-        [
-          attr.class("flex flex-wrap gap-x-3 gap-y-1"),
-          case config.layout {
-            kind.Column -> attr.class("flex-col gap-x-1")
-            kind.Row -> attr.class("flex-row")
-          },
-        ],
-        choices,
-      )
+      state.return(html.div(attr, choices))
     }
   }
 }
@@ -201,7 +197,7 @@ fn group_choice(
   use <- return(state.return)
   let on_change = event.on("change", context.on_change(choice))
 
-  html.div([attr.class("flex items-baseline gap-0.5")], [
+  let input =
     html.input([
       attr.id(dom_id),
       attr.name(config.id),
@@ -212,10 +208,10 @@ fn group_choice(
         True -> attr.attribute("checked", "true")
         False -> attr.none()
       },
-    ]),
-    // TODO
-    html.label([attr.for(dom_id), attr.class("p-1")], [
-      core.inline_value(choice),
-    ]),
-  ])
+    ])
+
+  html.label(
+    [attr.for(dom_id), attr.class("flex items-baseline ps-0 pe-3 py-0.5 gap-2")],
+    [input, html.div([], [core.inline_value(choice)])],
+  )
 }

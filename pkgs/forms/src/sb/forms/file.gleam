@@ -68,6 +68,7 @@ pub fn is_sources(file: File) -> Bool {
   }
 }
 
+// TODO: Valid keys
 pub fn decoder() {
   use kind <- props.get("kind", decoder.from(decode.string))
 

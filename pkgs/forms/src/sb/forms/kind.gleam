@@ -42,6 +42,7 @@ pub type Kind {
   Radio(choice: Option(Choice), layout: Layout, options: Options)
   Select(choice: Option(Choice), placeholder: Option(String), options: Options)
   Checkbox(choices: List(Choice), layout: Layout, options: Options)
+
   MultiSelect(
     choices: List(Choice),
     placeholder: Option(String),
