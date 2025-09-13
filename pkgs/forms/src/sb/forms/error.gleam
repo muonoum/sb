@@ -3,12 +3,8 @@ import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic/decode
 import gleam/json
-import gleam/list
-import gleam/pair
 import gleam/regexp
-import gleam/result
 import gleam/set.{type Set}
-import sb/extra/function
 import sb/extra/parser
 import sb/extra/report.{type Report}
 import sb/forms/value.{type Value}
@@ -71,21 +67,5 @@ pub fn try_duplicate_ids(
         True -> #(seen, report.error(DuplicateId(id)))
         False -> #(set.insert(seen, id), Ok(#(id, field)))
       }
-  }
-}
-
-// TODO
-pub fn check_duplicates(
-  items: List(value),
-  error: fn(key) -> Error,
-  key: fn(value) -> key,
-) -> Result(List(value), Report(Error)) {
-  use <- function.return(result.map(_, pair.second))
-  let items = list.reverse(items)
-  use #(seen, items), item <- list.try_fold(items, #(set.new(), []))
-
-  case set.contains(seen, key(item)) {
-    True -> report.error(error(key(item)))
-    False -> Ok(#(set.insert(seen, key(item)), [item, ..items]))
   }
 }
