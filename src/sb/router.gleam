@@ -13,6 +13,7 @@ import sb/extra/function.{identity}
 import sb/extra_erlang
 import sb/frontend
 import sb/frontend/components/errors
+import sb/frontend/components/task
 import sb/frontend/components/tasks
 import sb/task_store
 import wisp
@@ -65,7 +66,22 @@ pub fn websocket_router(
         ),
       )
 
-    ["components", "task"] -> component_service(request, todo)
+    ["components", "task"] ->
+      component_service(
+        request,
+        task.app(
+          schedule: extra_erlang.schedule,
+          load: fn(task_id, message) {
+            use dispatch <- effect.from
+            dispatch(message(task_store.get_task(task_store, task_id)))
+          },
+          step: fn(_task, _search, _message) {
+            use _dispatch <- effect.from
+            todo
+          },
+        ),
+      )
+
     ["components", "jobs", "requested"] -> component_service(request, todo)
     ["components", "jobs", "started"] -> component_service(request, todo)
     ["components", "jobs", "finished"] -> component_service(request, todo)
