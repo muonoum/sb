@@ -17,6 +17,8 @@ approvers: Access # optional
 Task
 ```
 
+[`Access`](#access), [`Task`](#task)
+
 ### custom field
 
 ```yaml
@@ -25,6 +27,8 @@ kind: fields/v1
 id: String
 Field
 ```
+
+[`Field`](#field)
 
 ### custom filter
 
@@ -35,6 +39,8 @@ id: String
 Filter
 ```
 
+[`Filter`](#filter)
+
 ### custom source
 
 ```yaml
@@ -44,13 +50,15 @@ id: String
 Source
 ```
 
+[`Source`](#source)
+
 ## Text
 
 ## Value
 
 ## Access
 
-```
+```yaml
 users: everyone | List(String)
 keys: List(String)
 groups: List(String)
@@ -83,6 +91,8 @@ layout: List(String) | .. # optional
 fields: List(Field) # optional
 ```
 
+[`Access`](#access)
+
 ## Field
 
 ```yaml
@@ -96,6 +106,10 @@ ignored: Condition # default: false
 optional: Condition # default: false
 filters: List(Filter) # optional
 ```
+
+[`Kind`](#kind)
+[`Condition`](#condition)
+[`Filter`](#filter)
 
 ### Kind
 
@@ -122,6 +136,8 @@ kind: data
 source: Source
 ```
 
+[`Source`](#source)
+
 #### radio
 
 ```yaml
@@ -131,6 +147,8 @@ default: String # optional
 source: Source
 ```
 
+[`Source`](#source)
+
 #### checkbox
 
 ```yaml
@@ -139,6 +157,8 @@ layout: row | column # default: row
 default: List(String) # optional
 source: Source
 ```
+
+[`Source`](#source)
 
 #### select
 
@@ -150,6 +170,8 @@ default: String | List(String) # optional
 source: Source
 ```
 
+[`Source`](#source)
+
 ## filter
 
 ### custom
@@ -158,6 +180,8 @@ source: Source
 id: String
 Filter
 ```
+
+[`Filter`](#filter)
 
 ### kind
 
@@ -294,6 +318,8 @@ source.fetch:
   body: Source
 ```
 
+[`Source`](#source)
+
 ```yaml
 source:
   kind: fetch
@@ -302,3 +328,5 @@ source:
   headers: Dict(String, String)
   body: Source
 ```
+
+[`Source`](#source)
