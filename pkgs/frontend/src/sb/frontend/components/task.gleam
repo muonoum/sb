@@ -286,9 +286,7 @@ fn page(model: Model) -> Element(Message) {
         reader.run(context:, reader: {
           use header <- reader.bind(task_header())
           let description = core.maybe(task.description, task_description)
-          use fields <- reader.bind({
-            reader.map(task_fields(), element.fragment)
-          })
+          use fields <- reader.bind(reader.map(task_fields(), element.fragment))
 
           reader.return(
             sheet.view([], header:, padding: [], body: [description, fields]),
@@ -362,7 +360,6 @@ fn results_layout(
 
   let field = {
     use id <- result.try(result)
-
     dict.get(task.fields, id)
     |> report.replace_error(error.BadId(id))
     |> result.map(pair.new(id, _))
@@ -377,10 +374,7 @@ fn results_layout(
       case condition.is_true(reset.unwrap(field.hidden)), debug {
         False, _debug -> field_container(id, field)
         True, False -> reader.return(element.none())
-
-        True, True ->
-          field_container(id, field)
-          |> reader.map(hidden_field)
+        True, True -> reader.map(field_container(id, field), hidden_field)
       }
   }
 }
