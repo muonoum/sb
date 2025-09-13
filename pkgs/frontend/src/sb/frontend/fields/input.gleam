@@ -54,7 +54,7 @@ fn context() -> State(Context(message), Context(message)) {
 }
 
 fn set_group_index(group_index: Int) -> State(Nil, Context(message)) {
-  use context <- state.update()
+  use context <- state.update
   Context(..context, group_index:)
 }
 

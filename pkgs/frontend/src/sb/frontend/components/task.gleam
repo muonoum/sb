@@ -23,6 +23,7 @@ import sb/forms/condition
 import sb/forms/error.{type Error}
 import sb/forms/field.{type Field}
 import sb/forms/kind
+import sb/forms/layout
 import sb/forms/source.{type Source}
 import sb/forms/task.{type Task}
 import sb/forms/value.{type Value}
@@ -354,7 +355,30 @@ fn task_description(description: String) -> Element(message) {
 
 fn task_fields() -> Reader(List(Element(Message)), Context) {
   use task <- reader.bind(task())
-  results_layout(task.layout)
+
+  case task.layout {
+    layout.List(list) -> list_layout(list)
+    layout.Grid(areas:, style:) -> grid_layout(areas, style)
+    layout.Results(results) -> results_layout(results)
+  }
+}
+
+fn list_layout(list: List(String)) -> Reader(List(Element(Message)), Context) {
+  use task <- reader.bind(task())
+
+  results_layout({
+    use id <- list.map(list)
+    dict.get(task.fields, id)
+    |> report.replace_error(error.BadId(id))
+    |> result.replace(id)
+  })
+}
+
+fn grid_layout(
+  _areas: List(String),
+  _style: Dict(String, String),
+) -> Reader(List(Element(Message)), Context) {
+  todo as "grid layout"
 }
 
 fn results_layout(

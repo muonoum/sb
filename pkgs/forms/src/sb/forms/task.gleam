@@ -16,6 +16,7 @@ import sb/forms/decoder
 import sb/forms/error.{type Error}
 import sb/forms/field.{type Field}
 import sb/forms/handlers.{type Handlers}
+import sb/forms/layout.{type Layout}
 import sb/forms/props.{type Props}
 import sb/forms/scope.{type Scope}
 import sb/forms/value.{type Value}
@@ -40,7 +41,7 @@ pub type Task {
     command: List(String),
     runners: Access,
     approvers: Access,
-    layout: List(Result(String, Report(Error))),
+    layout: Layout,
     fields: Dict(String, Field),
   )
 }
@@ -156,6 +157,15 @@ pub fn decoder(
     |> error.try_duplicate_ids(seen)
   })
 
+  let results_layout = fn() {
+    use <- return(layout.Results)
+    use result <- list.map(fields)
+    use #(id, _field) <- result.map(result)
+    id
+  }
+
+  use layout <- props.try("layout", zero.lazy(results_layout, layout.decoder))
+
   props.succeed(Task(
     id:,
     name:,
@@ -165,7 +175,7 @@ pub fn decoder(
     command:,
     runners:,
     approvers:,
-    layout: list.map(fields, result.map(_, pair.first)),
+    layout:,
     fields: dict.from_list(pair.first(result.partition(fields))),
   ))
 }

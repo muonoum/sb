@@ -55,6 +55,11 @@ pub fn add_report(report: Report(Error)) -> Props(Nil) {
   Context(dict:, reports: [report, ..reports])
 }
 
+pub fn replace(dict: Dict(String, Dynamic)) -> Props(Nil) {
+  use context <- state.update
+  Context(..context, dict:)
+}
+
 pub fn decode(dynamic: Dynamic, decoder: Props(v)) -> Result(v, Report(Error)) {
   let context = Context(dict: dict.new(), reports: [])
 
