@@ -31,6 +31,7 @@ import sb/frontend/components/icons
 import sb/frontend/components/sheet
 import sb/frontend/fields/data
 import sb/frontend/fields/input
+import sb/frontend/fields/select
 import sb/frontend/fields/text_input
 import sb/frontend/portals
 
@@ -76,6 +77,8 @@ pub opaque type Message {
   ToggleDebug
   Change(field_id: String, value: Value, delay: Int)
   ApplyChange(debounce: Int)
+  Search(field_id: String, value: String)
+  ApplySearch(field_id: String, debounce: Int)
 }
 
 pub opaque type Model {
@@ -85,14 +88,14 @@ pub opaque type Model {
 type State {
   State(
     task: Task,
-    search: Dict(String, Search),
+    search: Dict(String, DebouncedSearch),
     debounce: Int,
     validated: Bool,
   )
 }
 
-type Search {
-  Search(value: String, debounce: Int, applied: String)
+type DebouncedSearch {
+  DebouncedSearch(value: String, debounce: Int, applied: String)
 }
 
 pub fn app(
@@ -187,6 +190,9 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
         }
       }
     }
+
+    ApplySearch(field_id: _, debounce: _) -> #(model, effect.none())
+    Search(field_id: _, value: _) -> #(model, effect.none())
   }
 }
 
@@ -412,7 +418,7 @@ fn field_padding() -> Element(Message) {
 fn field_content(
   id: String,
   field: Field,
-  search: Option(Search),
+  search: Option(DebouncedSearch),
 ) -> Reader(Element(Message), Context) {
   use task <- reader.bind(task())
   let is_loading = is_loading(_, id, task)
@@ -439,7 +445,7 @@ fn field_description(text: String) -> Element(message) {
 fn field_meta(
   id: String,
   field: Field,
-  search: Option(Search),
+  search: Option(DebouncedSearch),
 ) -> Reader(Element(Message), Context) {
   use debug <- reader.bind(debug())
   use <- return(reader.return)
@@ -462,7 +468,7 @@ fn field_meta(
 fn field_debug(
   id: String,
   field: Field,
-  search: Option(Search),
+  search: Option(DebouncedSearch),
 ) -> List(Element(message)) {
   let sources = kind.sources(field.kind)
   let initial_sources = list.map(sources, reset.initial)
@@ -541,7 +547,7 @@ fn debug_sources(
 fn field_kind(
   id: String,
   field: Field,
-  _search: Option(Search),
+  search: Option(DebouncedSearch),
   is_loading: fn(Source) -> Bool,
 ) -> Reader(Element(Message), Context) {
   use debug <- reader.bind(debug())
@@ -561,6 +567,30 @@ fn field_kind(
       select: Change(id, _, delay: 0),
       debug:,
       is_loading:,
+    )
+  }
+
+  let select_config = fn(placeholder, options) {
+    let search_value = {
+      use search <- option.map(search)
+      search.value
+    }
+
+    let applied_search = {
+      use search <- option.map(search)
+      search.applied
+    }
+
+    select.Config(
+      options:,
+      placeholder:,
+      is_loading:,
+      search_value:,
+      applied_search:,
+      search: Search(id, _),
+      clear_search: Search(id, ""),
+      select: Change(id, _, delay: 0),
+      debug:,
     )
   }
 
@@ -587,6 +617,10 @@ fn field_kind(
         choice.key
       })
 
-    _else -> element.text(id)
+    kind.Select(selected, placeholder:, options:) ->
+      select.select(selected, select_config(placeholder, options))
+
+    kind.MultiSelect(selected, placeholder:, options:) ->
+      select.multi_select(selected, select_config(placeholder, options))
   }
 }
