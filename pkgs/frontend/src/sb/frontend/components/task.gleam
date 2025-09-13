@@ -13,8 +13,9 @@ import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
-import sb/extra/function.{apply}
-import sb/extra/loadable.{type Loadable, Loaded, Resolved}
+import sb/extra/function.{apply, return}
+import sb/extra/loadable.{type Loadable}
+import sb/extra/reader.{type Reader}
 import sb/extra/report.{type Report}
 import sb/extra/reset
 import sb/forms/condition
@@ -23,9 +24,12 @@ import sb/forms/field.{type Field}
 import sb/forms/kind
 import sb/forms/source.{type Source}
 import sb/forms/task.{type Task}
+import sb/forms/value.{type Value}
 import sb/frontend/components/core
 import sb/frontend/components/icons
 import sb/frontend/components/sheet
+import sb/frontend/fields/data
+import sb/frontend/fields/text_input
 import sb/frontend/portals
 
 const change_debounce = 250
@@ -68,6 +72,7 @@ pub opaque type Message {
   StartJob
   Evaluate
   ToggleDebug
+  Change(field_id: String, value: Value, delay: Int)
 }
 
 pub opaque type Model {
@@ -97,7 +102,7 @@ pub fn app(
   lustre.component(init: init(_, handlers), update:, view:, options: [
     component.on_attribute_change("task-id", fn(string) {
       case string.trim(string) {
-        "" -> Ok(Receive(report.error(error.BadId(""))))
+        "" -> Ok(Receive(report.error(error.BadId("<empty>"))))
         id -> Ok(Load(id))
       }
     }),
@@ -133,7 +138,7 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
 
     ResetForm ->
       case model.state {
-        Loaded(_status, State(task:, ..)) -> {
+        loadable.Loaded(_status, State(task:, ..)) -> {
           #(model, effect.from(apply(Load(task.id))))
         }
 
@@ -145,6 +150,8 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
     Evaluate -> #(model, effect.none())
 
     ToggleDebug -> #(Model(..model, debug: !model.debug), effect.none())
+
+    Change(field_id: _, value: _, delay: _) -> #(model, effect.none())
   }
 }
 
@@ -169,7 +176,7 @@ fn view(model: Model) -> Element(Message) {
 
 fn page_header(model: Model) -> Element(Message) {
   let validated = case model.state {
-    Loaded(Resolved, State(validated:, ..)) -> validated
+    loadable.Loaded(loadable.Resolved, State(validated:, ..)) -> validated
     _else -> False
   }
 
@@ -199,6 +206,26 @@ fn page_header(model: Model) -> Element(Message) {
   ])
 }
 
+type Context {
+  Context(debug: Bool, state: State)
+}
+
+fn debug() -> Reader(Bool, Context) {
+  use Context(debug:, ..) <- reader.bind(reader.ask)
+  reader.return(debug)
+}
+
+fn state() -> Reader(State, Context) {
+  use Context(state:, ..) <- reader.bind(reader.ask)
+  reader.return(state)
+}
+
+fn task() -> Reader(Task, Context) {
+  use Context(state:, ..) <- reader.bind(reader.ask)
+  let State(task:, ..) = state
+  reader.return(task)
+}
+
 fn page(model: Model) -> Element(Message) {
   core.page([
     case model.state {
@@ -212,11 +239,19 @@ fn page(model: Model) -> Element(Message) {
           padding: [],
         )
 
-      loadable.Loaded(_status, State(task:, ..) as state) ->
-        sheet.view([], header: task_header(model, state), padding: [], body: [
-          core.maybe(task.description, task_description),
-          element.fragment(task_fields(model, state)),
-        ])
+      loadable.Loaded(_status, State(task:, ..) as state) -> {
+        reader.run(context: Context(model.debug, state), reader: {
+          use header <- reader.bind(task_header())
+          let description = core.maybe(task.description, task_description)
+          use fields <- reader.bind({
+            reader.map(task_fields(), element.fragment)
+          })
+
+          reader.return(
+            sheet.view([], header:, padding: [], body: [description, fields]),
+          )
+        })
+      }
     },
   ])
 }
@@ -225,15 +260,20 @@ fn task_error(report: Report(Error)) -> Element(message) {
   core.inspect([attr.class("p-6 text-2xl text-red-800")], report)
 }
 
-fn task_header(model: Model, state: State) -> List(Element(Message)) {
-  [task_name(state.task), core.filler(), task_debug(model.debug), close_task()]
+fn task_header() -> Reader(List(Element(Message)), Context) {
+  use task <- reader.bind(task())
+  use task_debug <- reader.bind(task_debug())
+  reader.return([task_name(task.name), core.filler(), task_debug, close_task()])
 }
 
-fn task_name(task: Task) -> Element(message) {
-  html.div([attr.class("text-lg font-bold self-center")], [html.text(task.name)])
+fn task_name(name: String) -> Element(message) {
+  html.div([attr.class("text-lg font-bold self-center")], [html.text(name)])
 }
 
-fn task_debug(debug: Bool) -> Element(Message) {
+fn task_debug() -> Reader(Element(Message), Context) {
+  use debug <- reader.bind(debug())
+  use <- return(reader.return)
+
   html.div([core.classes(["flex gap-3 items-center p-1 rounded-sm"])], [
     case debug {
       True ->
@@ -264,17 +304,17 @@ fn task_description(description: String) -> Element(message) {
   ])
 }
 
-fn task_fields(model: Model, state: State) -> List(Element(Message)) {
-  let State(task:, ..) = state
-  results_layout(task.layout, model, state)
+fn task_fields() -> Reader(List(Element(Message)), Context) {
+  use task <- reader.bind(task())
+  results_layout(task.layout)
 }
 
 fn results_layout(
   layout: List(Result(String, Report(Error))),
-  model: Model,
-  state: State,
-) -> List(Element(Message)) {
-  let State(task:, ..) = state
+) -> Reader(List(Element(Message)), Context) {
+  use debug <- reader.bind(debug())
+  use task <- reader.bind(task())
+  use <- return(reader.sequence)
   use result <- list.map(layout)
 
   let field = {
@@ -288,12 +328,16 @@ fn results_layout(
   case field {
     Error(report) ->
       html.div([core.classes(field_row_style)], [field_error(report)])
+      |> reader.return
 
     Ok(#(id, field)) ->
-      case condition.is_true(reset.unwrap(field.hidden)), model.debug {
-        False, _debug -> field_container(id, field, model, state)
-        True, True -> hidden_field(field_container(id, field, model, state))
-        True, False -> element.none()
+      case condition.is_true(reset.unwrap(field.hidden)), debug {
+        False, _debug -> field_container(id, field)
+        True, False -> reader.return(element.none())
+
+        True, True ->
+          field_container(id, field)
+          |> reader.map(hidden_field)
       }
   }
 }
@@ -304,23 +348,23 @@ fn field_error(report: Report(Error)) -> Element(message) {
   ])
 }
 
-fn hidden_field(content: Element(message)) -> Element(message) {
+fn hidden_field(content) -> Element(message) {
   html.div([], [content])
 }
 
 fn field_container(
   id: String,
   field: Field,
-  model: Model,
-  state: State,
-) -> Element(Message) {
-  let search =
-    dict.get(state.search, id)
-    |> option.from_result
+) -> Reader(Element(Message), Context) {
+  use state <- reader.bind(state())
+  let search = option.from_result(dict.get(state.search, id))
+  use field_meta <- reader.bind(field_meta(id, field, search))
+  use field_content <- reader.bind(field_content(id, field, search))
+  use <- return(reader.return)
 
   html.div([core.classes(field_row_style)], [
-    field_content(id, field, search, state),
-    field_meta(id, field, search, model),
+    field_content,
+    field_meta,
     field_padding(),
   ])
 }
@@ -336,15 +380,17 @@ fn field_content(
   id: String,
   field: Field,
   search: Option(Search),
-  state: State,
-) -> Element(Message) {
-  let is_loading = is_loading(_, id, state.task)
+) -> Reader(Element(Message), Context) {
+  use task <- reader.bind(task())
+  let is_loading = is_loading(_, id, task)
+  use field_kind <- reader.bind(field_kind(id, field, search, is_loading))
+  use <- return(reader.return)
 
   html.div([core.classes(field_content_style)], [
     html.div([attr.class("flex flex-col gap-1.5 mb-1")], [
       core.maybe(field.label, field_label),
       core.maybe(field.description, field_description),
-      field_kind(id, field, search, is_loading, state),
+      field_kind,
     ]),
   ])
 }
@@ -361,9 +407,11 @@ fn field_meta(
   id: String,
   field: Field,
   search: Option(Search),
-  model: Model,
-) -> Element(Message) {
-  html.div([core.classes(field_meta_style)], case model.debug {
+) -> Reader(Element(Message), Context) {
+  use debug <- reader.bind(debug())
+  use <- return(reader.return)
+
+  html.div([core.classes(field_meta_style)], case debug {
     True -> field_debug(id, field, search)
 
     False -> [
@@ -459,10 +507,29 @@ fn debug_sources(
 
 fn field_kind(
   id: String,
-  _field: Field,
+  field: Field,
   _search: Option(Search),
-  _is_loading: fn(Source) -> Bool,
-  _state: State,
-) -> Element(Message) {
-  element.text(id)
+  is_loading: fn(Source) -> Bool,
+) -> Reader(Element(Message), Context) {
+  use debug <- reader.bind(debug())
+  use <- return(reader.return)
+
+  let text_input_config = fn(placeholder) {
+    text_input.Config(id:, placeholder:, input: fn(string) {
+      Change(id, value.String(string), delay: change_debounce)
+    })
+  }
+
+  case field.kind {
+    kind.Data(source) ->
+      data.field(data.Config(source: reset.unwrap(source), debug:, is_loading:))
+
+    kind.Text(string:, placeholder:) ->
+      text_input.text(string, text_input_config(placeholder))
+
+    kind.Textarea(string:, placeholder:) ->
+      text_input.textarea(string, text_input_config(placeholder))
+
+    _else -> element.text(id)
+  }
 }
