@@ -1,12 +1,15 @@
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import sb/extra/report
+import sb/extra/state_eval as state
 import sb/forms/access
 import sb/forms/decoder
 import sb/forms/error
 import sb/forms/props.{type Props}
 import sb/forms/task
 import sb/forms/zero
+
+const task_v1_keys = ["kind", "category", "runners", "approvers"]
 
 pub type File {
   File(kind: Kind, path: String, documents: List(Dynamic))
@@ -82,6 +85,8 @@ pub fn decoder() {
 }
 
 fn tasks_v1_decoder() -> Props(Kind) {
+  use <- state.do(props.check_keys(task_v1_keys))
+
   use category <- props.try("category", {
     zero.list(decoder.from(decode.list(decode.string)))
   })

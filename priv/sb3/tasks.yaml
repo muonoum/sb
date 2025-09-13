@@ -1,11 +1,4 @@
 kind: tasks/v1
-sources:
-  lorem-ipsum:
-    kind: literal
-    literal:
-      - Tempor id adipisicing voluptate nulla et incididunt cillum Lorem sit ad.
-      - Voluptate nulla deserunt qui pariatur laboris velit quis cupidatat proident dolor pariatur adipisicing.
-      - Qui irure non dolor.
 ---
 name: Input
 category: [Tests]
