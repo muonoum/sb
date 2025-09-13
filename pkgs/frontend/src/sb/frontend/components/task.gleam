@@ -279,7 +279,9 @@ fn page(model: Model) -> Element(Message) {
         )
 
       loadable.Loaded(_status, State(task:, ..) as state) -> {
-        reader.run(context: Context(model.debug, state), reader: {
+        let context = Context(model.debug, state)
+
+        reader.run(context:, reader: {
           use header <- reader.bind(task_header())
           let description = core.maybe(task.description, task_description)
           use fields <- reader.bind({
