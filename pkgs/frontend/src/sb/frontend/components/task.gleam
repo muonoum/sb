@@ -5,6 +5,7 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/pair
 import gleam/result
+import gleam/set
 import gleam/string
 import lustre
 import lustre/attribute.{type Attribute} as attr
@@ -113,13 +114,13 @@ pub fn app(
 }
 
 pub fn init(_flags, handlers: Handlers) -> #(Model, Effect(Message)) {
-  #(Model(handlers:, debug: False, state: loadable.Initial), effect.none())
+  #(Model(handlers:, debug: True, state: loadable.Initial), effect.none())
 }
 
 pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
   let Model(handlers:, state:, ..) = model
 
-  case echo message {
+  case message {
     Load(id) -> {
       let state = loadable.reload(state)
       #(Model(..model, state:), handlers.load(id, Receive))
@@ -580,16 +581,17 @@ fn field_kind(
       text_input.textarea(string, text_input_config(placeholder))
 
     kind.Radio(selected, layout:, options:) ->
-      input.radio(
-        option.map(selected, fn(choice) { choice.key }),
-        input_config(layout, options),
-      )
+      input.radio(config: input_config(layout, options), selected: {
+        use choice <- option.map(selected)
+        choice.key
+      })
 
     kind.Checkbox(selected, layout:, options:) ->
-      input.checkbox(
-        list.map(selected, fn(choice) { choice.key }),
-        input_config(layout, options),
-      )
+      input.checkbox(config: input_config(layout, options), selected: {
+        use <- return(set.from_list)
+        use choice <- list.map(selected)
+        choice.key
+      })
 
     _else -> element.text(id)
   }

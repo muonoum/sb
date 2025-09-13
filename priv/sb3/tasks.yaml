@@ -1,0 +1,9 @@
+kind: tasks/v1
+---
+name: Checkbox
+category: [Tests]
+fields:
+  - id: a
+    kind: checkbox
+    source.literal: [1, 2, 3]
+

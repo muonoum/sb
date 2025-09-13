@@ -205,7 +205,7 @@ pub fn value(kind: Kind) -> Option(Result(Value, Report(Error))) {
   case kind {
     Text("", ..) | Textarea("", ..) -> None
     Radio(None, ..) | Select(None, ..) -> None
-    MultiSelect([], ..) -> None
+    Checkbox([], ..) | MultiSelect([], ..) -> None
 
     Text(string:, ..) | Textarea(string:, ..) -> Some(Ok(value.String(string)))
 
