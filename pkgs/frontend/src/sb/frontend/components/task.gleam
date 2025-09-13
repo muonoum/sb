@@ -320,8 +320,9 @@ fn task_name(name: String) -> Element(message) {
 fn task_debug() -> Reader(Element(Message), Context) {
   use debug <- reader.bind(debug())
   use <- return(reader.return)
+  let attr = [core.classes(["flex gap-3 items-center p-1 rounded-sm"])]
 
-  html.div([core.classes(["flex gap-3 items-center p-1 rounded-sm"])], [
+  html.div(attr, [
     case debug {
       True ->
         icons.eye_outline([

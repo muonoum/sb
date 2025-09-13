@@ -171,6 +171,7 @@ type TaskDocument {
 }
 
 fn load(_model: Model, config: Config) -> Model {
+  // TODO: Writer?
   use <- return(state.run(_, context: []))
   use files <- state.bind(load_files(config.prefix, config.pattern))
 

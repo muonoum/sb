@@ -4,35 +4,37 @@ name: Input
 category: [Tests]
 
 fields:
-  - id: checkbox-row
-    kind: checkbox
-    layout: row
+  - id: data1
+    kind: data
+    source.literal:
+      - Tempor id adipisicing voluptate.
+      - Voluptate nulla deserunt qui pariatur laboris.
+      - Ut qui sint ex eiusmod officia cillum.
+
+  - id: data2
+    kind: data
     source.literal:
       - Tempor id adipisicing voluptate nulla et incididunt cillum Lorem sit ad.
       - Voluptate nulla deserunt qui pariatur laboris velit quis cupidatat proident dolor pariatur adipisicing.
-      - Qui irure non dolor.
+      - Ut qui sint ex eiusmod officia cillum.
+
+  - id: checkbox-row
+    kind: checkbox
+    layout: row
+    source.reference: data1
 
   - id: checkbox-column
     kind: checkbox
     layout: column
-    source.literal:
-      - Tempor id adipisicing voluptate nulla et incididunt cillum Lorem sit ad.
-      - Voluptate nulla deserunt qui pariatur laboris velit quis cupidatat proident dolor pariatur adipisicing.
-      - Qui irure non dolor.
+    source.reference: data2
 
   - id: radio-row
     kind: radio
     layout: row
-    source.literal:
-      - Tempor id adipisicing voluptate nulla et incididunt cillum Lorem sit ad.
-      - Voluptate nulla deserunt qui pariatur laboris velit quis cupidatat proident dolor pariatur adipisicing.
-      - Qui irure non dolor.
+    source.reference: data1
 
   - id: radio-column
     kind: radio
     layout: column
-    source.literal:
-      - Tempor id adipisicing voluptate nulla et incididunt cillum Lorem sit ad.
-      - Voluptate nulla deserunt qui pariatur laboris velit quis cupidatat proident dolor pariatur adipisicing.
-      - Qui irure non dolor.
+    source.reference: data2
 
