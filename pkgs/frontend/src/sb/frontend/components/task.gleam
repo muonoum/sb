@@ -73,6 +73,7 @@ pub opaque type Message {
   Evaluate
   ToggleDebug
   Change(field_id: String, value: Value, delay: Int)
+  ApplyChange(debounce: Int)
 }
 
 pub opaque type Model {
@@ -100,6 +101,7 @@ pub fn app(
   let handlers = Handlers(load:, step:, schedule:)
 
   lustre.component(init: init(_, handlers), update:, view:, options: [
+    // TODO: Denne trigger to ganger når siden lastes
     component.on_attribute_change("task-id", fn(string) {
       case string.trim(string) {
         "" -> Ok(Receive(report.error(error.BadId("<empty>"))))
@@ -116,7 +118,7 @@ pub fn init(_flags, handlers: Handlers) -> #(Model, Effect(Message)) {
 pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
   let Model(handlers:, state:, ..) = model
 
-  case message {
+  case echo message {
     Load(id) -> {
       let state = loadable.reload(state)
       #(Model(..model, state:), handlers.load(id, Receive))
@@ -151,12 +153,50 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
 
     ToggleDebug -> #(Model(..model, debug: !model.debug), effect.none())
 
-    Change(field_id: _, value: _, delay: _) -> #(model, effect.none())
+    Change(field_id:, value:, delay:) -> {
+      use state <- with_state(model)
+
+      case task.update(state.task, field_id, value) {
+        Error(_report) -> todo as "task.update error"
+
+        Ok(task) if delay == 0 -> {
+          let state = loadable.succeed(State(..state, task:))
+          #(Model(..model, state:), dispatch_evaluate())
+        }
+
+        Ok(task) -> {
+          let debounce = state.debounce + 1
+          let state = loadable.succeed(State(..state, task:, debounce:))
+          let model = Model(..model, state:)
+          #(model, handlers.schedule(delay, ApplyChange(debounce)))
+        }
+      }
+    }
+
+    ApplyChange(debounce:) -> {
+      use state <- with_state(model)
+
+      case state.debounce == debounce {
+        False -> #(model, effect.none())
+
+        True -> {
+          let state = loadable.succeed(State(..state, debounce: 0))
+          #(Model(..model, state:), dispatch_evaluate())
+        }
+      }
+    }
   }
 }
 
 fn dispatch_evaluate() -> Effect(Message) {
   effect.from(apply(Evaluate))
+}
+
+fn with_state(model: Model, then: fn(State) -> #(Model, Effect(message))) {
+  case model.state {
+    loadable.Loaded(loadable.Resolved, state) -> then(state)
+    _state -> #(model, effect.none())
+  }
 }
 
 fn is_loading(source: Source, field_id: String, task: Task) -> Bool {
@@ -221,8 +261,7 @@ fn state() -> Reader(State, Context) {
 }
 
 fn task() -> Reader(Task, Context) {
-  use Context(state:, ..) <- reader.bind(reader.ask)
-  let State(task:, ..) = state
+  use State(task:, ..) <- reader.bind(state())
   reader.return(task)
 }
 
@@ -361,12 +400,8 @@ fn field_container(
   use field_meta <- reader.bind(field_meta(id, field, search))
   use field_content <- reader.bind(field_content(id, field, search))
   use <- return(reader.return)
-
-  html.div([core.classes(field_row_style)], [
-    field_content,
-    field_meta,
-    field_padding(),
-  ])
+  [field_content, field_meta, field_padding()]
+  |> html.div([core.classes(field_row_style)], _)
 }
 
 fn field_padding() -> Element(Message) {
