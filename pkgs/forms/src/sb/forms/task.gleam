@@ -24,7 +24,7 @@ import sb/forms/zero
 
 const task_keys = [
   "id", "name", "category", "summary", "description", "command", "runners",
-  "approvers", "layout", "summary_fields", "fields",
+  "approvers", "notify", "layout", "summary_fields", "fields",
 ]
 
 pub type Defaults {
