@@ -1,4 +1,4 @@
-import sb/extra/function.{compose, identity}
+import sb/extra/function.{identity}
 
 pub type Reader(v, ctx) {
   Reader(run: fn(ctx) -> v)

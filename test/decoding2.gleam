@@ -1,3 +1,4 @@
+import gleam/dict
 import gleam/result
 import helpers
 import pprint
@@ -28,13 +29,15 @@ pub fn main() {
   let assert Ok([dynamic, ..]) =
     helpers.load_documents(short_recursive_source, yaml.decode_string)
 
+  let commands = custom.Commands(dict.new())
+
   let assert Ok(sources) =
     helpers.load_custom(custom_sources, yaml.decode_string)
     |> result.map(custom.Sources)
 
   pprint.debug(
     props.decode(dots.split(dynamic), {
-      let decoder = props.decode(_, source.decoder(sources))
+      let decoder = props.decode(_, source.decoder(commands:, sources:))
       use source <- props.get("source", decoder)
       props.succeed(source)
     }),

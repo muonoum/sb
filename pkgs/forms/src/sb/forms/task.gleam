@@ -114,6 +114,7 @@ pub fn update(
 
 pub fn decoder(
   defaults _defaults: Defaults,
+  commands commands: custom.Commands,
   filters filters: custom.Filters,
   fields fields: custom.Fields,
   sources sources: custom.Sources,
@@ -150,7 +151,7 @@ pub fn decoder(
     use list <- result.map(decoder.run(dynamic, decode.list(decode.dynamic)))
     use <- return(pair.second)
     use seen, dynamic <- list.map_fold(list, set.new())
-    let decoder = field.decoder(sources:, fields:, filters:)
+    let decoder = field.decoder(commands:, sources:, fields:, filters:)
     props.decode(dynamic, decoder)
     |> error.try_duplicate_ids(seen)
   })

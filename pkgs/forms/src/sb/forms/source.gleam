@@ -189,11 +189,18 @@ fn parse_json(bits: BitArray, decoder: Decoder(v)) -> Result(v, Report(Error)) {
   |> report.map_error(error.JsonError)
 }
 
-pub fn decoder(sources: custom.Sources) -> Props(Source) {
-  seen_decoder(set.new(), sources)
+pub fn decoder(
+  commands commands: custom.Commands,
+  sources sources: custom.Sources,
+) -> Props(Source) {
+  seen_decoder(set.new(), commands:, sources:)
 }
 
-fn seen_decoder(seen: Set(String), sources: custom.Sources) -> Props(Source) {
+fn seen_decoder(
+  seen: Set(String),
+  commands commands: custom.Commands,
+  sources sources: custom.Sources,
+) -> Props(Source) {
   use dict <- props.get_dict
 
   case dict.to_list(dict) {
@@ -232,17 +239,21 @@ fn seen_decoder(seen: Set(String), sources: custom.Sources) -> Props(Source) {
           Fetch(method: http.Get, uri:, headers: [], body: None)
         })
 
-        props.decode(dynamic, fetch_decoder(set.new(), sources))
+        props.decode(dynamic, fetch_decoder(set.new(), commands:, sources:))
         |> report.error_context(error.BadKind("fetch"))
       })
 
-    [#("kind", _dynamic)] -> kind_decoder(seen, sources)
+    [#("kind", _dynamic)] -> kind_decoder(seen, commands:, sources:)
     [#(name, _)] -> props.fail(report.new(error.UnknownKind(name)))
-    _else -> kind_decoder(seen, sources)
+    _else -> kind_decoder(seen, commands:, sources:)
   }
 }
 
-fn kind_decoder(seen: Set(String), sources: custom.Sources) -> Props(Source) {
+fn kind_decoder(
+  seen: Set(String),
+  commands commands: custom.Commands,
+  sources sources: custom.Sources,
+) -> Props(Source) {
   use seen, name <- custom.kind_decoder(seen, sources, custom.get_source)
   use <- return(props.error_context(error.BadKind(name)))
   use <- state.do(props.drop(["kind"]))
@@ -272,12 +283,16 @@ fn kind_decoder(seen: Set(String), sources: custom.Sources) -> Props(Source) {
       props.succeed(Command(command))
     }
 
-    "fetch" -> fetch_decoder(seen, sources)
+    "fetch" -> fetch_decoder(seen, commands:, sources:)
     name -> props.fail(report.new(error.UnknownKind(name)))
   }
 }
 
-fn fetch_decoder(seen: Set(String), sources: custom.Sources) -> Props(Source) {
+fn fetch_decoder(
+  seen: Set(String),
+  commands commands: custom.Commands,
+  sources sources: custom.Sources,
+) -> Props(Source) {
   use <- state.do(props.check_keys(fetch_keys))
 
   use method <- props.try("method", {
@@ -297,7 +312,7 @@ fn fetch_decoder(seen: Set(String), sources: custom.Sources) -> Props(Source) {
   })
 
   use body <- props.try("body", {
-    zero.option(props.decode(_, seen_decoder(seen, sources)))
+    zero.option(props.decode(_, seen_decoder(seen, commands:, sources:)))
   })
 
   props.succeed(Fetch(method:, uri:, headers:, body:))

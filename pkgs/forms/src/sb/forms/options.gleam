@@ -5,6 +5,7 @@ import gleam/list
 import gleam/option.{type Option}
 import gleam/result
 import gleam/set.{type Set}
+import sb/extra/function.{return}
 import sb/extra/report.{type Report}
 import sb/extra/reset.{type Reset}
 import sb/extra/state_eval as state
@@ -118,30 +119,37 @@ fn select_object(
   Ok(choice.new(value.String(have), value))
 }
 
-pub fn decoder(sources: custom.Sources) -> Props(Options) {
+pub fn decoder(
+  commands commands: custom.Commands,
+  sources sources: custom.Sources,
+) -> Props(Options) {
   use dict <- props.get_dict
 
   case dict.to_list(dict) {
-    [#("groups", dynamic)] ->
-      decoder.run(dynamic, decode.list(decode.dynamic))
-      |> result.try(list.try_map(_, props.decode(_, group_decoder(sources))))
-      |> result.map(SourceGroups)
-      |> state.from_result
+    [#("groups", dynamic)] -> {
+      use <- return(state.from_result)
+      use list <- result.try(decoder.run(dynamic, decode.list(decode.dynamic)))
+      use <- return(result.map(_, SourceGroups))
+      list.try_map(list, props.decode(_, group_decoder(commands:, sources:)))
+    }
 
     _else ->
-      state.map(source.decoder(sources), Ok)
+      state.map(source.decoder(commands:, sources:), Ok)
       |> state.attempt(state.catch_error)
       |> state.map(reset.try_new(_, source.refs))
       |> state.map(SingleSource)
   }
 }
 
-fn group_decoder(sources: custom.Sources) -> Props(Group) {
+fn group_decoder(
+  commands commands: custom.Commands,
+  sources sources: custom.Sources,
+) -> Props(Group) {
   use label <- props.get("label", decoder.from(decode.string))
 
   use source <- props.get("source", {
     props.decode(_, {
-      state.map(source.decoder(sources), Ok)
+      state.map(source.decoder(commands:, sources:), Ok)
       |> state.attempt(state.catch_error)
       |> state.map(reset.try_new(_, source.refs))
     })

@@ -155,13 +155,14 @@ pub fn value(kind: Kind) -> Option(Result(Value, Report(Error))) {
 
 pub fn decoder(
   name: String,
-  sources: custom.Sources,
-  check_keys: fn(List(String)) -> Props(Nil),
+  commands commands: custom.Commands,
+  sources sources: custom.Sources,
+  then check_keys: fn(List(String)) -> Props(Nil),
 ) -> Props(Kind) {
   case name {
     "data" -> {
       use <- state.do(check_keys(data_keys))
-      data_decoder(sources)
+      data_decoder(commands:, sources:)
       |> props.error_context(error.BadKind(name))
     }
 
@@ -175,19 +176,19 @@ pub fn decoder(
 
     "radio" -> {
       use <- state.do(check_keys(radio_keys))
-      radio_decoder(sources)
+      radio_decoder(commands:, sources:)
       |> props.error_context(error.BadKind(name))
     }
 
     "checkbox" -> {
       use <- state.do(check_keys(checkbox_keys))
-      checkbox_decoder(sources)
+      checkbox_decoder(commands:, sources:)
       |> props.error_context(error.BadKind(name))
     }
 
     "select" -> {
       use <- state.do(check_keys(select_keys))
-      select_decoder(sources)
+      select_decoder(commands:, sources:)
       |> props.error_context(error.BadKind(name))
     }
 
@@ -195,10 +196,13 @@ pub fn decoder(
   }
 }
 
-fn data_decoder(sources: custom.Sources) -> Props(Kind) {
+fn data_decoder(
+  commands commands: custom.Commands,
+  sources sources: custom.Sources,
+) -> Props(Kind) {
   use source <- props.get("source", {
     props.decode(_, {
-      state.map(source.decoder(sources), Ok)
+      state.map(source.decoder(commands:, sources:), Ok)
       |> state.attempt(state.catch_error)
       |> state.map(reset.try_new(_, source.refs))
     })
@@ -225,30 +229,48 @@ fn textarea_decoder() -> Props(Kind) {
   props.succeed(Textarea(string:, placeholder:))
 }
 
-fn radio_decoder(sources: custom.Sources) -> Props(Kind) {
+fn radio_decoder(
+  commands commands: custom.Commands,
+  sources sources: custom.Sources,
+) -> Props(Kind) {
   use placeholder <- props.try("placeholder", {
     zero.option(decoder.from(decode.string))
   })
 
   // TODO: radio
-  use options <- props.get("source", props.decode(_, options.decoder(sources)))
+  use options <- props.get("source", {
+    props.decode(_, options.decoder(commands:, sources:))
+  })
+
   props.succeed(Select(choice: None, placeholder:, options:))
 }
 
-fn checkbox_decoder(sources: custom.Sources) -> Props(Kind) {
-  use options <- props.get("source", props.decode(_, options.decoder(sources)))
+fn checkbox_decoder(
+  commands commands: custom.Commands,
+  sources sources: custom.Sources,
+) -> Props(Kind) {
+  use options <- props.get("source", {
+    props.decode(_, options.decoder(commands:, sources:))
+  })
 
   // TODO: checkbox
   props.succeed(MultiSelect([], options:))
 }
 
-fn select_decoder(sources: custom.Sources) -> Props(Kind) {
+fn select_decoder(
+  commands commands: custom.Commands,
+  sources sources: custom.Sources,
+) -> Props(Kind) {
   use placeholder <- props.try("placeholder", {
     zero.option(decoder.from(decode.string))
   })
 
   use multiple <- props.try("multiple", zero.bool(decoder.from(decode.bool)))
-  use options <- props.get("source", props.decode(_, options.decoder(sources)))
+
+  use options <- props.get("source", {
+    props.decode(_, options.decoder(commands:, sources:))
+  })
+
   use <- bool.guard(multiple, props.succeed(MultiSelect([], options:)))
   props.succeed(Select(choice: None, placeholder:, options:))
 }

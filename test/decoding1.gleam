@@ -15,6 +15,8 @@ import sb/forms/task
 pub fn main() {
   let task_data = load_document("test_data/task3.yaml")
 
+  let custom_commands = custom.Commands(dict.new())
+
   let assert Ok(custom_fields) =
     load_custom("test_data/fields.yaml")
     |> result.map(custom.Fields)
@@ -29,6 +31,7 @@ pub fn main() {
 
   let decoder =
     task.decoder(
+      commands: custom_commands,
       filters: custom_filters,
       fields: custom_fields,
       sources: custom_sources,

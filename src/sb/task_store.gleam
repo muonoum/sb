@@ -180,12 +180,15 @@ fn load(_model: Model, config: Config) -> Model {
   let #(fields, files) = load_documents(files, file.is_fields)
   let #(filters, _rest) = load_documents(files, file.is_filters)
 
-  use _commands <- state.with(load_custom(commands, custom.Commands))
+  use commands <- state.with(load_custom(commands, custom.Commands))
   use sources <- state.with(load_custom(sources, custom.Sources))
   use fields <- state.with(load_custom(fields, custom.Fields))
   use filters <- state.with(load_custom(filters, custom.Filters))
 
-  use tasks <- state.with(load_tasks(tasks, sources:, fields:, filters:))
+  use tasks <- state.with({
+    load_tasks(tasks, commands:, sources:, fields:, filters:)
+  })
+
   use errors <- state.with(state.get())
   state.return(Model(tasks: dict.from_list(tasks), errors:))
 }
@@ -270,6 +273,7 @@ fn load_custom(
 
 fn load_tasks(
   documents: List(TaskDocument),
+  commands commands: custom.Commands,
   sources sources: custom.Sources,
   fields fields: custom.Fields,
   filters filters: custom.Filters,
@@ -279,7 +283,7 @@ fn load_tasks(
 
   use TaskDocument(document:, defaults:) <- list.map(documents)
   use <- return(state.map(_, error_context(document)))
-  let decoder = task.decoder(defaults:, sources:, fields:, filters:)
+  let decoder = task.decoder(defaults:, commands:, sources:, fields:, filters:)
   case props.decode(document.data, decoder) {
     Error(report) -> state.return(Error(report))
 

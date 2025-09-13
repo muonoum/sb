@@ -29,7 +29,12 @@ pub fn short_fetch_test() {
   let assert Ok([dynamic, ..]) =
     helpers.load_documents(short_fetch, yaml.decode_string)
 
-  helpers.decode_source_property("source", dynamic, custom.Sources(dict.new()))
+  helpers.decode_source_property(
+    "source",
+    dynamic,
+    commands: custom.Commands(dict.new()),
+    sources: custom.Sources(dict.new()),
+  )
   |> should.be_ok
 }
 
@@ -37,7 +42,12 @@ pub fn long_fetch_test() {
   let assert Ok([dynamic, ..]) =
     helpers.load_documents(long_fetch, yaml.decode_string)
 
-  helpers.decode_source_property("source", dynamic, custom.Sources(dict.new()))
+  helpers.decode_source_property(
+    "source",
+    dynamic,
+    commands: custom.Commands(dict.new()),
+    sources: custom.Sources(dict.new()),
+  )
   |> should.be_ok
 }
 
@@ -45,7 +55,12 @@ pub fn longest_fetch_test() {
   let assert Ok([dynamic, ..]) =
     helpers.load_documents(longest_fetch, yaml.decode_string)
 
-  helpers.decode_source_property("source", dynamic, custom.Sources(dict.new()))
+  helpers.decode_source_property(
+    "source",
+    dynamic,
+    commands: custom.Commands(dict.new()),
+    sources: custom.Sources(dict.new()),
+  )
   |> should.be_ok
 }
 
@@ -53,6 +68,11 @@ pub fn double_fetch_test() {
   let assert Ok([dynamic, ..]) =
     helpers.load_documents(double_fetch, yaml.decode_string)
 
-  helpers.decode_source_property("source", dynamic, custom.Sources(dict.new()))
+  helpers.decode_source_property(
+    "source",
+    dynamic,
+    commands: custom.Commands(dict.new()),
+    sources: custom.Sources(dict.new()),
+  )
   |> should.be_ok
 }

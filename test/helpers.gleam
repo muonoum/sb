@@ -42,10 +42,11 @@ pub fn load_custom(
 pub fn decode_source_property(
   name: String,
   dynamic: dynamic.Dynamic,
-  sources: custom.Sources,
+  commands commands: custom.Commands,
+  sources sources: custom.Sources,
 ) -> Result(Source, Report(Error)) {
   props.decode(dots.split(dynamic), {
-    let decoder = props.decode(_, source.decoder(sources))
+    let decoder = props.decode(_, source.decoder(commands:, sources:))
     use source <- props.get(name, decoder)
     props.succeed(source)
   })
@@ -53,10 +54,11 @@ pub fn decode_source_property(
 
 pub fn decode_field(
   dynamic: Dynamic,
-  fields: custom.Fields,
-  sources: custom.Sources,
-  filters: custom.Filters,
+  commands commands: custom.Commands,
+  sources sources: custom.Sources,
+  fields fields: custom.Fields,
+  filters filters: custom.Filters,
 ) -> Result(#(String, Field), Report(Error)) {
-  let decoder = field.decoder(sources:, fields:, filters:)
+  let decoder = field.decoder(commands:, sources:, fields:, filters:)
   props.decode(dots.split(dynamic), decoder)
 }
