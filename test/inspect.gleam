@@ -61,13 +61,25 @@ fn inspect_kind(kind: Kind) -> String {
     kind.Text(string, ..) | kind.Textarea(string, ..) ->
       ansi.grey("str ") <> string
 
+    kind.Radio(choice:, options:, ..) ->
+      ansi.grey("radio ")
+      <> inspect_options(options)
+      <> ansi.grey(" ==> ")
+      <> single_selected(choice)
+
     kind.Select(choice:, options:, ..) ->
       ansi.grey("select ")
       <> inspect_options(options)
       <> ansi.grey(" ==> ")
       <> single_selected(choice)
 
-    kind.MultiSelect(selected, options:) ->
+    kind.Checkbox(selected, options:, ..) ->
+      ansi.grey("checkbox ")
+      <> inspect_options(options)
+      <> ansi.grey(" ==> ")
+      <> multiple_selected(selected)
+
+    kind.MultiSelect(selected, options:, ..) ->
       ansi.grey("multiselect ")
       <> inspect_options(options)
       <> ansi.grey(" ==> ")

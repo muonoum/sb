@@ -39,6 +39,15 @@ pub fn sources(options: Options) -> List(Reset(Result(Source, Report(Error)))) {
   }
 }
 
+pub fn keys(options: Options) -> List(Value) {
+  use source <- list.flat_map(sources(options))
+
+  case reset.unwrap(source) {
+    Ok(source) -> source.keys(source)
+    Error(_report) -> []
+  }
+}
+
 pub fn is_loading(options: Options, is_loading: fn(Source) -> Bool) -> Bool {
   case options {
     SingleSource(source) ->

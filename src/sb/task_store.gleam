@@ -143,7 +143,7 @@ fn check_id(
   id: String,
   then: fn() -> State(Result(v, Report(Error)), Dups),
 ) -> State(Result(v, Report(Error)), Dups) {
-  use dups: Dups <- state.with(state.get())
+  use dups: Dups <- state.bind(state.get())
   let error = state.return(report.error(error.DuplicateId(id)))
   use <- bool.guard(set.contains(dups.ids, id), error)
   let dups = Dups(..dups, ids: set.insert(dups.ids, id))
@@ -155,7 +155,7 @@ fn check_names(
   category: List(String),
   then: fn() -> State(Result(v, Report(Error)), Dups),
 ) -> State(Result(v, Report(Error)), Dups) {
-  use dups: Dups <- state.with(state.get())
+  use dups: Dups <- state.bind(state.get())
   let error = state.return(report.error(error.DuplicateNames(name, category)))
   use <- bool.guard(set.contains(dups.names, #(name, category)), error)
   let dups = Dups(..dups, names: set.insert(dups.names, #(name, category)))
@@ -172,7 +172,7 @@ type TaskDocument {
 
 fn load(_model: Model, config: Config) -> Model {
   use <- return(state.run(_, context: []))
-  use files <- state.with(load_files(config.prefix, config.pattern))
+  use files <- state.bind(load_files(config.prefix, config.pattern))
 
   let #(tasks, files) = load_task_documents(files)
   let #(commands, files) = load_documents(files, file.is_commands)
@@ -180,23 +180,23 @@ fn load(_model: Model, config: Config) -> Model {
   let #(fields, files) = load_documents(files, file.is_fields)
   let #(filters, _rest) = load_documents(files, file.is_filters)
 
-  use commands <- state.with(load_custom(commands, custom.Commands))
-  use sources <- state.with(load_custom(sources, custom.Sources))
-  use fields <- state.with(load_custom(fields, custom.Fields))
-  use filters <- state.with(load_custom(filters, custom.Filters))
+  use commands <- state.bind(load_custom(commands, custom.Commands))
+  use sources <- state.bind(load_custom(sources, custom.Sources))
+  use fields <- state.bind(load_custom(fields, custom.Fields))
+  use filters <- state.bind(load_custom(filters, custom.Filters))
 
-  use tasks <- state.with({
+  use tasks <- state.bind({
     load_tasks(tasks, commands:, sources:, fields:, filters:)
   })
 
-  use errors <- state.with(state.get())
+  use errors <- state.bind(state.get())
   state.return(Model(tasks: dict.from_list(tasks), errors:))
 }
 
 fn partition_results(
   results: List(Result(v, Report(Error))),
 ) -> State(List(v), List(Report(Error))) {
-  use context <- state.with(state.get())
+  use context <- state.bind(state.get())
   let #(oks, errors) = result.partition(results)
   use <- state.do(state.put(list.append(context, errors)))
   state.return(oks)

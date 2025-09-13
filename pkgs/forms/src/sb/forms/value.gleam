@@ -4,6 +4,7 @@ import gleam/dynamic/decode.{type Decoder}
 import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{None, Some}
+import gleam/pair
 
 pub type Value {
   Null
@@ -36,6 +37,27 @@ pub fn to_json(value: Value) -> Json {
         use #(key, value) <- list.map(pairs)
         #(key, to_json(value))
       })
+  }
+}
+
+pub fn keys(value: Value) -> Result(List(Value), Nil) {
+  case value {
+    List(list) -> {
+      use value <- list.try_map(list)
+
+      case value {
+        // Pair(key, _value) -> Ok(String(key))
+        String(key) -> Ok(String(key))
+        value -> Ok(value)
+      }
+    }
+
+    Object(pairs) ->
+      list.map(pairs, pair.first)
+      |> list.map(String)
+      |> Ok
+
+    _value -> Error(Nil)
   }
 }
 

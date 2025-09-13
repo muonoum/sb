@@ -29,6 +29,7 @@ import sb/frontend/components/core
 import sb/frontend/components/icons
 import sb/frontend/components/sheet
 import sb/frontend/fields/data
+import sb/frontend/fields/input
 import sb/frontend/fields/text_input
 import sb/frontend/portals
 
@@ -557,6 +558,17 @@ fn field_kind(
     })
   }
 
+  let input_config = fn(layout, options) {
+    input.Config(
+      id:,
+      layout:,
+      options:,
+      select: Change(id, _, delay: 0),
+      debug:,
+      is_loading:,
+    )
+  }
+
   case field.kind {
     kind.Data(source) ->
       data.field(data.Config(source: reset.unwrap(source), debug:, is_loading:))
@@ -566,6 +578,18 @@ fn field_kind(
 
     kind.Textarea(string:, placeholder:) ->
       text_input.textarea(string, text_input_config(placeholder))
+
+    kind.Radio(selected, layout:, options:) ->
+      input.radio(
+        option.map(selected, fn(choice) { choice.key }),
+        input_config(layout, options),
+      )
+
+    kind.Checkbox(selected, layout:, options:) ->
+      input.checkbox(
+        list.map(selected, fn(choice) { choice.key }),
+        input_config(layout, options),
+      )
 
     _else -> element.text(id)
   }

@@ -31,7 +31,7 @@ pub fn error_context(error: Error) -> fn(Props(v)) -> Props(v) {
 }
 
 pub fn get_dict(then: fn(Dict(String, Dynamic)) -> Props(v)) -> Props(v) {
-  use Context(dict:, ..) <- state.with(state.get())
+  use Context(dict:, ..) <- state.bind(state.get())
   then(dict)
 }
 
@@ -46,7 +46,7 @@ pub fn merge(other: Dict(String, Dynamic)) -> Props(Nil) {
 }
 
 pub fn get_reports(then: fn(List(Report(Error))) -> Props(v)) -> Props(v) {
-  use Context(reports:, ..) <- state.with(state.get())
+  use Context(reports:, ..) <- state.bind(state.get())
   then(list.reverse(reports))
 }
 
@@ -65,7 +65,7 @@ pub fn decode(dynamic: Dynamic, decoder: Props(v)) -> Result(v, Report(Error)) {
 }
 
 pub fn check_keys(keys: List(String)) -> Props(Nil) {
-  use Context(dict:, ..) <- state.with(state.get())
+  use Context(dict:, ..) <- state.bind(state.get())
 
   state.from_result(error.unknown_keys(dict, keys))
   |> state.replace(Nil)
@@ -80,7 +80,7 @@ pub fn load(dynamic: Dynamic, next: fn() -> Props(v)) -> Props(v) {
     Error(report) -> state.fail(report)
 
     Ok(dict) -> {
-      use context <- state.with(state.get())
+      use context <- state.bind(state.get())
       state.do(state.put(Context(..context, dict:)), next)
     }
   }

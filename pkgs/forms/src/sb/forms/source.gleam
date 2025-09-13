@@ -75,6 +75,19 @@ pub fn refs(source: Source) -> List(String) {
   }
 }
 
+pub fn value(source: Source) -> Result(Value, Nil) {
+  case source {
+    Literal(value) -> Ok(value)
+    _else -> Error(Nil)
+  }
+}
+
+pub fn keys(source: Source) -> List(Value) {
+  value(source)
+  |> result.try(value.keys)
+  |> result.unwrap([])
+}
+
 pub fn evaluate(
   source: Source,
   scope: Scope,

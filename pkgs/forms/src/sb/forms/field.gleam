@@ -96,7 +96,7 @@ pub fn decoder(
   use id <- props.get("id", text.id_decoder)
   use <- return(props.error_context(error.FieldContext(id)))
 
-  use kind <- state.with({
+  use kind <- state.bind({
     use _seen, name <- custom.kind_decoder(set.new(), fields, custom.get_field)
     use kind_keys <- kind.decoder(name, commands:, sources:)
     props.check_keys(list.append(field_keys, kind_keys))

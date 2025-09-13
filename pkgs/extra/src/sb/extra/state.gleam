@@ -22,10 +22,10 @@ pub fn do(
   with state: State(a, ctx),
   then then: fn() -> State(b, ctx),
 ) -> State(b, ctx) {
-  with(state, fn(_) { then() })
+  bind(state, fn(_) { then() })
 }
 
-pub fn with(
+pub fn bind(
   with state: State(a, ctx),
   then then: fn(a) -> State(b, ctx),
 ) -> State(b, ctx) {
@@ -45,7 +45,7 @@ pub fn put(context: ctx) -> State(Nil, ctx) {
 }
 
 pub fn update(mapper: fn(ctx) -> ctx) {
-  use context <- with(get())
+  use context <- bind(get())
   put(mapper(context))
 }
 
