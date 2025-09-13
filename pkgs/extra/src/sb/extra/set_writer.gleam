@@ -22,7 +22,7 @@ pub fn do(writer, then) {
 }
 
 pub fn tell(ctx: ctx) -> Writer(Nil, ctx) {
-  Writer(Nil, set.insert(set.new(), ctx))
+  Writer(Nil, set.from_list([ctx]))
 }
 
 pub fn main() {
