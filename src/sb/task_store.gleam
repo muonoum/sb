@@ -179,7 +179,8 @@ fn load(_model: Model, config: Config) -> Model {
   let #(commands, files) = load_documents(files, file.is_commands)
   let #(sources, files) = load_documents(files, file.is_sources)
   let #(fields, files) = load_documents(files, file.is_fields)
-  let #(filters, _rest) = load_documents(files, file.is_filters)
+  let #(filters, files) = load_documents(files, file.is_filters)
+  let #(_notifiers, _rest) = load_documents(files, file.is_notifiers)
 
   use commands <- state.bind(load_custom(commands, custom.Commands))
   use sources <- state.bind(load_custom(sources, custom.Sources))

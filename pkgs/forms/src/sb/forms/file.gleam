@@ -21,6 +21,7 @@ pub type Kind {
   FieldsV1
   FiltersV1
   SourcesV1
+  NotifiersV1
   TasksV1(task.Defaults)
 }
 
@@ -71,6 +72,13 @@ pub fn is_sources(file: File) -> Bool {
   }
 }
 
+pub fn is_notifiers(file: File) -> Bool {
+  case file {
+    File(kind: NotifiersV1, ..) -> True
+    _else -> False
+  }
+}
+
 pub fn decoder() {
   use kind <- props.get("kind", decoder.from(decode.string))
 
@@ -78,6 +86,7 @@ pub fn decoder() {
     "fields/v1" -> props.succeed(FieldsV1)
     "filters/v1" -> props.succeed(FiltersV1)
     "sources/v1" -> props.succeed(SourcesV1)
+    "notifiers/v1" -> props.succeed(NotifiersV1)
     "tasks/v1" -> tasks_v1_decoder()
     _bad -> props.fail(report.new(error.BadKind(kind)))
   }
