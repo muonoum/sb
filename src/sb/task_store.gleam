@@ -12,6 +12,7 @@ import gleam/result
 import gleam/set.{type Set}
 import sb/extra.{compose, return}
 import sb/extra/dots
+import sb/extra/list as list_extra
 import sb/extra/path
 import sb/extra/report.{type Report}
 import sb/extra/state.{type State}
@@ -165,11 +166,15 @@ type Document {
   Document(path: String, index: Int, data: Dynamic)
 }
 
+type TaskDocument {
+  TaskDocument(document: Document, defaults: task.Defaults)
+}
+
 fn load(_model: Model, config: Config) -> Model {
   use <- return(state.run(_, context: []))
   use files <- state.with(load_files(config.prefix, config.pattern))
 
-  let #(tasks, files) = load_documents(files, file.is_tasks)
+  let #(tasks, files) = load_task_documents(files)
   let #(sources, files) = load_documents(files, file.is_sources)
   let #(fields, files) = load_documents(files, file.is_fields)
   let #(filters, _rest) = load_documents(files, file.is_filters)
@@ -233,6 +238,15 @@ fn load_documents(
   Document(path: file.path, index: index + 1, data:)
 }
 
+fn load_task_documents(files: List(File)) -> #(List(TaskDocument), List(File)) {
+  use <- return(pair.map_first(_, list.flatten))
+  use file <- list_extra.partition_map(files)
+  use defaults, path, documents <- file.tasks(file)
+  use data, index <- list.index_map(documents)
+  let document = Document(path:, index:, data:)
+  TaskDocument(document:, defaults:)
+}
+
 fn load_custom(
   documents: List(Document),
   custom: fn(Dict(String, Custom)) -> custom,
@@ -254,7 +268,7 @@ fn load_custom(
 }
 
 fn load_tasks(
-  documents: List(Document),
+  documents: List(TaskDocument),
   sources sources: custom.Sources,
   fields fields: custom.Fields,
   filters filters: custom.Filters,
@@ -262,9 +276,9 @@ fn load_tasks(
   use <- return(partition_results)
   use <- return(compose(state.sequence, state.run(_, context: dups())))
 
-  use document <- list.map(documents)
+  use TaskDocument(document:, defaults:) <- list.map(documents)
   use <- return(state.map(_, error_context(document)))
-  let decoder = task.decoder(sources:, fields:, filters:)
+  let decoder = task.decoder(defaults: defaults, sources:, fields:, filters:)
   case props.decode(document.data, decoder) {
     Error(report) -> state.return(Error(report))
 

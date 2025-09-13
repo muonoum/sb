@@ -26,6 +26,10 @@ const task_keys = [
   "approvers", "layout", "summary_fields", "fields",
 ]
 
+pub type Defaults {
+  Defaults(category: List(String), runners: Access, approvers: Access)
+}
+
 pub type Task {
   Task(
     id: String,
@@ -109,6 +113,7 @@ pub fn update(
 }
 
 pub fn decoder(
+  defaults _defaults: Defaults,
   filters filters: custom.Filters,
   fields fields: custom.Fields,
   sources sources: custom.Sources,
@@ -145,7 +150,8 @@ pub fn decoder(
     use list <- result.map(decoder.run(dynamic, decode.list(decode.dynamic)))
     use <- extra.return(pair.second)
     use seen, dynamic <- list.map_fold(list, set.new())
-    props.decode(dynamic, field.decoder(fields, sources, filters))
+    let decoder = field.decoder(sources:, fields:, filters:)
+    props.decode(dynamic, decoder)
     |> error.try_duplicate_ids(seen)
   })
 

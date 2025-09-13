@@ -88,9 +88,9 @@ pub fn value(field: Field) -> Option(Result(Value, Report(Error))) {
 }
 
 pub fn decoder(
-  fields: custom.Fields,
-  sources: custom.Sources,
-  filters: custom.Filters,
+  sources sources: custom.Sources,
+  fields fields: custom.Fields,
+  filters filters: custom.Filters,
 ) -> Props(#(String, Field)) {
   use id <- props.get("id", text.id_decoder)
   use <- extra.return(props.error_context(error.FieldContext(id)))

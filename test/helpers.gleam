@@ -57,6 +57,6 @@ pub fn decode_field(
   sources: custom.Sources,
   filters: custom.Filters,
 ) -> Result(#(String, Field), Report(Error)) {
-  let decoder = field.decoder(fields, sources, filters)
+  let decoder = field.decoder(sources:, fields:, filters:)
   props.decode(dots.split(dynamic), decoder)
 }

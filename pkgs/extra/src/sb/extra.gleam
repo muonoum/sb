@@ -10,23 +10,12 @@ pub type Visibility {
   Hidden
 }
 
-pub fn deconstruct(list: List(a), empty: b, then: fn(a, List(a)) -> b) -> b {
-  case list {
-    [] -> empty
-    [first, ..rest] -> then(first, rest)
-  }
-}
-
 pub fn compose(a: fn(a) -> b, b: fn(b) -> c) -> fn(a) -> c {
   fn(v) { b(a(v)) }
 }
 
 pub fn identity(value: v) -> v {
   value
-}
-
-pub fn id2(f: fn(a, b) -> c, then: b) -> fn(a) -> c {
-  fn(a) { f(a, then) }
 }
 
 pub fn nullary(value: v) -> fn() -> v {

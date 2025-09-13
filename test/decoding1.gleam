@@ -7,6 +7,7 @@ import inspect
 import pprint
 import sb/extra/dots
 import sb/extra/yaml
+import sb/forms/access
 import sb/forms/custom
 import sb/forms/props
 import sb/forms/task
@@ -26,7 +27,17 @@ pub fn main() {
     load_custom("test_data/filters.yaml")
     |> result.map(custom.Filters)
 
-  let decoder = task.decoder(custom_filters, custom_fields, custom_sources)
+  let decoder =
+    task.decoder(
+      filters: custom_filters,
+      fields: custom_fields,
+      sources: custom_sources,
+      defaults: task.Defaults(
+        category: [],
+        runners: access.none(),
+        approvers: access.none(),
+      ),
+    )
 
   case props.decode(task_data, decoder) {
     Ok(task) -> {

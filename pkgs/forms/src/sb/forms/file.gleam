@@ -1,10 +1,11 @@
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import sb/extra/report
-import sb/forms/access.{type Access}
+import sb/forms/access
 import sb/forms/decoder
 import sb/forms/error
 import sb/forms/props.{type Props}
+import sb/forms/task
 import sb/forms/zero
 
 pub type File {
@@ -17,11 +18,22 @@ pub type Kind {
   FieldsV1
   FiltersV1
   SourcesV1
-  TasksV1(category: List(String), runners: Access, approvers: Access)
+  TasksV1(task.Defaults)
 }
 
 pub fn empty(path: String) -> File {
   File(kind: Empty, path:, documents: [])
+}
+
+pub fn tasks(
+  file: File,
+  then: fn(task.Defaults, String, List(Dynamic)) -> v,
+) -> Result(v, Nil) {
+  case file {
+    File(kind: TasksV1(defaults), path:, documents:) ->
+      Ok(then(defaults, path, documents))
+    _else -> Error(Nil)
+  }
 }
 
 pub fn is_tasks(file: File) -> Bool {
@@ -71,5 +83,6 @@ fn tasks_v1_decoder() -> Props(Kind) {
 
   use runners <- props.try("runners", access.decoder())
   use approvers <- props.try("approvers", access.decoder())
-  props.succeed(TasksV1(category:, runners:, approvers:))
+  let defaults = task.Defaults(category:, runners:, approvers:)
+  props.succeed(TasksV1(defaults))
 }

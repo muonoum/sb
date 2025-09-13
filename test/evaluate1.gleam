@@ -8,6 +8,7 @@ import inspect
 import sb/extra/dots
 import sb/extra/report.{type Report}
 import sb/extra/yaml
+import sb/forms/access
 import sb/forms/custom
 import sb/forms/error.{type Error}
 import sb/forms/handlers
@@ -23,9 +24,14 @@ pub fn main() -> Nil {
 
     dots.split(doc)
     |> props.decode(task.decoder(
-      custom.Filters(dict.new()),
-      custom.Fields(dict.new()),
-      custom.Sources(dict.new()),
+      filters: custom.Filters(dict.new()),
+      fields: custom.Fields(dict.new()),
+      sources: custom.Sources(dict.new()),
+      defaults: task.Defaults(
+        category: [],
+        runners: access.none(),
+        approvers: access.none(),
+      ),
     ))
   }
 
