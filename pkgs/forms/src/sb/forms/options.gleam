@@ -87,24 +87,21 @@ pub fn evaluate(
   handlers handlers: Handlers,
 ) -> Options {
   case options {
-    SingleSource(source) ->
-      SingleSource({
-        use source <- reset.map(source)
-        use source <- result.try(source)
-        source.evaluate(source, scope, search:, handlers:)
-      })
+    SingleSource(source) -> {
+      use <- return(SingleSource)
+      use result <- reset.map(source)
+      use source <- result.try(result)
+      source.evaluate(source, scope, search:, handlers:)
+    }
 
-    SourceGroups(groups) ->
-      SourceGroups({
-        use Group(label, source) <- list.map(groups)
-
-        Group(label, {
-          use source <- reset.map(source)
-          use source <- result.try(source)
-
-          source.evaluate(source, scope, search:, handlers:)
-        })
-      })
+    SourceGroups(groups) -> {
+      use <- return(SourceGroups)
+      use Group(label, source) <- list.map(groups)
+      use <- return(Group(label, _))
+      use result <- reset.map(source)
+      use source <- result.try(result)
+      source.evaluate(source, scope, search:, handlers:)
+    }
   }
 }
 
