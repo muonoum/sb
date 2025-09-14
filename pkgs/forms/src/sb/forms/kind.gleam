@@ -177,8 +177,8 @@ pub fn update(kind: Kind, value: Option(Value)) -> Result(Kind, Report(Error)) {
     Textarea(..), Some(value.String(string)) -> Ok(Textarea(..kind, string:))
 
     Radio(..), None -> Ok(Radio(..kind, choice: None))
-    Select(..), None -> Ok(Select(..kind, choice: None))
     Checkbox(..), None -> Ok(Checkbox(..kind, choices: []))
+    Select(..), None -> Ok(Select(..kind, choice: None))
     MultiSelect(..), None -> Ok(MultiSelect(..kind, choices: []))
 
     Radio(options:, ..), Some(key) -> {
@@ -186,14 +186,14 @@ pub fn update(kind: Kind, value: Option(Value)) -> Result(Kind, Report(Error)) {
       Ok(Radio(..kind, choice: Some(choice), options:))
     }
 
-    Select(options:, ..), Some(key) -> {
-      use choice <- result.try(options.select(options, key))
-      Ok(Select(..kind, choice: Some(choice), options:))
-    }
-
     Checkbox(options:, ..), Some(value.List(keys)) -> {
       use choices <- result.try(list.try_map(keys, options.select(options, _)))
       Ok(Checkbox(..kind, choices:, options:))
+    }
+
+    Select(options:, ..), Some(key) -> {
+      use choice <- result.try(options.select(options, key))
+      Ok(Select(..kind, choice: Some(choice), options:))
     }
 
     MultiSelect(options:, ..), Some(value.List(keys)) -> {
@@ -201,11 +201,11 @@ pub fn update(kind: Kind, value: Option(Value)) -> Result(Kind, Report(Error)) {
       Ok(MultiSelect(..kind, choices:, options:))
     }
 
-    Data(..), _value -> report.error(error.BadKind("data"))
     Text(..), Some(value) -> report.error(error.BadValue(value))
     Textarea(..), Some(value) -> report.error(error.BadValue(value))
     Checkbox(..), Some(value) -> report.error(error.BadValue(value))
     MultiSelect(..), Some(value) -> report.error(error.BadValue(value))
+    Data(..), _value -> report.error(error.BadKind("data"))
   }
 }
 
