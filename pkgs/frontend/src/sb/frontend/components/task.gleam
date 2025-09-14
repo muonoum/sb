@@ -329,15 +329,21 @@ fn task_error(report: Report(Error)) -> Element(message) {
 
 fn task_header() -> Reader(List(Element(Message)), Context) {
   use task <- reader.bind(task())
-  use task_debug <- reader.bind(task_debug())
-  reader.return([task_name(task.name), core.filler(), task_debug, close_task()])
+  use task_options <- reader.bind(task_options())
+
+  reader.return([
+    task_name(task.name),
+    core.filler(),
+    task_options,
+    close_task(),
+  ])
 }
 
 fn task_name(name: String) -> Element(message) {
   html.div([attr.class("text-lg font-bold self-center")], [html.text(name)])
 }
 
-fn task_debug() -> Reader(Element(Message), Context) {
+fn task_options() -> Reader(Element(Message), Context) {
   use debug <- reader.bind(debug())
   use use_layout <- reader.bind(use_layout())
   use <- return(reader.return)
