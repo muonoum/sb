@@ -205,8 +205,9 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
       }
     }
 
-    ApplySearch(field_id: _, debounce: _) -> #(model, effect.none())
     Search(field_id: _, value: _) -> #(model, effect.none())
+
+    ApplySearch(field_id: _, debounce: _) -> #(model, effect.none())
   }
 }
 
