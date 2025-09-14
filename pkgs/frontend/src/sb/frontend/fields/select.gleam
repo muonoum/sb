@@ -282,14 +282,13 @@ fn group_value(
   value: Value,
   has_placeholder: Bool,
 ) -> Reader(Element(message), Context(message)) {
-  // TODO: Searching
-
   case check.unique_keys(value), has_placeholder {
     Ok(keys), False -> {
-      use keys <- reader.bind(apply_search(label, keys))
+      use keys <- reader.bind(find(label, keys))
       group_members(label, keys)
     }
 
+    // TODO 
     Ok(keys), True -> group_members(label, keys)
 
     Error(report), _has_placeholder ->
@@ -298,23 +297,22 @@ fn group_value(
   }
 }
 
-fn apply_search(label: Option(String), keys: List(Value)) {
+fn find(label: Option(String), keys: List(Value)) {
   use config <- reader.bind(get_config())
-  use <- return(reader.return)
   let words = option.map(config.applied_search, extra.words)
+  use <- return(reader.return)
 
   let match = fn(words) {
     use keys, word <- list.fold(words, keys)
-    use key <- list.filter(keys)
-    value.match(key, word)
+    list.filter(keys, value.match(_, word))
   }
 
-  case label, words {
+  case option.map(label, value.String), words {
     _label, None -> keys
     None, Some(words) -> match(words)
 
     Some(label), Some(words) ->
-      case list.any(words, value.match(value.String(label), _)) {
+      case list.any(words, value.match(label, _)) {
         False -> match(words)
         True -> keys
       }
@@ -333,14 +331,12 @@ fn group_members(
     group_label(label),
     element.fragment({
       use key <- list.map(keys)
+      let attr = [
+        event.on_click(context.select(Some(key))),
+        core.classes(select_choice_style),
+      ]
 
-      html.div(
-        [
-          core.classes(select_choice_style),
-          event.on_click(context.select(Some(key))),
-        ],
-        [core.inline_value(key)],
-      )
+      html.div(attr, [core.inline_value(key)])
     }),
   ])
 }
