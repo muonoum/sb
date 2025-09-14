@@ -77,7 +77,7 @@ pub opaque type Message {
   Evaluate
   ToggleDebug
   ToggleLayout
-  Change(field_id: String, value: Value, delay: Int)
+  Change(field_id: String, value: Option(Value), delay: Int)
   ApplyChange(debounce: Int)
   Search(field_id: String, value: String)
   ApplySearch(field_id: String, debounce: Int)
@@ -176,7 +176,10 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
       use state <- with_state(model)
 
       case task.update(state.task, field_id, value) {
-        Error(_report) -> todo as "task.update error"
+        Error(report) -> {
+          echo report
+          #(model, effect.none())
+        }
 
         Ok(task) if delay == 0 -> {
           let state = loadable.succeed(State(..state, task:))
@@ -631,7 +634,7 @@ fn field_kind(
 
   let text_input_config = fn(placeholder) {
     text_input.Config(id:, placeholder:, input: fn(string) {
-      Change(id, value.String(string), delay: change_debounce)
+      Change(id, Some(value.String(string)), delay: change_debounce)
     })
   }
 

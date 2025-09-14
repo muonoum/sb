@@ -103,7 +103,7 @@ fn evaluate_fields(
 pub fn update(
   task: Task,
   id: String,
-  value: Value,
+  value: Option(Value),
 ) -> Result(Task, Report(Error)) {
   use field <- result.try(
     dict.get(task.fields, id)

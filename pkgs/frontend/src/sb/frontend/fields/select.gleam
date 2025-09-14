@@ -88,7 +88,7 @@ pub type Config(message) {
     applied_search: Option(String),
     search: fn(String) -> message,
     clear_search: message,
-    select: fn(Value) -> message,
+    select: fn(Option(Value)) -> message,
     debug: Bool,
   )
 }
@@ -122,9 +122,15 @@ pub fn select(
     Some(choice) ->
       html.div([core.classes(select_selected_container_style)], [
         html.ul([attr.class("flex flex-col")], [
-          html.li([core.classes(select_selected_style)], [
-            core.inline_value(choice.key),
-          ]),
+          html.li(
+            [
+              core.classes(select_selected_style),
+              event.on_click(config.select(None)),
+            ],
+            [
+              core.inline_value(choice.key),
+            ],
+          ),
         ]),
       ])
   }
@@ -186,8 +192,7 @@ fn options() -> Reader(Element(message), Context(message)) {
     options.SingleSource(source) -> group_source(label: None, source:)
 
     options.SourceGroups(groups) -> {
-      use <- return(reader.map(_, element.fragment))
-      use <- return(reader.sequence)
+      use <- core.reader_fragment()
       use options.Group(label:, source:) <- list.map(groups)
       group_source(Some(label), source:)
     }
@@ -197,35 +202,67 @@ fn options() -> Reader(Element(message), Context(message)) {
   |> reader.return
 }
 
+fn group_label(label: Option(String)) -> Element(message) {
+  use text <- core.maybe(label)
+  html.div([attr.class("font-semibold px-3 py-2 mt-4 first:mt-0 pb-1")], [
+    element.text(text),
+  ])
+}
+
 fn group_source(
-  label _label: Option(String),
+  label label: Option(String),
   source source: Reset(Result(Source, Report(Error))),
 ) -> Reader(Element(message), Context(message)) {
   use config <- reader.bind(get_config())
-  use <- return(reader.return)
 
   case reset.unwrap(source), config.debug {
-    Error(report), _debug -> core.inspect([], report)
+    Error(report), _debug ->
+      [group_label(label), core.inspect([], report)]
+      |> element.fragment
+      |> reader.return
 
     Ok(source.Literal(value)), _debug ->
       group_value(value, has_placeholder(source))
 
-    Ok(source), False -> core.inspect([], source)
-    Ok(source), True -> core.inspect([], source)
+    Ok(source), False ->
+      [group_label(label), core.inspect([], source)]
+      |> element.fragment
+      |> reader.return
+
+    Ok(source), True ->
+      [group_label(label), core.inspect([], source)]
+      |> element.fragment
+      |> reader.return
   }
 }
 
-fn group_value(value: Value, has_placeholder: Bool) -> Element(message) {
+fn group_value(
+  value: Value,
+  has_placeholder: Bool,
+) -> Reader(Element(message), Context(message)) {
   case check.unique_keys(value), has_placeholder {
-    Error(report), _has_placeholder -> core.inspect([], report)
-    Ok(_keys), True -> todo
     Ok(keys), False -> group_members(keys)
+    Ok(_keys), True -> todo
+
+    Error(report), _has_placeholder ->
+      core.inspect([], report)
+      |> reader.return
   }
 }
 
-fn group_members(keys: List(Value)) -> Element(message) {
-  use <- return(element.fragment)
+fn group_members(keys: List(Value)) -> Reader(Element(a), Context(a)) {
+  use config <- reader.bind(get_config())
+  use <- core.reader_fragment()
   use <- bool.guard(keys == [], [])
-  use choice <- list.map(keys)
-  html.div([core.classes(select_choice_style)], [core.inline_value(choice)])
+  use key <- list.map(keys)
+
+  reader.return(
+    html.div(
+      [
+        core.classes(select_choice_style),
+        event.on_click(config.select(Some(key))),
+      ],
+      [core.inline_value(key)],
+    ),
+  )
 }

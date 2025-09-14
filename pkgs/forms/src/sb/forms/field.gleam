@@ -67,7 +67,10 @@ pub fn evaluate(
   )
 }
 
-pub fn update(field: Field, value: Value) -> Result(Field, Report(Error)) {
+pub fn update(
+  field: Field,
+  value: Option(Value),
+) -> Result(Field, Report(Error)) {
   use kind <- result.try(kind.update(field.kind, value))
   Ok(Field(..field, kind:))
 }

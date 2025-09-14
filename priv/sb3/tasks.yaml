@@ -24,6 +24,14 @@ fields:
       - Tempor id adipisicing voluptate nulla et incididunt cillum Lorem sit ad.
       - Voluptate nulla deserunt qui pariatur laboris velit quis cupidatat proident dolor pariatur.
       - Ut qui sint ex eiusmod officia cillum.
+
+  - id: multi-select
+    kind: select
+    multiple: true
+    source.literal:
+      - Tempor id adipisicing voluptate nulla et incididunt cillum Lorem sit ad.
+      - Voluptate nulla deserunt qui pariatur laboris velit quis cupidatat proident dolor pariatur.
+      - Ut qui sint ex eiusmod officia cillum.
 --- 
 name: Input
 layout:

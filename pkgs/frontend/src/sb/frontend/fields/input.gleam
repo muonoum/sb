@@ -28,7 +28,7 @@ pub type Config(message) {
     options: Options,
     layout: kind.Layout,
     is_loading: fn(Source) -> Bool,
-    select: fn(Value) -> message,
+    select: fn(Option(Value)) -> message,
     debug: Bool,
   )
 }
@@ -70,7 +70,7 @@ pub fn radio(
     Context(
       kind: "radio",
       group_index: 0,
-      on_change: fn(key) { decode.success(config.select(key)) },
+      on_change: fn(key) { decode.success(config.select(Some(key))) },
       is_selected: fn(key) { Some(key) == selected },
       config:,
     )
@@ -90,7 +90,8 @@ pub fn checkbox(
       is_selected: set.contains(selected, _),
       on_change: fn(choice) {
         use checked <- decode.then(checked_decoder())
-        use <- return(compose(config.select, decode.success))
+        use <- return(decode.success)
+        use <- return(compose(Some, config.select))
         use <- return(compose(set.to_list, value.List))
         use <- bool.lazy_guard(checked, fn() { set.insert(selected, choice) })
         set.delete(selected, choice)
