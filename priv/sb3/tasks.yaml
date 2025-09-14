@@ -1,6 +1,27 @@
 kind: tasks/v1
 category: [Tests]
+# sources:
+#   lorem1:
+#     source.literal:
+#       - Tempor id adipisicing voluptate nulla et incididunt cillum Lorem sit ad.
+#       - Voluptate nulla deserunt qui pariatur laboris velit quis cupidatat proident dolor pariatur.
+#       - Ut qui sint ex eiusmod officia cillum.
+# sources:
+#   - kind: literal
+#     literal:
+#       - Tempor id adipisicing voluptate nulla et incididunt cillum Lorem sit ad.
+#       - Voluptate nulla deserunt qui pariatur laboris velit quis cupidatat proident dolor pariatur.
+#       - Ut qui sint ex eiusmod officia cillum.
 ---
+name: Select
+fields:
+  - id: select1
+    kind: select
+    source.literal:
+      - Tempor id adipisicing voluptate nulla et incididunt cillum Lorem sit ad.
+      - Voluptate nulla deserunt qui pariatur laboris velit quis cupidatat proident dolor pariatur.
+      - Ut qui sint ex eiusmod officia cillum.
+--- 
 name: Input
 layout:
   - checkbox-row

@@ -352,7 +352,9 @@ fn task_options() -> Reader(Element(Message), Context) {
   html.div([core.classes(["flex gap-3 items-center p-1 rounded-sm"])], [
     case debug {
       True -> enabled_option(ToggleDebug, "hide debug", icons.eye_outline)
-      False -> disabled_option(ToggleDebug, "show debug", icons.eye_outline)
+
+      False ->
+        disabled_option(ToggleDebug, "show debug", icons.eye_slash_outline)
     },
 
     case use_layout {
@@ -380,13 +382,17 @@ fn disabled_option(
 ) -> Element(message) {
   html.div(
     [event.on_click(message), attr.class("cursor-pointer"), attr.title(title)],
-    [element([attr.class("stroke-stone-600/70")])],
+    [element([attr.class("stroke-stone-600/60")])],
   )
 }
 
 fn close_task() -> Element(message) {
   html.a(
-    [attr.href("/oppgaver"), attr.class("flex items-center p-2 rounded-sm")],
+    [
+      attr.href("/oppgaver"),
+      attr.class("flex items-center p-2 rounded-sm"),
+      attr.title("close form"),
+    ],
     [icons.x_mark_outline([attr.class("stroke-2")])],
   )
 }

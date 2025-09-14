@@ -8,6 +8,7 @@ import sb/extra/function.{return}
 import sb/extra/reader.{type Reader}
 import sb/extra/report.{type Report}
 import sb/extra/reset.{type Reset}
+import sb/forms/check
 import sb/forms/error.{type Error}
 import sb/forms/options.{type Options}
 import sb/forms/source.{type Source}
@@ -69,6 +70,14 @@ const select_selected_choice_style = [
 // - "search member & .."
 // - "search > member & .."
 
+// TODO: For generisk for denne modulen?
+fn has_placeholder(source: Reset(Result(Source, Report(Error)))) -> Bool {
+  case reset.unwrap(reset.initial(source)) {
+    Error(_report) -> False
+    Ok(_source) -> todo
+  }
+}
+
 pub type Config(message) {
   Config(
     options: Options,
@@ -84,33 +93,27 @@ pub type Config(message) {
 }
 
 pub opaque type Context(message) {
-  Context(
-    config: Config(message),
-    has_placeholder: fn(Reset(Result(Source, Report(Error)))) -> Bool,
-  )
+  Context(config: Config(message))
 }
 
-fn context() -> Reader(Context(message), Context(message)) {
+fn get_context() -> Reader(Context(message), Context(message)) {
   use context <- reader.bind(reader.ask)
   reader.return(context)
 }
 
-fn config() -> Reader(Config(message), Context(message)) {
-  use Context(config:, ..) <- reader.bind(context())
+fn get_config() -> Reader(Config(message), Context(message)) {
+  use Context(config:) <- reader.bind(get_context())
   reader.return(config)
 }
 
 pub fn select(selected _selected, config config) {
-  let context =
-    Context(config:, has_placeholder: fn(source) {
-      case reset.unwrap(reset.initial(source)) {
-        Error(_report) -> False
-        Ok(_source) -> todo
-      }
-    })
+  let context = Context(config:)
 
   use <- return(reader.run(_, context:))
   use <- field()
+
+  // TODO: Har allerede context og config her; kanskje droppe reader
+  // use config <- reader.bind(get_config())
   reader.return(element.none())
 }
 
@@ -129,7 +132,7 @@ fn field(
 }
 
 fn search() -> Reader(Element(message), Context(message)) {
-  use config <- reader.bind(config())
+  use config <- reader.bind(get_config())
   use <- return(reader.return)
 
   html.div(
@@ -153,7 +156,7 @@ fn search() -> Reader(Element(message), Context(message)) {
 }
 
 fn options() -> Reader(Element(message), Context(message)) {
-  use config <- reader.bind(config())
+  use config <- reader.bind(get_config())
 
   use options <- reader.bind(case config.options {
     options.SingleSource(source) -> group_source(label: None, source:)
@@ -174,15 +177,26 @@ fn group_source(
   label _label: Option(String),
   source source: Reset(Result(Source, Report(Error))),
 ) -> Reader(List(Element(message)), Context(message)) {
-  use config <- reader.bind(config())
+  use config <- reader.bind(get_config())
   use <- return(reader.return)
 
   case reset.unwrap(source), config.debug {
     Error(_report), _debug -> todo
-    Ok(source.Literal(value)), _debug -> todo
+
+    Ok(source.Literal(value)), _debug ->
+      group_value(value, has_placeholder(source))
+
     Ok(_source), False -> todo
     Ok(_source), True -> todo
   }
 
   [element.none()]
+}
+
+fn group_value(value: Value, has_placeholder: Bool) {
+  case check.unique_keys(value), has_placeholder {
+    Error(_report), _has_placeholder -> todo
+    Ok(_keys), True -> todo
+    Ok(_keys), False -> todo
+  }
 }

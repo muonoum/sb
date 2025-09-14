@@ -3,8 +3,6 @@ import gleam/dynamic/decode.{type Decoder}
 import gleam/int
 import gleam/list
 import gleam/option.{type Option, Some}
-import gleam/pair
-import gleam/result
 import gleam/set.{type Set}
 import gleam/string
 import lustre/attribute as attr
@@ -16,6 +14,7 @@ import sb/extra/function.{compose, return}
 import sb/extra/report.{type Report}
 import sb/extra/reset.{type Reset}
 import sb/extra/state.{type State}
+import sb/forms/check
 import sb/forms/error.{type Error}
 import sb/forms/kind
 import sb/forms/options.{type Options}
@@ -48,7 +47,7 @@ fn checked_decoder() -> Decoder(Bool) {
   decode.at(["target", "checked"], decode.bool)
 }
 
-fn context() -> State(Context(message), Context(message)) {
+fn get_context() -> State(Context(message), Context(message)) {
   use context <- state.bind(state.get())
   state.return(context)
 }
@@ -58,8 +57,8 @@ fn set_group_index(group_index: Int) -> State(Nil, Context(message)) {
   Context(..context, group_index:)
 }
 
-fn config() -> State(Config(message), Context(message)) {
-  use Context(config:, ..) <- state.bind(context())
+fn get_config() -> State(Config(message), Context(message)) {
+  use Context(config:, ..) <- state.bind(get_context())
   state.return(config)
 }
 
@@ -101,7 +100,7 @@ pub fn checkbox(
 }
 
 fn field() -> State(Element(message), Context(message)) {
-  use config <- state.bind(config())
+  use config <- state.bind(get_config())
 
   use choices <- state.bind(case config.options {
     options.SingleSource(source) -> state.sequence([group_source(source)])
@@ -127,7 +126,7 @@ fn group_label(text: String) -> Element(message) {
 fn group_source(
   source: Reset(Result(Source, Report(Error))),
 ) -> State(Element(message), Context(message)) {
-  use config <- state.bind(config())
+  use config <- state.bind(get_config())
 
   case reset.unwrap(source), config.debug {
     Error(report), _debug ->
@@ -153,25 +152,10 @@ fn group_source(
 }
 
 fn group_members(value: Value) -> State(Element(message), Context(message)) {
-  use context <- state.bind(context())
-  use config <- state.bind(config())
+  use context <- state.bind(get_context())
+  use config <- state.bind(get_config())
 
-  let keys = {
-    use keys <- result.try(
-      value.keys(value)
-      |> report.replace_error(error.BadValue(value)),
-    )
-
-    use <- return(result.map(_, pair.second))
-    let keys = list.reverse(keys)
-    use #(seen, keys), key <- list.try_fold(keys, #(set.new(), []))
-    case set.contains(seen, key) {
-      True -> report.error(error.DuplicateKey(key))
-      False -> Ok(#(set.insert(seen, key), [key, ..keys]))
-    }
-  }
-
-  case keys {
+  case check.unique_keys(value) {
     Error(report) ->
       state.return(core.inspect([attr.class("text-red-800")], report))
 
@@ -202,8 +186,8 @@ fn group_choice(
   choice: Value,
   dom_id: String,
 ) -> State(Element(message), Context(message)) {
-  use context <- state.bind(context())
-  use config <- state.bind(config())
+  use context <- state.bind(get_context())
+  use config <- state.bind(get_config())
   use <- return(state.return)
   let on_change = event.on("change", context.on_change(choice))
 
