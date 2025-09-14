@@ -361,11 +361,7 @@ fn enabled_option(
   element: fn(List(Attribute(message))) -> Element(message),
 ) -> Element(message) {
   html.div(
-    [
-      event.on_click(message),
-      attr.class("cursor-pointer duration-75 transition-colors"),
-      attr.title(title),
-    ],
+    [event.on_click(message), attr.class("cursor-pointer"), attr.title(title)],
     [element([])],
   )
 }
@@ -376,11 +372,7 @@ fn disabled_option(
   element: fn(List(Attribute(message))) -> Element(message),
 ) -> Element(message) {
   html.div(
-    [
-      event.on_click(message),
-      attr.class("cursor-pointer"),
-      attr.title(title),
-    ],
+    [event.on_click(message), attr.class("cursor-pointer"), attr.title(title)],
     [element([attr.class("stroke-stone-600/70")])],
   )
 }
