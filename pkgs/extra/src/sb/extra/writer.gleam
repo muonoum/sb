@@ -1,37 +1,41 @@
-import gleam/list
+import sb/extra/difference_list.{type DList} as diff
 
 pub type Writer(v, ctx) {
-  Writer(#(v, List(ctx)))
+  Writer(v, DList(ctx))
+}
+
+pub fn run(writer: Writer(v, ctx)) -> #(v, List(ctx)) {
+  let Writer(v, ctx) = writer
+  #(v, diff.to_list(ctx))
 }
 
 pub fn return(value: v) -> Writer(v, ctx) {
-  Writer(#(value, []))
+  Writer(value, diff.new())
 }
 
-pub fn do(
+pub fn bind(
   writer: Writer(a, ctx),
   then: fn(a) -> Writer(b, ctx),
 ) -> Writer(b, ctx) {
-  let Writer(#(a, context1)) = writer
-  let Writer(#(b, context2)) = then(a)
-  Writer(#(b, list.append(context1, context2)))
+  let Writer(a, ctx1) = writer
+  let Writer(b, ctx2) = then(a)
+  Writer(b, diff.append(ctx1, ctx2))
 }
 
-pub fn tell(context: List(ctx)) -> Writer(Nil, ctx) {
-  Writer(#(Nil, context))
+pub fn do(writer, then) {
+  bind(writer, fn(_) { then() })
 }
 
-fn log(value) {
-  use _ <- do(tell([value]))
-  return(value)
+pub fn put(ctx: List(ctx)) -> Writer(Nil, ctx) {
+  Writer(Nil, diff.from_list(ctx))
 }
 
 pub fn main() {
   let x = {
-    use a <- do(log(10))
-    use b <- do(log(20))
-    return(a + b)
+    use <- do(put(["a"]))
+    use <- do(put(["b"]))
+    return(10)
   }
 
-  echo x
+  echo run(x)
 }

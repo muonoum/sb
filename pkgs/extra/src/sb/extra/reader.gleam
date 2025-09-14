@@ -30,22 +30,22 @@ pub fn do(
   bind(reader, fn(_) { then() })
 }
 
-pub fn map(state: Reader(a, ctx), mapper: fn(a) -> b) -> Reader(b, ctx) {
+pub fn map(reader: Reader(a, ctx), mapper: fn(a) -> b) -> Reader(b, ctx) {
   use ctx <- Reader
-  mapper(state.run(ctx))
+  mapper(reader.run(ctx))
 }
 
 pub fn map2(
-  state1: Reader(a, ctx),
-  state2: Reader(b, ctx),
+  reader1: Reader(a, ctx),
+  reader2: Reader(b, ctx),
   mapper: fn(a, b) -> c,
 ) -> Reader(c, ctx) {
   use ctx <- Reader
-  mapper(state1.run(ctx), state2.run(ctx))
+  mapper(reader1.run(ctx), reader2.run(ctx))
 }
 
-pub fn sequence(states: List(Reader(v, ctx))) -> Reader(List(v), ctx) {
+pub fn sequence(readers: List(Reader(v, ctx))) -> Reader(List(v), ctx) {
   use <- function.return(map(_, list.reverse))
-  use list, state <- list.fold(states, return([]))
-  map2(list, state, list.prepend)
+  use list, reader <- list.fold(readers, return([]))
+  map2(list, reader, list.prepend)
 }

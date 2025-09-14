@@ -1,0 +1,5 @@
+kind: notifiers/v1
+---
+id: notifier1
+kind: slack
+url: https://example.org

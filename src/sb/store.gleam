@@ -17,10 +17,12 @@ import sb/extra/path
 import sb/extra/report.{type Report}
 import sb/extra/state.{type State}
 import sb/extra/yaml
+import sb/forms/command.{type Command}
 import sb/forms/custom.{type Custom}
 import sb/forms/decoder
 import sb/forms/error.{type Error}
 import sb/forms/file.{type File, File}
+import sb/forms/notifier.{type Notifier}
 import sb/forms/props
 import sb/forms/task.{type Task}
 
@@ -35,15 +37,30 @@ pub type Config {
 }
 
 pub opaque type Model {
-  Model(tasks: Dict(String, Task), errors: List(Report(Error)))
+  Model(
+    tasks: Dict(String, Task),
+    commands: Dict(String, Command),
+    notifiers: Dict(String, Notifier),
+    errors: List(Report(Error)),
+  )
 }
 
 pub opaque type Message {
   Schedule(process.Subject(Message))
   Load(process.Subject(Message))
+  GetErrors(process.Subject(List(Report(Error))))
   GetTasks(process.Subject(List(Task)))
   GetTask(process.Subject(Result(Task, Nil)), String)
-  GetErrors(process.Subject(List(Report(Error))))
+  GetNotifier(process.Subject(Result(Notifier, Nil)), String)
+  GetCommand(process.Subject(Result(Command, Nil)), String)
+}
+
+pub fn get_tasks(store: process.Subject(Message)) -> List(Task) {
+  process.call(store, call_timeout, GetTasks)
+}
+
+pub fn get_errors(store: process.Subject(Message)) -> List(Report(Error)) {
+  process.call(store, call_timeout, GetErrors)
 }
 
 pub fn get_task(
@@ -54,12 +71,20 @@ pub fn get_task(
   |> report.replace_error(error.BadId(id))
 }
 
-pub fn get_tasks(store: process.Subject(Message)) -> List(Task) {
-  process.call(store, call_timeout, GetTasks)
+pub fn get_notifier(
+  store: process.Subject(Message),
+  id: String,
+) -> Result(Notifier, Report(Error)) {
+  process.call(store, call_timeout, GetNotifier(_, id))
+  |> report.replace_error(error.BadId(id))
 }
 
-pub fn get_errors(store: process.Subject(Message)) -> List(Report(Error)) {
-  process.call(store, call_timeout, GetErrors)
+pub fn get_comamnds(
+  store: process.Subject(Message),
+  id: String,
+) -> Result(Command, Report(Error)) {
+  process.call(store, call_timeout, GetCommand(_, id))
+  |> report.replace_error(error.BadId(id))
 }
 
 pub fn start(
@@ -87,7 +112,14 @@ pub fn supervised(
 pub fn init(
   subject: process.Subject(Message),
 ) -> Result(actor.Initialised(Model, Message, process.Subject(Message)), String) {
-  let model = Model(tasks: dict.new(), errors: [])
+  let model =
+    Model(
+      tasks: dict.new(),
+      notifiers: dict.new(),
+      commands: dict.new(),
+      errors: [],
+    )
+
   process.send(subject, Load(subject))
   Ok(actor.initialised(model) |> actor.returning(subject))
 }
@@ -103,13 +135,23 @@ fn update(config: Config) {
         actor.continue(model)
       }
 
+      GetErrors(reply) -> {
+        process.send(reply, model.errors)
+        actor.continue(model)
+      }
+
       GetTask(reply, id) -> {
         process.send(reply, dict.get(model.tasks, id))
         actor.continue(model)
       }
 
-      GetErrors(reply) -> {
-        process.send(reply, model.errors)
+      GetNotifier(reply, id) -> {
+        process.send(reply, dict.get(model.notifiers, id))
+        actor.continue(model)
+      }
+
+      GetCommand(reply, id) -> {
+        process.send(reply, dict.get(model.commands, id))
         actor.continue(model)
       }
     }
@@ -176,18 +218,29 @@ fn load(_model: Model, config: Config) -> Model {
   use files <- state.bind(load_files(config.prefix, config.pattern))
 
   let #(tasks, files) = load_task_documents(files)
+
   let #(sources, files) = load_documents(files, file.is_sources)
   let #(fields, files) = load_documents(files, file.is_fields)
-  let #(filters, _rest) = load_documents(files, file.is_filters)
-
+  let #(filters, files) = load_documents(files, file.is_filters)
   use sources <- state.bind(load_custom(sources, custom.Sources))
   use fields <- state.bind(load_custom(fields, custom.Fields))
   use filters <- state.bind(load_custom(filters, custom.Filters))
 
   use tasks <- state.bind(load_tasks(tasks, sources:, fields:, filters:))
 
+  let #(commands, files) = load_documents(files, file.is_commands)
+  let #(notifiers, _files) = load_documents(files, file.is_notifiers)
+  use commands <- state.bind(load_commands(commands))
+  use notifiers <- state.bind(load_notifiers(notifiers))
+
   use errors <- state.bind(state.get())
-  state.return(Model(tasks: dict.from_list(tasks), errors:))
+
+  state.return(Model(
+    tasks: dict.from_list(tasks),
+    commands:,
+    notifiers:,
+    errors:,
+  ))
 }
 
 fn partition_results(
@@ -238,6 +291,18 @@ fn load_documents(
   use file <- list.flat_map(files)
   use data, index <- list.index_map(file.documents)
   Document(path: file.path, index: index + 1, data:)
+}
+
+fn load_notifiers(
+  _documents: List(Document),
+) -> State(Dict(String, Notifier), List(Report(Error))) {
+  state.return(dict.new())
+}
+
+fn load_commands(
+  _documents: List(Document),
+) -> State(Dict(String, Command), List(Report(Error))) {
+  state.return(dict.new())
 }
 
 fn load_task_documents(files: List(File)) -> #(List(TaskDocument), List(File)) {

@@ -15,7 +15,7 @@ import sb/frontend
 import sb/frontend/components/errors
 import sb/frontend/components/task
 import sb/frontend/components/tasks
-import sb/task_store
+import sb/store
 import wisp
 
 pub fn service(
@@ -37,7 +37,7 @@ pub fn service(
 pub fn websocket_router(
   next_router: fn(Request(_)) -> Response(_),
   store_interval store_interval: Int,
-  task_store task_store: process.Subject(task_store.Message),
+  store store: process.Subject(store.Message),
 ) -> fn(Request(_)) -> Response(_) {
   use request <- identity
 
@@ -49,7 +49,7 @@ pub fn websocket_router(
           schedule: extra_erlang.schedule(store_interval, _),
           load: fn(message) {
             use dispatch <- effect.from
-            dispatch(message(task_store.get_errors(task_store)))
+            dispatch(message(store.get_errors(store)))
           },
         ),
       )
@@ -61,7 +61,7 @@ pub fn websocket_router(
           schedule: extra_erlang.schedule(store_interval, _),
           load: fn(message) {
             use dispatch <- effect.from
-            dispatch(message(task_store.get_tasks(task_store)))
+            dispatch(message(store.get_tasks(store)))
           },
         ),
       )
@@ -73,7 +73,7 @@ pub fn websocket_router(
           schedule: extra_erlang.schedule,
           load: fn(task_id, message) {
             use dispatch <- effect.from
-            dispatch(message(task_store.get_task(task_store, task_id)))
+            dispatch(message(store.get_task(store, task_id)))
           },
           step: fn(_task, _search, _message) {
             use _dispatch <- effect.from
