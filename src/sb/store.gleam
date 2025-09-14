@@ -325,7 +325,8 @@ fn load_custom(
 ) -> Writer(custom, Report(Error)) {
   use <- return(writer.map(_, compose(dict.from_list, custom)))
   use <- return(partition_results)
-  use <- return(compose(state.sequence, state.run(_, context: dups())))
+  use <- return(state.run(_, context: dups()))
+  use <- return(state.sequence)
 
   use document <- list.map(documents)
   use <- return(state.map(_, error_context(document)))
@@ -346,7 +347,8 @@ fn load_tasks(
   filters filters: custom.Filters,
 ) -> Writer(List(#(String, Task)), Report(Error)) {
   use <- return(partition_results)
-  use <- return(compose(state.sequence, state.run(_, context: dups())))
+  use <- return(state.run(_, context: dups()))
+  use <- return(state.sequence)
 
   use TaskDocument(document:, defaults:) <- list.map(documents)
   use <- return(state.map(_, error_context(document)))
