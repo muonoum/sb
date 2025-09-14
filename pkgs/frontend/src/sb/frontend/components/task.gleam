@@ -668,7 +668,7 @@ fn field_kind(
       applied_search:,
       search: Search(id, _),
       clear_search: Search(id, ""),
-      select: Change(id, _, delay: 0),
+      change: Change(id, _, delay: 0),
       debug:,
     )
   }

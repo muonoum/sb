@@ -1,7 +1,15 @@
 import gleam/result
 
+pub fn constant(value: v) -> fn(_) -> v {
+  fn(_) { value }
+}
+
 pub fn compose(a: fn(a) -> b, b: fn(b) -> c) -> fn(a) -> c {
   fn(v) { b(a(v)) }
+}
+
+pub fn compose2(a: fn(a) -> b, b: fn(b) -> c, c: fn(c) -> d) -> fn(a) -> d {
+  fn(v) { c(b(a(v))) }
 }
 
 pub fn identity(value: v) -> v {

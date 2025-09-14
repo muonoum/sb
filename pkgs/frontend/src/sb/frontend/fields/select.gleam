@@ -5,7 +5,7 @@ import lustre/attribute as attr
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
-import sb/extra/function.{return}
+import sb/extra/function.{compose2, return}
 import sb/extra/reader.{type Reader}
 import sb/extra/report.{type Report}
 import sb/extra/reset.{type Reset}
@@ -88,13 +88,17 @@ pub type Config(message) {
     applied_search: Option(String),
     search: fn(String) -> message,
     clear_search: message,
-    select: fn(Option(Value)) -> message,
+    change: fn(Option(Value)) -> message,
     debug: Bool,
   )
 }
 
 pub opaque type Context(message) {
-  Context(config: Config(message))
+  Context(
+    config: Config(message),
+    select: fn(Option(Value)) -> message,
+    deselect: fn(Value) -> message,
+  )
 }
 
 fn get_context() -> Reader(Context(message), Context(message)) {
@@ -103,7 +107,7 @@ fn get_context() -> Reader(Context(message), Context(message)) {
 }
 
 fn get_config() -> Reader(Config(message), Context(message)) {
-  use Context(config:) <- reader.bind(get_context())
+  use Context(config:, ..) <- reader.bind(get_context())
   reader.return(config)
 }
 
@@ -111,7 +115,11 @@ pub fn select(
   selected selected: Option(Choice),
   config config: Config(message),
 ) -> Element(message) {
-  let context = Context(config:)
+  let context =
+    Context(config:, select: config.change, deselect: {
+      fn(_) { config.change(None) }
+    })
+
   use <- return(reader.run(_, context:))
   use <- field()
   use <- return(reader.return)
@@ -125,11 +133,9 @@ pub fn select(
           html.li(
             [
               core.classes(select_selected_style),
-              event.on_click(config.select(None)),
+              event.on_click(context.deselect(choice.key)),
             ],
-            [
-              core.inline_value(choice.key),
-            ],
+            [core.inline_value(choice.key)],
           ),
         ]),
       ])
@@ -140,14 +146,48 @@ pub fn multi_select(
   selected selected: List(Choice),
   config config: Config(message),
 ) -> Element(message) {
-  let context = Context(config:)
+  let context =
+    Context(
+      config:,
+      select: fn(value: Option(Value)) -> message {
+        use <- return(config.change)
+        use value <- option.map(value)
+        use <- return(value.List)
+        let selected = list.map(selected, choice.key)
+        use <- bool.guard(list.contains(selected, value), selected)
+        list.append(selected, [value])
+      },
+      deselect: fn(value: Value) -> message {
+        use <- return(compose2(value.List, Some, config.change))
+        let selected = list.map(selected, choice.key)
+        use key <- list.filter_map(selected)
+        use <- bool.guard(key == value, Error(Nil))
+        Ok(key)
+      },
+    )
+
   use <- return(reader.run(_, context:))
   use <- field()
   use <- return(reader.return)
 
   case selected {
     [] -> element.none()
-    _choices -> element.none()
+
+    choices ->
+      html.div([core.classes(select_selected_container_style)], [
+        html.ul([attr.class("flex flex-col ps-2")], {
+          use choice <- list.map(choices)
+
+          html.li(
+            [
+              event.on_click(context.deselect(choice.key)),
+              attr.class("list-[square]"),
+              core.classes(select_selected_style),
+            ],
+            [core.inline_value(choice.key)],
+          )
+        }),
+      ])
   }
 }
 
@@ -251,7 +291,7 @@ fn group_value(
 }
 
 fn group_members(keys: List(Value)) -> Reader(Element(a), Context(a)) {
-  use config <- reader.bind(get_config())
+  use context <- reader.bind(get_context())
   use <- core.reader_fragment()
   use <- bool.guard(keys == [], [])
   use key <- list.map(keys)
@@ -260,7 +300,7 @@ fn group_members(keys: List(Value)) -> Reader(Element(a), Context(a)) {
     html.div(
       [
         core.classes(select_choice_style),
-        event.on_click(config.select(Some(key))),
+        event.on_click(context.select(Some(key))),
       ],
       [core.inline_value(key)],
     ),

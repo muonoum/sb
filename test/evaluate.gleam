@@ -2,6 +2,7 @@ import gleam/dict.{type Dict}
 import gleam/dynamic/decode
 import gleam/io
 import gleam/list
+import gleam/option.{Some}
 import gleam/string
 import gleam_community/ansi
 import inspect
@@ -90,5 +91,5 @@ fn update(
   ]
 
   io.println(string.join(parts, " "))
-  task.update(task, id, value)
+  task.update(task, id, Some(value))
 }
