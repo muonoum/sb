@@ -15,7 +15,10 @@ category: [Tests]
 ---
 name: Select
 fields:
-  - id: select1
+  - id: text
+    kind: text
+
+  - id: select
     kind: select
     source.literal:
       - Tempor id adipisicing voluptate nulla et incididunt cillum Lorem sit ad.

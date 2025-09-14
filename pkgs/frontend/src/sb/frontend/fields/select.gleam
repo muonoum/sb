@@ -1,3 +1,4 @@
+import gleam/bool
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import lustre/attribute as attr
@@ -16,10 +17,18 @@ import sb/forms/value.{type Value}
 import sb/frontend/components/core
 import sb/frontend/components/search
 
+const input_style = [
+  "rounded-md border px-3 py-1.5 outline-transparent",
+  "transition-[border-color,outline] duration-200",
+  "focus:outline focus:outline-4 focus:outline-offset-0",
+  "bg-white border-stone-900/30 placeholder-zinc-500/80",
+  "focus:border-stone-950/60 focus:outline-stone-900/20",
+]
+
 pub const select_style = [
   "relative flex flex-col rounded-md", "border border-stone-900/30",
-  "transition-[border-color,outline] duration-200",
-  "focus-within:outline focus:outline-4 focus-within:outline-offset-0",
+  "transition-[border-color,outline] duration-200 outline-transparent",
+  "focus-within:outline focus-within:outline-4 focus-within:outline-offset-0",
   "focus-within:border-stone-950/60 focus-within:outline-stone-900/20",
 ]
 
@@ -74,7 +83,7 @@ const select_selected_choice_style = [
 fn has_placeholder(source: Reset(Result(Source, Report(Error)))) -> Bool {
   case reset.unwrap(reset.initial(source)) {
     Error(_report) -> False
-    Ok(_source) -> todo
+    Ok(_source) -> False
   }
 }
 
@@ -162,41 +171,46 @@ fn options() -> Reader(Element(message), Context(message)) {
     options.SingleSource(source) -> group_source(label: None, source:)
 
     options.SourceGroups(groups) -> {
-      use <- return(reader.map(_, list.flatten))
+      use <- return(reader.map(_, element.fragment))
       use <- return(reader.sequence)
       use options.Group(label:, source:) <- list.map(groups)
       group_source(Some(label), source:)
     }
   })
 
-  html.div([core.classes(select_options_style)], options)
+  html.div([core.classes(select_options_style)], [options])
   |> reader.return
 }
 
 fn group_source(
   label _label: Option(String),
   source source: Reset(Result(Source, Report(Error))),
-) -> Reader(List(Element(message)), Context(message)) {
+) -> Reader(Element(message), Context(message)) {
   use config <- reader.bind(get_config())
   use <- return(reader.return)
 
   case reset.unwrap(source), config.debug {
-    Error(_report), _debug -> todo
+    Error(report), _debug -> core.inspect([], report)
 
     Ok(source.Literal(value)), _debug ->
       group_value(value, has_placeholder(source))
 
-    Ok(_source), False -> todo
-    Ok(_source), True -> todo
+    Ok(source), False -> core.inspect([], source)
+    Ok(source), True -> core.inspect([], source)
   }
-
-  [element.none()]
 }
 
-fn group_value(value: Value, has_placeholder: Bool) {
+fn group_value(value: Value, has_placeholder: Bool) -> Element(message) {
   case check.unique_keys(value), has_placeholder {
-    Error(_report), _has_placeholder -> todo
+    Error(report), _has_placeholder -> core.inspect([], report)
     Ok(_keys), True -> todo
-    Ok(_keys), False -> todo
+    Ok(keys), False -> group_members(keys)
   }
+}
+
+fn group_members(keys: List(Value)) -> Element(message) {
+  use <- return(element.fragment)
+  use <- bool.guard(keys == [], [])
+  use choice <- list.map(keys)
+  html.div([core.classes(select_choice_style)], [core.inline_value(choice)])
 }

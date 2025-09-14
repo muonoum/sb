@@ -6,10 +6,10 @@ import lustre/event
 import sb/frontend/components/core
 
 const input_style = [
-  "rounded-md border px-3 py-1.5 outline-transparent",
+  "rounded-md border px-3 py-1.5 outline-transparent shadow-inner",
   "transition-[border-color,outline] duration-200",
-  "focus:outline focus:outline-4 focus:outline-offset-0",
   "bg-white border-stone-900/30 placeholder-zinc-500/80",
+  "focus:outline focus:outline-4 focus:outline-offset-0",
   "focus:border-stone-950/60 focus:outline-stone-900/20",
 ]
 
