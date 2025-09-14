@@ -42,11 +42,10 @@ const select_search_style = [
   "group-last/input:rounded-b-md",
 ]
 
-// TODO
-// const select_empty_style = [
-//   "flex relative justify-center p-3", "font-medium text-3xl text-stone-500",
-//   "border-t border-t-1 border-stone-500/30",
-// ]
+const select_empty_style = [
+  "flex relative justify-center p-3", "font-medium text-3xl text-stone-500",
+  "border-t border-t-1 border-stone-500/30",
+]
 
 const select_options_style = [
   "flex flex-col grow overflow-y-auto", "w-full min-h-20 max-h-96",
@@ -149,6 +148,7 @@ pub fn multi_select(
   let context =
     Context(
       config:,
+      // TODO
       select: fn(value: Option(Value)) -> message {
         use <- return(config.change)
         use value <- option.map(value)
@@ -157,6 +157,7 @@ pub fn multi_select(
         use <- bool.guard(list.contains(selected, value), selected)
         list.append(selected, [value])
       },
+      // TODO
       deselect: fn(value: Value) -> message {
         use <- return(compose2(value.List, Some, config.change))
         let selected = list.map(selected, choice.key)
@@ -288,6 +289,8 @@ fn group_value(
   value: Value,
   has_placeholder: Bool,
 ) -> Reader(Element(message), Context(message)) {
+  // TODO: Searching
+
   case check.unique_keys(value), has_placeholder {
     Ok(keys), False -> group_members(keys)
     Ok(keys), True -> group_members(keys)
