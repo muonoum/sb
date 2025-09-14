@@ -47,13 +47,13 @@ pub opaque type Model {
 }
 
 pub opaque type Message {
-  Schedule(process.Subject(Message))
-  Load(process.Subject(Message))
-  GetErrors(process.Subject(List(Report(Error))))
-  GetTasks(process.Subject(List(Task)))
-  GetTask(process.Subject(Result(Task, Nil)), String)
-  GetNotifier(process.Subject(Result(Notifier, Nil)), String)
-  GetCommand(process.Subject(Result(Command, Nil)), String)
+  Schedule(store: process.Subject(Message))
+  Load(store: process.Subject(Message))
+  GetErrors(reply: process.Subject(List(Report(Error))))
+  GetTasks(reply: process.Subject(List(Task)))
+  GetTask(reply: process.Subject(Result(Task, Nil)), id: String)
+  GetNotifier(reply: process.Subject(Result(Notifier, Nil)), id: String)
+  GetCommand(reply: process.Subject(Result(Command, Nil)), id: String)
 }
 
 pub fn get_tasks(store: process.Subject(Message)) -> List(Task) {
@@ -125,36 +125,39 @@ pub fn init(
   Ok(actor.initialised(model) |> actor.returning(subject))
 }
 
-fn update(config: Config) {
-  fn(model: Model, message: Message) -> actor.Next(Model, Message) {
-    case message {
-      Schedule(store) -> schedule(model, config, store)
-      Load(store) -> load(model, config) |> schedule(config, store)
+fn update(config: Config) -> fn(Model, Message) -> actor.Next(Model, Message) {
+  use model, message <- identity
 
-      GetTasks(reply) -> {
-        process.send(reply, dict.values(model.tasks))
-        actor.continue(model)
-      }
+  case message {
+    Schedule(store:) -> schedule(model, config, store)
 
-      GetErrors(reply) -> {
-        process.send(reply, model.errors)
-        actor.continue(model)
-      }
+    Load(store:) ->
+      load(model, config)
+      |> schedule(config, store)
 
-      GetTask(reply, id) -> {
-        process.send(reply, dict.get(model.tasks, id))
-        actor.continue(model)
-      }
+    GetTasks(reply:) -> {
+      process.send(reply, dict.values(model.tasks))
+      actor.continue(model)
+    }
 
-      GetNotifier(reply, id) -> {
-        process.send(reply, dict.get(model.notifiers, id))
-        actor.continue(model)
-      }
+    GetErrors(reply:) -> {
+      process.send(reply, model.errors)
+      actor.continue(model)
+    }
 
-      GetCommand(reply, id) -> {
-        process.send(reply, dict.get(model.commands, id))
-        actor.continue(model)
-      }
+    GetTask(reply:, id:) -> {
+      process.send(reply, dict.get(model.tasks, id))
+      actor.continue(model)
+    }
+
+    GetNotifier(reply:, id:) -> {
+      process.send(reply, dict.get(model.notifiers, id))
+      actor.continue(model)
+    }
+
+    GetCommand(reply:, id:) -> {
+      process.send(reply, dict.get(model.commands, id))
+      actor.continue(model)
     }
   }
 }
