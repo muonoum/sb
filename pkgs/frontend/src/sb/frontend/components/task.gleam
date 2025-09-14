@@ -19,6 +19,7 @@ import sb/extra/loadable.{type Loadable}
 import sb/extra/reader.{type Reader}
 import sb/extra/report.{type Report}
 import sb/extra/reset
+import sb/forms/choice
 import sb/forms/condition
 import sb/forms/error.{type Error}
 import sb/forms/field.{type Field}
@@ -169,10 +170,9 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
 
     ToggleDebug -> #(Model(..model, debug: !model.debug), effect.none())
 
-    ToggleLayout -> #(
-      Model(..model, use_layout: !model.use_layout),
-      effect.none(),
-    )
+    ToggleLayout -> {
+      #(Model(..model, use_layout: !model.use_layout), effect.none())
+    }
 
     Change(field_id:, value:, delay:) -> {
       use state <- with_state(model)
@@ -199,15 +199,9 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
 
     ApplyChange(debounce:) -> {
       use state <- with_state(model)
-
-      case state.debounce == debounce {
-        False -> #(model, effect.none())
-
-        True -> {
-          let state = loadable.succeed(State(..state, debounce: 0))
-          #(Model(..model, state:), dispatch_evaluate())
-        }
-      }
+      use <- bool.guard(state.debounce == debounce, #(model, effect.none()))
+      let state = loadable.succeed(State(..state, debounce: 0))
+      #(Model(..model, state:), dispatch_evaluate())
     }
 
     Search(field_id:, string: "") -> {
@@ -226,14 +220,12 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
         DebouncedSearch(string:, debounce: 0, applied: "")
       }
 
-      let debounce = search.debounce + 1
-
       let apply =
-        ApplySearch(field_id, debounce)
+        ApplySearch(field_id, search.debounce + 1)
         |> handlers.schedule(search_debounce, _)
 
       let search =
-        DebouncedSearch(..search, string:, debounce:)
+        DebouncedSearch(..search, string:, debounce: search.debounce + 1)
         |> dict.insert(state.search, field_id, _)
       let state = loadable.succeed(State(..state, search:))
       #(Model(..model, state:), apply)
@@ -321,23 +313,23 @@ type Context {
   Context(debug: Bool, use_layout: Bool, state: State)
 }
 
-fn debug() -> Reader(Bool, Context) {
+fn get_debug() -> Reader(Bool, Context) {
   use Context(debug:, ..) <- reader.bind(reader.ask)
   reader.return(debug)
 }
 
-fn use_layout() -> Reader(Bool, Context) {
+fn get_use_layout() -> Reader(Bool, Context) {
   use Context(use_layout:, ..) <- reader.bind(reader.ask)
   reader.return(use_layout)
 }
 
-fn state() -> Reader(State, Context) {
+fn get_state() -> Reader(State, Context) {
   use Context(state:, ..) <- reader.bind(reader.ask)
   reader.return(state)
 }
 
-fn task() -> Reader(Task, Context) {
-  use State(task:, ..) <- reader.bind(state())
+fn get_task() -> Reader(Task, Context) {
+  use State(task:, ..) <- reader.bind(get_state())
   reader.return(task)
 }
 
@@ -377,7 +369,7 @@ fn task_error(report: Report(Error)) -> Element(message) {
 }
 
 fn task_header() -> Reader(List(Element(Message)), Context) {
-  use task <- reader.bind(task())
+  use task <- reader.bind(get_task())
   use task_options <- reader.bind(task_options())
 
   reader.return([
@@ -393,8 +385,8 @@ fn task_name(name: String) -> Element(message) {
 }
 
 fn task_options() -> Reader(Element(Message), Context) {
-  use debug <- reader.bind(debug())
-  use use_layout <- reader.bind(use_layout())
+  use debug <- reader.bind(get_debug())
+  use use_layout <- reader.bind(get_use_layout())
   use <- return(reader.return)
 
   html.div([core.classes(["flex gap-3 items-center p-1 rounded-sm"])], [
@@ -452,8 +444,8 @@ fn task_description(description: String) -> Element(message) {
 }
 
 fn task_fields() -> Reader(List(Element(Message)), Context) {
-  use task <- reader.bind(task())
-  use use_layout <- reader.bind(use_layout())
+  use task <- reader.bind(get_task())
+  use use_layout <- reader.bind(get_use_layout())
 
   case task.layout, use_layout {
     layout, False -> results_layout(layout.results)
@@ -464,7 +456,7 @@ fn task_fields() -> Reader(List(Element(Message)), Context) {
 }
 
 fn list_layout(list: List(String)) -> Reader(List(Element(Message)), Context) {
-  use task <- reader.bind(task())
+  use task <- reader.bind(get_task())
   use <- return(results_layout)
   use id <- list.map(list)
 
@@ -483,8 +475,8 @@ fn grid_layout(
 fn results_layout(
   layout: List(Result(String, Report(Error))),
 ) -> Reader(List(Element(Message)), Context) {
-  use debug <- reader.bind(debug())
-  use task <- reader.bind(task())
+  use debug <- reader.bind(get_debug())
+  use task <- reader.bind(get_task())
   use <- return(reader.sequence)
   use result <- list.map(layout)
 
@@ -523,7 +515,7 @@ fn field_container(
   id: String,
   field: Field,
 ) -> Reader(Element(Message), Context) {
-  use state <- reader.bind(state())
+  use state <- reader.bind(get_state())
   let search = option.from_result(dict.get(state.search, id))
   use field_meta <- reader.bind(field_meta(id, field, search))
   use field_content <- reader.bind(field_content(id, field, search))
@@ -544,7 +536,7 @@ fn field_content(
   field: Field,
   search: Option(DebouncedSearch),
 ) -> Reader(Element(Message), Context) {
-  use task <- reader.bind(task())
+  use task <- reader.bind(get_task())
   let is_loading = is_loading(_, id, task)
   use field_kind <- reader.bind(field_kind(id, field, search, is_loading))
   use <- return(reader.return)
@@ -571,7 +563,7 @@ fn field_meta(
   field: Field,
   search: Option(DebouncedSearch),
 ) -> Reader(Element(Message), Context) {
-  use debug <- reader.bind(debug())
+  use debug <- reader.bind(get_debug())
   use <- return(reader.return)
 
   html.div([core.classes(field_meta_style)], case debug {
@@ -674,7 +666,7 @@ fn field_kind(
   search: Option(DebouncedSearch),
   is_loading: fn(Source) -> Bool,
 ) -> Reader(Element(Message), Context) {
-  use debug <- reader.bind(debug())
+  use debug <- reader.bind(get_debug())
   use <- return(reader.return)
 
   let text_input_config = fn(placeholder) {
@@ -730,15 +722,12 @@ fn field_kind(
 
     kind.Radio(selected, layout:, options:) ->
       input.radio(config: input_config(layout, options), selected: {
-        use choice <- option.map(selected)
-        choice.key
+        option.map(selected, choice.key)
       })
 
     kind.Checkbox(selected, layout:, options:) ->
       input.checkbox(config: input_config(layout, options), selected: {
-        use <- return(set.from_list)
-        use choice <- list.map(selected)
-        choice.key
+        set.from_list(list.map(selected, choice.key))
       })
 
     kind.Select(selected, placeholder:, options:) ->
