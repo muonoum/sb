@@ -5,6 +5,7 @@ import lustre/attribute as attr
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
+import sb/extra
 import sb/extra/function.{compose, return}
 import sb/extra/reader.{type Reader}
 import sb/extra/report.{type Report}
@@ -256,49 +257,40 @@ fn group_source(
 ) -> Reader(Element(message), Context(message)) {
   use config <- reader.bind(get_config())
 
-  case reset.unwrap(source), config.debug {
-    Error(report), _debug ->
-      reader.return(
-        element.fragment([
-          group_label(label),
-          core.inspect([attr.class("p-3 text-red-800")], report),
-        ]),
-      )
+  let return = fn(element) {
+    reader.return(element.fragment([group_label(label), element]))
+  }
 
-    Ok(source.Literal(value)), _debug -> {
-      use group_value <- reader.bind(group_value(value, has_placeholder(source)))
-      element.fragment([group_label(label), group_value])
-      |> reader.return
-    }
+  case reset.unwrap(source), config.debug {
+    Ok(source.Literal(value)), _debug ->
+      group_value(label, value, has_placeholder(source))
+
+    Error(report), _debug ->
+      return(core.inspect([attr.class("p-3 text-red-800")], report))
 
     // TODO: Loading
     Ok(source), False ->
-      reader.return(
-        element.fragment([
-          group_label(label),
-          html.div([attr.class("flex gap-2 p-3")], [core.inspect([], source)]),
-        ]),
-      )
+      return(html.div([attr.class("p-3")], [core.inspect([], source)]))
 
     Ok(source), True ->
-      reader.return(
-        element.fragment([
-          group_label(label),
-          html.div([attr.class("flex gap-2 p-3")], [core.inspect([], source)]),
-        ]),
-      )
+      return(html.div([attr.class("p-3")], [core.inspect([], source)]))
   }
 }
 
 fn group_value(
+  label: Option(String),
   value: Value,
   has_placeholder: Bool,
 ) -> Reader(Element(message), Context(message)) {
   // TODO: Searching
 
   case check.unique_keys(value), has_placeholder {
-    Ok(keys), False -> group_members(keys)
-    Ok(keys), True -> group_members(keys)
+    Ok(keys), False -> {
+      use keys <- reader.bind(apply_search(label, keys))
+      group_members(label, keys)
+    }
+
+    Ok(keys), True -> group_members(label, keys)
 
     Error(report), _has_placeholder ->
       core.inspect([attr.class("p-3 text-red-800")], report)
@@ -306,20 +298,49 @@ fn group_value(
   }
 }
 
-fn group_members(keys: List(Value)) -> Reader(Element(a), Context(a)) {
-  use context <- reader.bind(get_context())
-  use <- return(reader.map(_, element.fragment))
-  use <- return(reader.sequence)
-  use <- bool.guard(keys == [], [])
-  use key <- list.map(keys)
+fn apply_search(label: Option(String), keys: List(Value)) {
+  use config <- reader.bind(get_config())
+  use <- return(reader.return)
+  let words = option.map(config.applied_search, extra.words)
 
-  reader.return(
-    html.div(
-      [
-        core.classes(select_choice_style),
-        event.on_click(context.select(Some(key))),
-      ],
-      [core.inline_value(key)],
-    ),
-  )
+  let match = fn(words) {
+    use keys, word <- list.fold(words, keys)
+    use key <- list.filter(keys)
+    value.match(key, word)
+  }
+
+  case label, words {
+    _label, None -> keys
+    None, Some(words) -> match(words)
+
+    Some(label), Some(words) ->
+      case list.any(words, value.match(value.String(label), _)) {
+        False -> match(words)
+        True -> keys
+      }
+  }
+}
+
+fn group_members(
+  label: Option(String),
+  keys: List(Value),
+) -> Reader(Element(a), Context(a)) {
+  use context <- reader.bind(get_context())
+  use <- return(reader.return)
+  use <- bool.lazy_guard(keys == [], element.none)
+
+  element.fragment([
+    group_label(label),
+    element.fragment({
+      use key <- list.map(keys)
+
+      html.div(
+        [
+          core.classes(select_choice_style),
+          event.on_click(context.select(Some(key))),
+        ],
+        [core.inline_value(key)],
+      )
+    }),
+  ])
 }

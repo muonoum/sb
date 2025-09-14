@@ -1,10 +1,13 @@
 import gleam/dict
 import gleam/dynamic
 import gleam/dynamic/decode.{type Decoder}
+import gleam/float
+import gleam/int
 import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/pair
+import gleam/string
 
 pub type Value {
   Null
@@ -59,6 +62,33 @@ pub fn keys(value: Value) -> Result(List(Value), Nil) {
       |> Ok
 
     _value -> Error(Nil)
+  }
+}
+
+// TODO
+pub fn match(value: Value, term: String) -> Bool {
+  let term = string.lowercase(term)
+
+  case value {
+    Null -> False
+
+    String(string) -> {
+      let string = string.lowercase(string)
+      string.contains(string, term)
+    }
+
+    List(list) -> list.any(list, match(_, term))
+
+    Object(list) -> {
+      use #(key, value) <- list.any(list)
+      let key = string.lowercase(key)
+      string.contains(key, term) || match(value, term)
+    }
+
+    Bool(True) -> string.contains("true", term)
+    Bool(False) -> string.contains("false", term)
+    Float(int) -> string.contains(float.to_string(int), term)
+    Int(int) -> string.contains(int.to_string(int), term)
   }
 }
 
