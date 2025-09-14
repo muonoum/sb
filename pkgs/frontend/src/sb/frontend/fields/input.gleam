@@ -52,7 +52,7 @@ fn get_context() -> State(Context(message), Context(message)) {
   state.return(context)
 }
 
-fn set_group_index(group_index: Int) -> State(Nil, Context(message)) {
+fn update_group_index(group_index: Int) -> State(Nil, Context(message)) {
   use context <- state.update
   Context(..context, group_index:)
 }
@@ -107,13 +107,14 @@ fn field() -> State(Element(message), Context(message)) {
     options.SingleSource(source) -> state.sequence([group_source(source)])
 
     options.SourceGroups(groups) -> {
-      use <- return(state.map(_, list.flatten))
       use <- return(state.sequence)
       use group, group_index <- list.index_map(groups)
       let options.Group(label:, source:) = group
-      use <- state.do(set_group_index(group_index))
+      use <- state.do(update_group_index(group_index))
       use group_source <- state.bind(group_source(source))
-      state.return([group_label(label), group_source])
+
+      element.fragment([group_label(label), group_source])
+      |> state.return
     }
   })
 

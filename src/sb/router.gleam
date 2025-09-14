@@ -8,6 +8,7 @@ import lustre
 import lustre/effect
 import lustre/element
 import mist
+import sb/api
 import sb/component
 import sb/extra/function.{identity}
 import sb/extra_erlang
@@ -27,8 +28,8 @@ pub fn service(
   use <- wisp.log_request(request)
 
   case request.method, wisp.path_segments(request) {
+    _method, ["api", ..] -> api.service(request)
     http.Get, [] -> wisp.redirect("/oppgaver")
-
     _method, _segments ->
       wisp.html_body(wisp.ok(), element.to_document_string(frontend.page()))
   }

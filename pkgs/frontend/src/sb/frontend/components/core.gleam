@@ -5,18 +5,8 @@ import gleam/string
 import lustre/attribute.{type Attribute} as attr
 import lustre/element.{type Element}
 import lustre/element/html
-import sb/extra/function.{return}
-import sb/extra/reader.{type Reader}
 import sb/forms/value.{type Value}
 import sb/frontend/components/icons
-
-pub fn reader_fragment(
-  then: fn() -> List(Reader(Element(message), context)),
-) -> Reader(Element(message), context) {
-  use <- return(reader.map(_, element.fragment))
-  use <- return(reader.sequence)
-  then()
-}
 
 pub fn maybe(
   value: Option(v),

@@ -5,7 +5,7 @@ import lustre/attribute as attr
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
-import sb/extra/function.{compose2, return}
+import sb/extra/function.{compose, return}
 import sb/extra/reader.{type Reader}
 import sb/extra/report.{type Report}
 import sb/extra/reset.{type Reset}
@@ -101,8 +101,7 @@ pub opaque type Context(message) {
 }
 
 fn get_context() -> Reader(Context(message), Context(message)) {
-  use context <- reader.bind(reader.ask)
-  reader.return(context)
+  reader.bind(reader.ask, reader.return)
 }
 
 fn get_config() -> Reader(Config(message), Context(message)) {
@@ -159,7 +158,7 @@ pub fn multi_select(
       },
       // TODO
       deselect: fn(value: Value) -> message {
-        use <- return(compose2(value.List, Some, config.change))
+        use <- return(compose(value.List, compose(Some, config.change)))
         let selected = list.map(selected, choice.key)
         use key <- list.filter_map(selected)
         use <- bool.guard(key == value, Error(Nil))
@@ -233,7 +232,8 @@ fn options() -> Reader(Element(message), Context(message)) {
     options.SingleSource(source) -> group_source(label: None, source:)
 
     options.SourceGroups(groups) -> {
-      use <- core.reader_fragment()
+      use <- return(reader.map(_, element.fragment))
+      use <- return(reader.sequence)
       use options.Group(label:, source:) <- list.map(groups)
       group_source(Some(label), source:)
     }
@@ -266,22 +266,27 @@ fn group_source(
       )
 
     Ok(source.Literal(value)), _debug -> {
-      use <- return(reader.map(_, element.fragment))
-
-      reader.sequence([
-        reader.return(group_label(label)),
-        group_value(value, has_placeholder(source)),
-      ])
+      use group_value <- reader.bind(group_value(value, has_placeholder(source)))
+      element.fragment([group_label(label), group_value])
+      |> reader.return
     }
 
     // TODO: Loading
     Ok(source), False ->
-      element.fragment([group_label(label), core.inspect([], source)])
-      |> reader.return
+      reader.return(
+        element.fragment([
+          group_label(label),
+          html.div([attr.class("flex gap-2 p-3")], [core.inspect([], source)]),
+        ]),
+      )
 
     Ok(source), True ->
-      element.fragment([group_label(label), core.inspect([], source)])
-      |> reader.return
+      reader.return(
+        element.fragment([
+          group_label(label),
+          html.div([attr.class("flex gap-2 p-3")], [core.inspect([], source)]),
+        ]),
+      )
   }
 }
 
@@ -303,7 +308,8 @@ fn group_value(
 
 fn group_members(keys: List(Value)) -> Reader(Element(a), Context(a)) {
   use context <- reader.bind(get_context())
-  use <- core.reader_fragment()
+  use <- return(reader.map(_, element.fragment))
+  use <- return(reader.sequence)
   use <- bool.guard(keys == [], [])
   use key <- list.map(keys)
 
