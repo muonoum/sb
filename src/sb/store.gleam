@@ -16,6 +16,7 @@ import sb/extra/list as list_extra
 import sb/extra/path
 import sb/extra/report.{type Report}
 import sb/extra/state.{type State}
+import sb/extra/writer.{type Writer}
 import sb/extra/yaml
 import sb/forms/command.{type Command}
 import sb/forms/custom.{type Custom}
@@ -212,50 +213,48 @@ type TaskDocument {
   TaskDocument(document: Document, defaults: task.Defaults)
 }
 
-fn load(_model: Model, config: Config) -> Model {
-  // TODO: Writer?
-  use <- return(state.run(_, context: []))
-  use files <- state.bind(load_files(config.prefix, config.pattern))
+fn load(model: Model, config: Config) -> Model {
+  let #(model, errors) = writer.run(load_model(model, config))
+  Model(..model, errors:)
+}
 
+fn load_model(model: Model, config: Config) -> Writer(Model, Report(Error)) {
+  use files <- writer.bind(load_files(config.prefix, config.pattern))
   let #(tasks, files) = load_task_documents(files)
 
   let #(sources, files) = load_documents(files, file.is_sources)
   let #(fields, files) = load_documents(files, file.is_fields)
   let #(filters, files) = load_documents(files, file.is_filters)
-  use sources <- state.bind(load_custom(sources, custom.Sources))
-  use fields <- state.bind(load_custom(fields, custom.Fields))
-  use filters <- state.bind(load_custom(filters, custom.Filters))
+  use sources <- writer.bind(load_custom(sources, custom.Sources))
+  use fields <- writer.bind(load_custom(fields, custom.Fields))
+  use filters <- writer.bind(load_custom(filters, custom.Filters))
 
-  use tasks <- state.bind(load_tasks(tasks, sources:, fields:, filters:))
+  use tasks <- writer.bind(
+    load_tasks(tasks, sources:, fields:, filters:)
+    |> writer.map(dict.from_list),
+  )
 
   let #(commands, files) = load_documents(files, file.is_commands)
   let #(notifiers, _files) = load_documents(files, file.is_notifiers)
-  use commands <- state.bind(load_commands(commands))
-  use notifiers <- state.bind(load_notifiers(notifiers))
+  use commands <- writer.bind(load_commands(commands))
+  use notifiers <- writer.bind(load_notifiers(notifiers))
 
-  use errors <- state.bind(state.get())
-
-  state.return(Model(
-    tasks: dict.from_list(tasks),
-    commands:,
-    notifiers:,
-    errors:,
-  ))
+  let model = Model(..model, tasks:, commands:, notifiers:)
+  writer.return(model)
 }
 
 fn partition_results(
   results: List(Result(v, Report(Error))),
-) -> State(List(v), List(Report(Error))) {
-  use context <- state.bind(state.get())
+) -> Writer(List(v), Report(Error)) {
   let #(oks, errors) = result.partition(results)
-  use <- state.do(state.put(list.append(context, errors)))
-  state.return(oks)
+  use <- writer.do(writer.put(errors))
+  writer.return(oks)
 }
 
 fn load_files(
   prefix: String,
   pattern: String,
-) -> State(List(File), List(Report(Error))) {
+) -> Writer(List(File), Report(Error)) {
   use <- return(partition_results)
   use path <- list.map(path.wildcard(prefix, pattern))
   use <- return(report.error_context(_, error.PathContext(path)))
@@ -295,14 +294,14 @@ fn load_documents(
 
 fn load_notifiers(
   _documents: List(Document),
-) -> State(Dict(String, Notifier), List(Report(Error))) {
-  state.return(dict.new())
+) -> Writer(Dict(String, Notifier), Report(Error)) {
+  writer.return(dict.new())
 }
 
 fn load_commands(
   _documents: List(Document),
-) -> State(Dict(String, Command), List(Report(Error))) {
-  state.return(dict.new())
+) -> Writer(Dict(String, Command), Report(Error)) {
+  writer.return(dict.new())
 }
 
 fn load_task_documents(files: List(File)) -> #(List(TaskDocument), List(File)) {
@@ -316,8 +315,8 @@ fn load_task_documents(files: List(File)) -> #(List(TaskDocument), List(File)) {
 fn load_custom(
   documents: List(Document),
   custom: fn(Dict(String, Custom)) -> custom,
-) -> State(custom, List(Report(Error))) {
-  use <- return(state.map(_, compose(dict.from_list, custom)))
+) -> Writer(custom, Report(Error)) {
+  use <- return(writer.map(_, compose(dict.from_list, custom)))
   use <- return(partition_results)
   use <- return(compose(state.sequence, state.run(_, context: dups())))
 
@@ -338,7 +337,7 @@ fn load_tasks(
   sources sources: custom.Sources,
   fields fields: custom.Fields,
   filters filters: custom.Filters,
-) -> State(List(#(String, Task)), List(Report(Error))) {
+) -> Writer(List(#(String, Task)), Report(Error)) {
   use <- return(partition_results)
   use <- return(compose(state.sequence, state.run(_, context: dups())))
 

@@ -26,6 +26,11 @@ pub fn do(writer, then) {
   bind(writer, fn(_) { then() })
 }
 
+pub fn map(writer: Writer(a, ctx), mapper: fn(a) -> b) -> Writer(b, ctx) {
+  let Writer(a, ctx) = writer
+  Writer(mapper(a), ctx)
+}
+
 pub fn put(ctx: List(ctx)) -> Writer(Nil, ctx) {
   Writer(Nil, diff.from_list(ctx))
 }
