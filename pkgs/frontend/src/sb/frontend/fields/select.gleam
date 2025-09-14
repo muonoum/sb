@@ -153,13 +153,14 @@ pub fn multi_select(
         use <- return(config.change)
         use value <- option.map(value)
         use <- return(value.List)
-        let selected = list.map(selected, choice.key)
-        use <- bool.guard(list.contains(selected, value), selected)
-        list.append(selected, [value])
+        let keys = list.map(selected, choice.key)
+        use <- bool.guard(list.contains(keys, value), keys)
+        list.append(keys, [value])
       },
       // TODO
       deselect: fn(value: Value) -> message {
-        use <- return(compose(value.List, compose(Some, config.change)))
+        use <- return(config.change)
+        use <- return(compose(value.List, Some))
         let selected = list.map(selected, choice.key)
         use key <- list.filter_map(selected)
         use <- bool.guard(key == value, Error(Nil))
