@@ -257,21 +257,29 @@ fn group_source(
 
   case reset.unwrap(source), config.debug {
     Error(report), _debug ->
-      [group_label(label), core.inspect([], report)]
-      |> element.fragment
-      |> reader.return
+      reader.return(
+        element.fragment([
+          group_label(label),
+          core.inspect([attr.class("p-3 text-red-800")], report),
+        ]),
+      )
 
-    Ok(source.Literal(value)), _debug ->
-      group_value(value, has_placeholder(source))
+    Ok(source.Literal(value)), _debug -> {
+      use <- return(reader.map(_, element.fragment))
 
+      reader.sequence([
+        reader.return(group_label(label)),
+        group_value(value, has_placeholder(source)),
+      ])
+    }
+
+    // TODO: Loading
     Ok(source), False ->
-      [group_label(label), core.inspect([], source)]
-      |> element.fragment
+      element.fragment([group_label(label), core.inspect([], source)])
       |> reader.return
 
     Ok(source), True ->
-      [group_label(label), core.inspect([], source)]
-      |> element.fragment
+      element.fragment([group_label(label), core.inspect([], source)])
       |> reader.return
   }
 }
@@ -282,10 +290,10 @@ fn group_value(
 ) -> Reader(Element(message), Context(message)) {
   case check.unique_keys(value), has_placeholder {
     Ok(keys), False -> group_members(keys)
-    Ok(_keys), True -> todo
+    Ok(keys), True -> group_members(keys)
 
     Error(report), _has_placeholder ->
-      core.inspect([], report)
+      core.inspect([attr.class("p-3 text-red-800")], report)
       |> reader.return
   }
 }
