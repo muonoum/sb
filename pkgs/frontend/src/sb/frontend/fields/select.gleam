@@ -10,20 +10,13 @@ import sb/extra/reader.{type Reader}
 import sb/extra/report.{type Report}
 import sb/extra/reset.{type Reset}
 import sb/forms/check
+import sb/forms/choice.{type Choice}
 import sb/forms/error.{type Error}
 import sb/forms/options.{type Options}
 import sb/forms/source.{type Source}
 import sb/forms/value.{type Value}
 import sb/frontend/components/core
 import sb/frontend/components/search
-
-const input_style = [
-  "rounded-md border px-3 py-1.5 outline-transparent",
-  "transition-[border-color,outline] duration-200",
-  "focus:outline focus:outline-4 focus:outline-offset-0",
-  "bg-white border-stone-900/30 placeholder-zinc-500/80",
-  "focus:border-stone-950/60 focus:outline-stone-900/20",
-]
 
 pub const select_style = [
   "relative flex flex-col rounded-md", "border border-stone-900/30",
@@ -44,8 +37,7 @@ const select_selected_style = [
 
 const select_search_style = [
   "bg-white placeholder-zinc-500/80", "transition-[filter] duration-100",
-  "grow px-3 py-2 z-[100] w-full", "outline outline-0", "border-0",
-  "shadow-inner",
+  "grow px-3 py-2 z-[100] w-full", "outline outline-0", "border-0 shadow-inner",
   "group-first/input:rounded-md group-first/input:rounded-b-none",
   "group-last/input:rounded-b-md",
 ]
@@ -115,19 +107,42 @@ fn get_config() -> Reader(Config(message), Context(message)) {
   reader.return(config)
 }
 
-pub fn select(selected _selected, config config) {
+pub fn select(
+  selected selected: Option(Choice),
+  config config: Config(message),
+) -> Element(message) {
   let context = Context(config:)
-
   use <- return(reader.run(_, context:))
   use <- field()
+  use <- return(reader.return)
 
-  // TODO: Har allerede context og config her; kanskje droppe reader
-  // use config <- reader.bind(get_config())
-  reader.return(element.none())
+  case selected {
+    None -> element.none()
+
+    Some(choice) ->
+      html.div([core.classes(select_selected_container_style)], [
+        html.ul([attr.class("flex flex-col")], [
+          html.li([core.classes(select_selected_style)], [
+            core.inline_value(choice.key),
+          ]),
+        ]),
+      ])
+  }
 }
 
-pub fn multi_select(selected _selected, config _config) {
-  todo
+pub fn multi_select(
+  selected selected: List(Choice),
+  config config: Config(message),
+) -> Element(message) {
+  let context = Context(config:)
+  use <- return(reader.run(_, context:))
+  use <- field()
+  use <- return(reader.return)
+
+  case selected {
+    [] -> element.none()
+    _choices -> element.none()
+  }
 }
 
 fn field(
