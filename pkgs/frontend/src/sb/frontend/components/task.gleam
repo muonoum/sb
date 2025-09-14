@@ -36,6 +36,8 @@ import sb/frontend/fields/select
 import sb/frontend/fields/text_input
 import sb/frontend/portals
 
+const search_debounce = 250
+
 const change_debounce = 250
 
 const field_row_style = [
@@ -79,7 +81,7 @@ pub opaque type Message {
   ToggleLayout
   Change(field_id: String, value: Option(Value), delay: Int)
   ApplyChange(debounce: Int)
-  Search(field_id: String, value: String)
+  Search(field_id: String, string: String)
   ApplySearch(field_id: String, debounce: Int)
 }
 
@@ -102,7 +104,7 @@ type State {
 }
 
 type DebouncedSearch {
-  DebouncedSearch(value: String, debounce: Int, applied: String)
+  DebouncedSearch(string: String, debounce: Int, applied: String)
 }
 
 pub fn app(
@@ -208,9 +210,52 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
       }
     }
 
-    Search(field_id: _, value: _) -> #(model, effect.none())
+    Search(field_id:, string: "") -> {
+      // TODO: Reset field placeholder
+      use state <- with_state(model)
+      let search = dict.delete(state.search, field_id)
+      let state = loadable.succeed(State(..state, search:))
+      #(Model(..model, state:), dispatch_evaluate())
+    }
 
-    ApplySearch(field_id: _, debounce: _) -> #(model, effect.none())
+    Search(field_id:, string:) -> {
+      use state <- with_state(model)
+
+      let search = {
+        use <- result.lazy_unwrap(dict.get(state.search, field_id))
+        DebouncedSearch(string:, debounce: 0, applied: "")
+      }
+
+      let debounce = search.debounce + 1
+
+      let apply =
+        ApplySearch(field_id, debounce)
+        |> handlers.schedule(search_debounce, _)
+
+      let search =
+        DebouncedSearch(..search, string:, debounce:)
+        |> dict.insert(state.search, field_id, _)
+      let state = loadable.succeed(State(..state, search:))
+      #(Model(..model, state:), apply)
+    }
+
+    ApplySearch(field_id:, debounce:) -> {
+      // TODO: Reset field placeholder
+      use state <- with_state(model)
+
+      case dict.get(state.search, field_id) {
+        Ok(search) if search.debounce == debounce -> {
+          let search =
+            DebouncedSearch(..search, applied: search.string, debounce: 0)
+            |> dict.insert(state.search, field_id, _)
+          let state = State(..state, search:)
+          let state = loadable.succeed(State(..state, search:))
+          #(Model(..model, state:), dispatch_evaluate())
+        }
+
+        _else -> #(model, effect.none())
+      }
+    }
   }
 }
 
@@ -652,7 +697,7 @@ fn field_kind(
   let select_config = fn(placeholder, options) {
     let search_value = {
       use search <- option.map(search)
-      search.value
+      search.string
     }
 
     let applied_search = {
