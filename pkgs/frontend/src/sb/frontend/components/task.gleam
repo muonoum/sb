@@ -412,6 +412,7 @@ fn list_layout(list: List(String)) -> Reader(List(Element(Message)), Context) {
   use task <- reader.bind(task())
   use <- return(results_layout)
   use id <- list.map(list)
+
   dict.get(task.fields, id)
   |> report.replace_error(error.BadId(id))
   |> result.replace(id)
