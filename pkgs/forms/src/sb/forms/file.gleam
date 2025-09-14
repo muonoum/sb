@@ -83,10 +83,11 @@ pub fn decoder() {
   use kind <- props.get("kind", decoder.from(decode.string))
 
   case kind {
+    "commands/v1" -> props.succeed(CommandsV1)
     "fields/v1" -> props.succeed(FieldsV1)
     "filters/v1" -> props.succeed(FiltersV1)
-    "sources/v1" -> props.succeed(SourcesV1)
     "notifiers/v1" -> props.succeed(NotifiersV1)
+    "sources/v1" -> props.succeed(SourcesV1)
     "tasks/v1" -> tasks_v1_decoder()
     _bad -> props.fail(report.new(error.BadKind(kind)))
   }

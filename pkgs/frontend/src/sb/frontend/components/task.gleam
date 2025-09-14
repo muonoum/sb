@@ -76,6 +76,7 @@ pub opaque type Message {
   StartJob
   Evaluate
   ToggleDebug
+  ToggleLayout
   Change(field_id: String, value: Value, delay: Int)
   ApplyChange(debounce: Int)
   Search(field_id: String, value: String)
@@ -83,7 +84,12 @@ pub opaque type Message {
 }
 
 pub opaque type Model {
-  Model(handlers: Handlers, debug: Bool, state: Loadable(State, Report(Error)))
+  Model(
+    handlers: Handlers,
+    debug: Bool,
+    use_layout: Bool,
+    state: Loadable(State, Report(Error)),
+  )
 }
 
 type State {
@@ -118,7 +124,9 @@ pub fn app(
 }
 
 pub fn init(_flags, handlers: Handlers) -> #(Model, Effect(Message)) {
-  #(Model(handlers:, debug: True, state: loadable.Initial), effect.none())
+  let model =
+    Model(handlers:, debug: True, use_layout: True, state: loadable.Initial)
+  #(model, effect.none())
 }
 
 pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
@@ -158,6 +166,11 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
     Evaluate -> #(model, effect.none())
 
     ToggleDebug -> #(Model(..model, debug: !model.debug), effect.none())
+
+    ToggleLayout -> #(
+      Model(..model, use_layout: !model.use_layout),
+      effect.none(),
+    )
 
     Change(field_id:, value:, delay:) -> {
       use state <- with_state(model)
@@ -256,12 +269,17 @@ fn page_header(model: Model) -> Element(Message) {
 }
 
 type Context {
-  Context(debug: Bool, state: State)
+  Context(debug: Bool, use_layout: Bool, state: State)
 }
 
 fn debug() -> Reader(Bool, Context) {
   use Context(debug:, ..) <- reader.bind(reader.ask)
   reader.return(debug)
+}
+
+fn use_layout() -> Reader(Bool, Context) {
+  use Context(use_layout:, ..) <- reader.bind(reader.ask)
+  reader.return(use_layout)
 }
 
 fn state() -> Reader(State, Context) {
@@ -288,7 +306,8 @@ fn page(model: Model) -> Element(Message) {
         )
 
       loadable.Loaded(_status, State(task:, ..) as state) -> {
-        let context = Context(model.debug, state)
+        let context =
+          Context(debug: model.debug, use_layout: model.use_layout, state:)
 
         reader.run(context:, reader: {
           use header <- reader.bind(task_header())
@@ -320,24 +339,50 @@ fn task_name(name: String) -> Element(message) {
 
 fn task_debug() -> Reader(Element(Message), Context) {
   use debug <- reader.bind(debug())
+  use use_layout <- reader.bind(use_layout())
   use <- return(reader.return)
-  let attr = [core.classes(["flex gap-3 items-center p-1 rounded-sm"])]
 
-  html.div(attr, [
+  html.div([core.classes(["flex gap-3 items-center p-1 rounded-sm"])], [
     case debug {
-      True ->
-        icons.eye_outline([
-          event.on_click(ToggleDebug),
-          attr.class("cursor-pointer duration-75 transition-colors"),
-        ])
+      True -> enabled_option(ToggleDebug, "hide debug", icons.eye_outline)
+      False -> disabled_option(ToggleDebug, "show debug", icons.eye_outline)
+    },
 
-      False ->
-        icons.eye_slash_outline([
-          event.on_click(ToggleDebug),
-          attr.class("cursor-pointer stroke-stone-600/70"),
-        ])
+    case use_layout {
+      True -> enabled_option(ToggleLayout, "hide layout", icons.squares22)
+      False -> disabled_option(ToggleLayout, "show layout", icons.squares22)
     },
   ])
+}
+
+fn enabled_option(
+  message: message,
+  title: String,
+  element: fn(List(Attribute(message))) -> Element(message),
+) -> Element(message) {
+  html.div(
+    [
+      event.on_click(message),
+      attr.class("cursor-pointer duration-75 transition-colors"),
+      attr.title(title),
+    ],
+    [element([])],
+  )
+}
+
+fn disabled_option(
+  message: message,
+  title: String,
+  element: fn(List(Attribute(message))) -> Element(message),
+) -> Element(message) {
+  html.div(
+    [
+      event.on_click(message),
+      attr.class("cursor-pointer"),
+      attr.title(title),
+    ],
+    [element([attr.class("stroke-stone-600/70")])],
+  )
 }
 
 fn close_task() -> Element(message) {
@@ -355,11 +400,13 @@ fn task_description(description: String) -> Element(message) {
 
 fn task_fields() -> Reader(List(Element(Message)), Context) {
   use task <- reader.bind(task())
+  use use_layout <- reader.bind(use_layout())
 
-  case task.layout {
-    layout.List(list) -> list_layout(list)
-    layout.Grid(areas:, style:) -> grid_layout(areas, style)
-    layout.Results(results) -> results_layout(results)
+  case task.layout, use_layout {
+    layout, False -> results_layout(layout.results)
+    layout.Ids(ids:, ..), _use_layout -> list_layout(ids)
+    layout.Grid(areas:, style:, ..), _use_layout -> grid_layout(areas, style)
+    layout.Results(results), _use_layout -> results_layout(results)
   }
 }
 

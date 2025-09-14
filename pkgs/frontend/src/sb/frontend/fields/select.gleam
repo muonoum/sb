@@ -21,10 +21,10 @@ pub type Config(message) {
   )
 }
 
-pub fn select(_selected, _config) {
+pub fn select(selected _selected, config _config) {
   todo
 }
 
-pub fn multi_select(_selected, _config) {
+pub fn multi_select(selected _selected, config _config) {
   todo
 }

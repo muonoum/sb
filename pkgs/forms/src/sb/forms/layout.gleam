@@ -9,16 +9,22 @@ import sb/forms/error.{type Error}
 import sb/forms/props
 import sb/forms/zero
 
+pub type Results =
+  List(Result(String, Report(Error)))
+
 pub type Layout {
-  Results(List(Result(String, Report(Error))))
-  List(List(String))
-  Grid(areas: List(String), style: Dict(String, String))
+  Results(results: Results)
+  Ids(results: Results, ids: List(String))
+  Grid(results: Results, areas: List(String), style: Dict(String, String))
 }
 
-pub fn decoder(dynamic: Dynamic) -> Result(Layout, Report(Error)) {
+pub fn decoder(
+  results: Results,
+  dynamic: Dynamic,
+) -> Result(Layout, Report(Error)) {
   use <- result.lazy_or(
     decoder.run(dynamic, decode.list(decode.string))
-    |> result.map(List),
+    |> result.map(Ids(results:, ids: _)),
   )
 
   props.decode(dynamic, {
@@ -36,6 +42,6 @@ pub fn decoder(dynamic: Dynamic) -> Result(Layout, Report(Error)) {
       )
     })
 
-    props.succeed(Grid(areas:, style:))
+    props.succeed(Grid(results, areas:, style:))
   })
 }

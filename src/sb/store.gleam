@@ -209,6 +209,10 @@ type Document {
   Document(path: String, index: Int, data: Dynamic)
 }
 
+fn document(path: String, index: Int, data: Dynamic) -> Document {
+  Document(path:, index: index + 1, data:)
+}
+
 type TaskDocument {
   TaskDocument(document: Document, defaults: task.Defaults)
 }
@@ -292,7 +296,7 @@ fn load_documents(
   use files <- pair.map_first(list.partition(files, filter))
   use file <- list.flat_map(files)
   use data, index <- list.index_map(file.documents)
-  Document(path: file.path, index: index + 1, data:)
+  document(file.path, index, data)
 }
 
 fn load_notifiers(
@@ -311,7 +315,7 @@ fn load_task_documents(files: List(File)) -> #(List(TaskDocument), List(File)) {
   use files <- pair.map_first(list_extra.partition_map(files, file.tasks))
   use #(path, documents, defaults) <- list.flat_map(files)
   use data, index <- list.index_map(documents)
-  let document = Document(path:, index:, data:)
+  let document = document(path, index, data)
   TaskDocument(document:, defaults:)
 }
 

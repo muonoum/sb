@@ -167,14 +167,10 @@ pub fn decoder(
     |> error.try_duplicate_ids(seen)
   })
 
-  let results_layout = fn() {
-    use <- return(layout.Results)
-    use result <- list.map(fields)
-    use #(id, _field) <- result.map(result)
-    id
-  }
-
-  use layout <- props.try("layout", zero.lazy(results_layout, layout.decoder))
+  let results = list.map(fields, result.map(_, pair.first))
+  use layout <- props.try("layout", {
+    zero.new(layout.Results(results), layout.decoder(results, _))
+  })
 
   props.succeed(Task(
     id:,
