@@ -223,10 +223,12 @@ fn load_model(model: Model, config: Config) -> Writer(Model, Report(Error)) {
   let #(tasks, files) = load_task_documents(files)
 
   let #(sources, files) = load_documents(files, file.is_sources)
-  let #(fields, files) = load_documents(files, file.is_fields)
-  let #(filters, files) = load_documents(files, file.is_filters)
   use sources <- writer.bind(load_custom(sources, custom.Sources))
+
+  let #(fields, files) = load_documents(files, file.is_fields)
   use fields <- writer.bind(load_custom(fields, custom.Fields))
+
+  let #(filters, files) = load_documents(files, file.is_filters)
   use filters <- writer.bind(load_custom(filters, custom.Filters))
 
   use tasks <- writer.bind(
@@ -235,8 +237,9 @@ fn load_model(model: Model, config: Config) -> Writer(Model, Report(Error)) {
   )
 
   let #(commands, files) = load_documents(files, file.is_commands)
-  let #(notifiers, _files) = load_documents(files, file.is_notifiers)
   use commands <- writer.bind(load_commands(commands))
+
+  let #(notifiers, _files) = load_documents(files, file.is_notifiers)
   use notifiers <- writer.bind(load_notifiers(notifiers))
 
   let model = Model(..model, tasks:, commands:, notifiers:)
