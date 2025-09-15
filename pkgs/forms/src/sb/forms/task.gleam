@@ -11,7 +11,6 @@ import sb/extra/function.{identity, return}
 import sb/extra/report.{type Report}
 import sb/extra/state_eval as state
 import sb/forms/access.{type Access}
-import sb/forms/check
 import sb/forms/custom
 import sb/forms/decoder
 import sb/forms/error.{type Error}
@@ -165,7 +164,7 @@ pub fn decoder(
     use seen, dynamic <- list.map_fold(list, set.new())
     let decoder = field.decoder(sources:, fields:, filters:)
     props.decode(dynamic, decoder)
-    |> check.try_unique_id(seen)
+    |> try_unique_id(seen)
   })
 
   let results = list.map(fields, result.map(_, pair.first))
@@ -183,6 +182,21 @@ pub fn decoder(
     layout:,
     fields: dict.from_list(pair.first(result.partition(fields))),
   ))
+}
+
+fn try_unique_id(
+  result: Result(#(String, v), Report(Error)),
+  seen: Set(String),
+) -> #(Set(String), Result(#(String, v), Report(Error))) {
+  case result {
+    Error(report) -> #(seen, Error(report))
+
+    Ok(#(id, field)) ->
+      case set.contains(seen, id) {
+        True -> #(seen, report.error(error.DuplicateId(id)))
+        False -> #(set.insert(seen, id), Ok(#(id, field)))
+      }
+  }
 }
 
 const valid_id = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"

@@ -1,10 +1,11 @@
+import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/list
+import gleam/set
 import sb/extra/report.{type Report}
 import sb/extra/state_eval.{type State} as state
-import sb/forms/check
 import sb/forms/decoder.{type Decoder}
 import sb/forms/error.{type Error}
 import sb/forms/zero.{type Zero}
@@ -73,8 +74,19 @@ pub fn decode(dynamic: Dynamic, decoder: Props(v)) -> Result(v, Report(Error)) {
 pub fn check_keys(keys: List(String)) -> Props(Nil) {
   use Context(dict:, ..) <- state.bind(state.get())
 
-  state.from_result(check.known_keys(dict, keys))
+  state.from_result(known_keys(dict, keys))
   |> state.replace(Nil)
+}
+
+fn known_keys(
+  dict: Dict(String, v),
+  known_keys: List(String),
+) -> Result(Dict(String, v), Report(Error)) {
+  let defined_set = set.from_list(dict.keys(dict))
+  let known_set = set.from_list(known_keys)
+  let unknown_keys = set.to_list(set.difference(defined_set, known_set))
+  use <- bool.guard(unknown_keys == [], Ok(dict))
+  report.error(error.UnknownKeys(unknown_keys))
 }
 
 pub fn load(dynamic: Dynamic, next: fn() -> Props(v)) -> Props(v) {

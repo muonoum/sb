@@ -14,7 +14,6 @@ import sb/extra/function.{compose, return}
 import sb/extra/report.{type Report}
 import sb/extra/reset.{type Reset}
 import sb/extra/state.{type State}
-import sb/forms/check
 import sb/forms/error.{type Error}
 import sb/forms/kind
 import sb/forms/options.{type Options}
@@ -157,7 +156,7 @@ fn group_members(value: Value) -> State(Element(message), Context(message)) {
   use context <- state.bind(get_context())
   use config <- state.bind(get_config())
 
-  case check.unique_keys(value) {
+  case error.unique_keys(value) {
     Error(report) ->
       state.return(core.inspect([attr.class("text-red-800")], report))
 

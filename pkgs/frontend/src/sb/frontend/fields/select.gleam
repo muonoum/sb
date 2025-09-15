@@ -10,7 +10,6 @@ import sb/extra/function.{compose, return}
 import sb/extra/reader.{type Reader}
 import sb/extra/report.{type Report}
 import sb/extra/reset.{type Reset}
-import sb/forms/check
 import sb/forms/choice.{type Choice}
 import sb/forms/error.{type Error}
 import sb/forms/options.{type Options}
@@ -283,7 +282,7 @@ fn group_value(
   value: Value,
   has_placeholder: Bool,
 ) -> Reader(Element(message), Context(message)) {
-  case check.unique_keys(value), has_placeholder {
+  case error.unique_keys(value), has_placeholder {
     Ok(keys), False -> {
       use keys <- reader.bind(find(label, keys))
       group_members(label, keys)
