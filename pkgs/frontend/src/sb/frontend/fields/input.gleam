@@ -80,23 +80,20 @@ pub fn checkbox(
 ) -> Element(message) {
   let is_selected = fn(key) { set.contains(set.from_list(selected), key) }
 
+  let select = fn(key) {
+    use <- function.identity
+    let set = set.from_list(selected)
+    use <- bool.guard(set.contains(set, key), selected)
+    list.append(selected, [key])
+  }
+
   let change = fn(key) {
     use checked <- decode.then(checked_decoder())
     use <- return(compose(config.change, decode.success))
     use <- return(compose(value.List, Some))
-
-    case checked {
-      True -> {
-        let set = set.from_list(selected)
-        use <- bool.guard(set.contains(set, key), selected)
-        list.append(selected, [key])
-      }
-
-      False -> {
-        use have <- list.filter(selected)
-        key != have
-      }
-    }
+    use <- bool.lazy_guard(checked, select(key))
+    use have <- list.filter(selected)
+    key != have
   }
 
   let context =
