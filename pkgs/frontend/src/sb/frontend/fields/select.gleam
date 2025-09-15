@@ -1,6 +1,7 @@
 import gleam/bool
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/set.{type Set}
 import lustre/attribute as attr
 import lustre/element.{type Element}
 import lustre/element/html
@@ -143,7 +144,7 @@ pub fn select(
 }
 
 pub fn multi_select(
-  selected selected: List(Choice),
+  selected selected: Set(Choice),
   config config: Config(message),
 ) -> Element(message) {
   let context =
@@ -152,17 +153,17 @@ pub fn multi_select(
       select: fn(key) -> message {
         config.change({
           use <- return(compose(value.List, Some))
-          let keys = list.map(selected, choice.key)
-          use <- bool.guard(list.contains(keys, key), keys)
-          list.append(keys, [key])
+          let keys = set.map(selected, choice.key)
+          set.insert(keys, key)
+          |> set.to_list
         })
       },
       deselect: fn(choice) {
         config.change({
           use <- return(compose(value.List, Some))
-          use key <- list.filter_map(list.map(selected, choice.key))
-          use <- bool.guard(key == choice.key(choice), Error(Nil))
-          Ok(key)
+          set.delete(selected, choice)
+          |> set.map(choice.key)
+          |> set.to_list
         })
       },
     )
@@ -171,7 +172,7 @@ pub fn multi_select(
   use <- field()
   use <- return(reader.return)
 
-  case selected {
+  case set.to_list(selected) {
     [] -> element.none()
 
     choices ->

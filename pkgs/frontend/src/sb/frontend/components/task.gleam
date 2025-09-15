@@ -734,6 +734,7 @@ fn field_kind(
       select.select(selected, select_config(placeholder, options))
 
     kind.MultiSelect(selected, placeholder:, options:) ->
-      select.multi_select(selected, select_config(placeholder, options))
+      set.from_list(selected)
+      |> select.multi_select(select_config(placeholder, options))
   }
 }
