@@ -94,7 +94,7 @@ fn kind_decoder() -> Props(Condition) {
 
     // TODO
     [#(unknown, _)] -> props.fail(report.new(error.UnknownKind(unknown)))
-    _bad -> props.fail(report.new(error.Message("bad condition")))
+    bad -> props.fail(report.new(error.bad_format(bad)))
   }
 }
 
@@ -120,7 +120,6 @@ fn condition_decoder(
         Ok(value) -> props.succeed(equal(id, value))
       }
 
-    // TODO
-    _bad -> props.fail(report.new(error.Message("bad condition")))
+    bad -> props.fail(report.new(error.bad_format(bad)))
   }
 }

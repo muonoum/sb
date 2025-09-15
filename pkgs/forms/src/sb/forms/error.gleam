@@ -1,4 +1,5 @@
 import exception.{type Exception}
+import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/json
 import gleam/list
@@ -6,6 +7,7 @@ import gleam/pair
 import gleam/regexp
 import gleam/result
 import gleam/set
+import sb/extra/dynamic as dynamic_extra
 import sb/extra/function.{return}
 import sb/extra/parser
 import sb/extra/report.{type Report}
@@ -37,6 +39,7 @@ pub type Error {
   BadSource
   BadValue(Value)
   BadCondition(String)
+  BadFormat(Dynamic)
 
   FileError
   DecodeError(List(decode.DecodeError))
@@ -44,6 +47,10 @@ pub type Error {
   RegexError(regexp.CompileError)
   TextError(parser.Message(String))
   YamlError(Exception)
+}
+
+pub fn bad_format(data: any) -> Error {
+  BadFormat(dynamic_extra.from(data))
 }
 
 pub fn unique_keys(value: Value) -> Result(List(Value), Report(Error)) {

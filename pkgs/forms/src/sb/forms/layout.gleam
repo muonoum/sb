@@ -1,5 +1,4 @@
 import gleam/dict.{type Dict}
-import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/result
 import sb/extra/function.{return}
@@ -39,7 +38,7 @@ pub fn decoder(results: Results) -> Zero(Layout) {
 
     // TODO
     [#(unknown, _)] -> props.fail(report.new(error.UnknownKind(unknown)))
-    _bad -> props.fail(report.new(error.Message("bad layout")))
+    bad -> props.fail(report.new(error.bad_format(bad)))
   }
 }
 

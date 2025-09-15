@@ -89,7 +89,7 @@ pub fn decoder() {
     "notifiers/v1" -> props.succeed(NotifiersV1)
     "sources/v1" -> props.succeed(SourcesV1)
     "tasks/v1" -> tasks_v1_decoder()
-    _bad -> props.fail(report.new(error.BadKind(kind)))
+    bad -> props.fail(report.new(error.bad_format(bad)))
   }
 }
 

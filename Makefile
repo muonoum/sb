@@ -6,15 +6,12 @@ run: check frontend
 	gleam run
 
 .PHONY: check
-check:
+check: check-frontend
 	gleam check
 
-assets/Iosevka:
-	mkdir assets/Iosevka
-	curl --silent -L $(iosevka) | bsdtar -C assets/Iosevka -xf-
-
-assets/Inter:
-	curl --silent -L $(inter) | bsdtar -C assets -s /^web/Inter/ -xf- web
+.PHONY: check-frontend
+check-frontend:
+	cd pkgs/frontend && gleam check
 
 .PHONY: frontend
 frontend: assets/Inter assets/Iosevka
@@ -27,6 +24,13 @@ frontend: assets/Inter assets/Iosevka
 	tailwindcss --minify --input priv/static/app.css --output priv/static/build.css
 
 	mv priv/static/build.css priv/static/app.css
+
+assets/Iosevka:
+	mkdir assets/Iosevka
+	curl --silent -L $(iosevka) | bsdtar -C assets/Iosevka -xf-
+
+assets/Inter:
+	curl --silent -L $(inter) | bsdtar -C assets -s /^web/Inter/ -xf- web
 
 .PHONY: commit
 commit: message ?= $(shell git diff --name-only --cached | sed -r 's,([^ /]+/)+([^/ ]+),\2,g')
