@@ -1,7 +1,7 @@
 import gleam/bool
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/set.{type Set}
+import gleam/set
 import lustre/attribute as attr
 import lustre/element.{type Element}
 import lustre/element/html
@@ -11,7 +11,6 @@ import sb/extra/function.{compose, return}
 import sb/extra/reader.{type Reader}
 import sb/extra/report.{type Report}
 import sb/extra/reset.{type Reset}
-import sb/forms/choice.{type Choice}
 import sb/forms/error.{type Error}
 import sb/forms/options.{type Options}
 import sb/forms/source.{type Source}
@@ -96,8 +95,9 @@ pub type Config(message) {
 pub opaque type Context(message) {
   Context(
     config: Config(message),
+    is_selected: fn(Value) -> Bool,
     select: fn(Value) -> message,
-    deselect: fn(Choice) -> message,
+    deselect: fn(Value) -> message,
   )
 }
 
@@ -111,12 +111,13 @@ fn get_config() -> Reader(Config(message), Context(message)) {
 }
 
 pub fn select(
-  selected selected: Option(Choice),
+  selected selected: Option(Value),
   config config: Config(message),
 ) -> Element(message) {
   let context =
     Context(
       config:,
+      is_selected: fn(key) { Some(key) == selected },
       select: fn(key) { config.change(Some(key)) },
       deselect: fn(_choice) { config.change(None) },
     )
@@ -128,7 +129,7 @@ pub fn select(
   case selected {
     None -> element.none()
 
-    Some(choice) ->
+    Some(key) ->
       html.div([core.classes(select_selected_container_style)], [
         html.ul([attr.class("flex flex-col")], [
           html.li(
@@ -136,7 +137,7 @@ pub fn select(
               core.classes(select_selected_style),
               event.on_click(config.change(None)),
             ],
-            [core.inline_value(choice.key(choice))],
+            [core.inline_value(key)],
           ),
         ]),
       ])
@@ -144,26 +145,29 @@ pub fn select(
 }
 
 pub fn multi_select(
-  selected selected: Set(Choice),
+  selected selected: List(Value),
   config config: Config(message),
 ) -> Element(message) {
   let context =
     Context(
       config:,
+      is_selected: fn(key) {
+        set.from_list(selected)
+        |> set.contains(key)
+      },
       select: fn(key) -> message {
         config.change({
           use <- return(compose(value.List, Some))
-          let keys = set.map(selected, choice.key)
-          set.insert(keys, key)
-          |> set.to_list
+          let set = set.from_list(selected)
+          use <- bool.guard(set.contains(set, key), selected)
+          list.append(selected, [key])
         })
       },
-      deselect: fn(choice) {
+      deselect: fn(key) {
         config.change({
           use <- return(compose(value.List, Some))
-          set.delete(selected, choice)
-          |> set.map(choice.key)
-          |> set.to_list
+          use have <- list.filter(selected)
+          key != have
         })
       },
     )
@@ -172,21 +176,21 @@ pub fn multi_select(
   use <- field()
   use <- return(reader.return)
 
-  case set.to_list(selected) {
+  case selected {
     [] -> element.none()
 
-    choices ->
+    selected ->
       html.div([core.classes(select_selected_container_style)], [
         html.ul([attr.class("flex flex-col ps-2")], {
-          use choice <- list.map(choices)
+          use key <- list.map(selected)
 
           html.li(
             [
               attr.class("list-[square]"),
               core.classes(select_selected_style),
-              event.on_click(context.deselect(choice)),
+              event.on_click(context.deselect(key)),
             ],
-            [core.inline_value(choice.key(choice))],
+            [core.inline_value(key)],
           )
         }),
       ])
@@ -332,10 +336,15 @@ fn group_members(
     group_label(label),
     element.fragment({
       use key <- list.map(keys)
-      let attr = [
-        event.on_click(context.select(key)),
-        core.classes(select_choice_style),
-      ]
+
+      let attr = case context.is_selected(key) {
+        True -> [core.classes(select_selected_choice_style)]
+
+        False -> [
+          event.on_click(context.select(key)),
+          core.classes(select_choice_style),
+        ]
+      }
 
       html.div(attr, [core.inline_value(key)])
     }),

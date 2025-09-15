@@ -1,9 +1,5 @@
 import gleam/list
-
-// import lap
 import sb/extra/function.{compose}
-
-// https://h2.jaguarpaw.co.uk/posts/demystifying-dlist/
 
 pub type DList(v) {
   DList(run: fn(List(v)) -> List(v))
@@ -26,6 +22,7 @@ pub fn append(a: DList(v), b: DList(v)) -> DList(v) {
   DList(compose(b.run, a.run))
 }
 
+// import lap
 pub fn main() {
   // let count = 50_000
   // let timing = lap.start_in_milliseconds("list")
@@ -43,5 +40,5 @@ pub fn main() {
 
   // io.println(lap.pretty_print(lap.sort_max(timing)))
 
-  todo
+  Nil
 }

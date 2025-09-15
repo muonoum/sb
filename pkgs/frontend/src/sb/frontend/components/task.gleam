@@ -5,7 +5,6 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/pair
 import gleam/result
-import gleam/set
 import gleam/string
 import lustre
 import lustre/attribute.{type Attribute} as attr
@@ -680,7 +679,7 @@ fn field_kind(
       id:,
       layout:,
       options:,
-      select: Change(id, _, delay: 0),
+      change: Change(id, _, delay: 0),
       debug:,
       is_loading:,
     )
@@ -726,17 +725,21 @@ fn field_kind(
       })
 
     kind.Checkbox(selected, layout:, options:) ->
-      input.checkbox(config: input_config(layout, options), selected: {
-        set.from_list(list.map(selected, choice.key))
-      })
+      input.checkbox(
+        config: input_config(layout, options),
+        selected: list.map(selected, choice.key),
+      )
 
     kind.Select(selected, placeholder:, options:) ->
-      select.select(config: select_config(placeholder, options), selected:)
+      select.select(
+        config: select_config(placeholder, options),
+        selected: option.map(selected, choice.key),
+      )
 
     kind.MultiSelect(selected, placeholder:, options:) ->
       select.multi_select(
         config: select_config(placeholder, options),
-        selected: set.from_list(selected),
+        selected: list.map(selected, choice.key),
       )
   }
 }

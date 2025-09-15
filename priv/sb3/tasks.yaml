@@ -15,9 +15,6 @@ category: [Tests]
 ---
 name: Select
 fields:
-  - id: text
-    kind: text
-
   - id: select
     kind: select
     source.literal:
@@ -33,7 +30,23 @@ fields:
       - Voluptate nulla deserunt qui pariatur laboris velit quis cupidatat proident dolor pariatur.
       - Ut qui sint ex eiusmod officia cillum.
 --- 
-name: Input
+name: Input1
+fields:
+  - id: radio
+    kind: radio
+    source.literal:
+      - Tempor id adipisicing voluptate nulla et incididunt cillum Lorem sit ad.
+      - Voluptate nulla deserunt qui pariatur laboris velit quis cupidatat proident dolor pariatur.
+      - Ut qui sint ex eiusmod officia cillum.
+
+  - id: checkbox
+    kind: checkbox
+    source.literal:
+      - Tempor id adipisicing voluptate nulla et incididunt cillum Lorem sit ad.
+      - Voluptate nulla deserunt qui pariatur laboris velit quis cupidatat proident dolor pariatur.
+      - Ut qui sint ex eiusmod officia cillum.
+--- 
+name: Input2
 layout:
   - checkbox-row
   - checkbox-column

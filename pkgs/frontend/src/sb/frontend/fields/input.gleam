@@ -3,7 +3,7 @@ import gleam/dynamic/decode.{type Decoder}
 import gleam/int
 import gleam/list
 import gleam/option.{type Option, Some}
-import gleam/set.{type Set}
+import gleam/set
 import gleam/string
 import lustre/attribute as attr
 import lustre/element.{type Element}
@@ -27,7 +27,7 @@ pub type Config(message) {
     options: Options,
     layout: kind.Layout,
     is_loading: fn(Source) -> Bool,
-    select: fn(Option(Value)) -> message,
+    change: fn(Option(Value)) -> message,
     debug: Bool,
   )
 }
@@ -36,8 +36,8 @@ pub opaque type Context(message) {
   Context(
     kind: String,
     group_index: Int,
-    on_change: fn(Value) -> Decoder(message),
     is_selected: fn(Value) -> Bool,
+    change: fn(Value) -> Decoder(message),
     config: Config(message),
   )
 }
@@ -69,15 +69,15 @@ pub fn radio(
     Context(
       kind: "radio",
       group_index: 0,
-      on_change: fn(key) { decode.success(config.select(Some(key))) },
       is_selected: fn(key) { Some(key) == selected },
+      change: fn(key) { decode.success(config.change(Some(key))) },
       config:,
     )
   })
 }
 
 pub fn checkbox(
-  selected selected: Set(Value),
+  selected selected: List(Value),
   config config: Config(message),
 ) -> Element(message) {
   state.run(
@@ -86,14 +86,27 @@ pub fn checkbox(
       config:,
       kind: "checkbox",
       group_index: 0,
-      is_selected: set.contains(selected, _),
-      on_change: fn(choice) {
+      is_selected: fn(key) {
+        set.from_list(selected)
+        |> set.contains(key)
+      },
+      change: fn(key) {
         use checked <- decode.then(checked_decoder())
-        use <- return(decode.success)
-        use <- return(compose(Some, config.select))
-        use <- return(compose(set.to_list, value.List))
-        use <- bool.lazy_guard(checked, fn() { set.insert(selected, choice) })
-        set.delete(selected, choice)
+        use <- return(compose(config.change, decode.success))
+        use <- return(compose(value.List, Some))
+
+        case checked {
+          True -> {
+            let set = set.from_list(selected)
+            use <- bool.guard(set.contains(set, key), selected)
+            list.append(selected, [key])
+          }
+
+          False -> {
+            use have <- list.filter(selected)
+            key != have
+          }
+        }
       },
     ),
   )
@@ -184,13 +197,13 @@ fn group_members(value: Value) -> State(Element(message), Context(message)) {
 }
 
 fn group_choice(
-  choice: Value,
+  key: Value,
   dom_id: String,
 ) -> State(Element(message), Context(message)) {
   use context <- state.bind(get_context())
   use config <- state.bind(get_config())
   use <- return(state.return)
-  let on_change = event.on("change", context.on_change(choice))
+  let change = event.on("change", context.change(key))
 
   let input =
     html.input([
@@ -198,8 +211,8 @@ fn group_choice(
       attr.name(config.id),
       attr.type_(context.kind),
       attr.class("p-1 accent-cyan-800 translate-y-px"),
-      server.include(on_change, ["target.checked"]),
-      case context.is_selected(choice) {
+      server.include(change, ["target.checked"]),
+      case context.is_selected(key) {
         True -> attr.attribute("checked", "true")
         False -> attr.none()
       },
@@ -207,6 +220,6 @@ fn group_choice(
 
   html.label(
     [attr.for(dom_id), attr.class("flex items-baseline ps-0 pe-3 py-1 gap-2")],
-    [input, html.div([], [core.inline_value(choice)])],
+    [input, html.div([], [core.inline_value(key)])],
   )
 }
