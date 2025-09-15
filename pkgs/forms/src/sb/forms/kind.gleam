@@ -44,6 +44,7 @@ pub type Kind {
   Checkbox(choices: List(Choice), layout: Layout, options: Options)
 
   MultiSelect(
+    // TODO: Set?
     choices: List(Choice),
     placeholder: Option(String),
     options: Options,
