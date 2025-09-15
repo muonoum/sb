@@ -2,7 +2,7 @@ iosevka = https://github.com/be5invis/Iosevka/releases/download/v33.2.7/PkgWebFo
 inter = https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip
 
 .PHONY: run
-run: check frontend
+run: frontend
 	gleam run
 
 .PHONY: check
@@ -10,7 +10,11 @@ check: check-frontend
 	gleam check
 
 .PHONY: watch
-watch: 
+watch:
+	watchexec --restart --watch .restart make
+
+.PHONY: watch-check
+watch-check: 
 	watchexec --exts gleam make check
 
 .PHONY: check-frontend
