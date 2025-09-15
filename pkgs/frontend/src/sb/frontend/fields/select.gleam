@@ -114,13 +114,11 @@ pub fn select(
   selected selected: Option(Value),
   config config: Config(message),
 ) -> Element(message) {
-  let context =
-    Context(
-      config:,
-      is_selected: fn(key) { Some(key) == selected },
-      select: fn(key) { config.change(Some(key)) },
-      deselect: fn(_choice) { config.change(None) },
-    )
+  let is_selected = fn(key) { Some(key) == selected }
+  let select = fn(key) { config.change(Some(key)) }
+  let deselect = fn(_) { config.change(None) }
+
+  let context = Context(config:, is_selected:, select:, deselect:)
 
   use <- return(reader.run(_, context:))
   use <- field()
@@ -148,29 +146,27 @@ pub fn multi_select(
   selected selected: List(Value),
   config config: Config(message),
 ) -> Element(message) {
-  let context =
-    Context(
-      config:,
-      is_selected: fn(key) {
-        set.from_list(selected)
-        |> set.contains(key)
-      },
-      select: fn(key) -> message {
-        config.change({
-          use <- return(compose(value.List, Some))
-          let set = set.from_list(selected)
-          use <- bool.guard(set.contains(set, key), selected)
-          list.append(selected, [key])
-        })
-      },
-      deselect: fn(key) {
-        config.change({
-          use <- return(compose(value.List, Some))
-          use have <- list.filter(selected)
-          key != have
-        })
-      },
-    )
+  let is_selected = fn(key) -> Bool {
+    set.from_list(selected)
+    |> set.contains(key)
+  }
+
+  let select = fn(key) {
+    use <- return(config.change)
+    use <- return(compose(value.List, Some))
+    let set = set.from_list(selected)
+    use <- bool.guard(set.contains(set, key), selected)
+    list.append(selected, [key])
+  }
+
+  let deselect = fn(key) {
+    use <- return(config.change)
+    use <- return(compose(value.List, Some))
+    use have <- list.filter(selected)
+    key != have
+  }
+
+  let context = Context(config:, is_selected:, select:, deselect:)
 
   use <- return(reader.run(_, context:))
   use <- field()

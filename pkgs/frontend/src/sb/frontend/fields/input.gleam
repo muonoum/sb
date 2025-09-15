@@ -10,7 +10,7 @@ import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
 import lustre/server_component as server
-import sb/extra/function.{compose, return}
+import sb/extra/function.{compose, identity, return}
 import sb/extra/report.{type Report}
 import sb/extra/reset.{type Reset}
 import sb/extra/state.{type State}
@@ -65,51 +65,44 @@ pub fn radio(
   selected selected: Option(Value),
   config config: Config(message),
 ) -> Element(message) {
-  state.run(field(), context: {
-    Context(
-      kind: "radio",
-      group_index: 0,
-      is_selected: fn(key) { Some(key) == selected },
-      change: fn(key) { decode.success(config.change(Some(key))) },
-      config:,
-    )
-  })
+  let is_selected = fn(key) { Some(key) == selected }
+  let change = fn(key) { decode.success(config.change(Some(key))) }
+
+  let context =
+    Context(kind: "radio", group_index: 0, is_selected:, change:, config:)
+
+  state.run(field(), context:)
 }
 
 pub fn checkbox(
   selected selected: List(Value),
   config config: Config(message),
 ) -> Element(message) {
-  state.run(
-    field(),
-    context: Context(
-      config:,
-      kind: "checkbox",
-      group_index: 0,
-      is_selected: fn(key) {
-        set.from_list(selected)
-        |> set.contains(key)
-      },
-      change: fn(key) {
-        use checked <- decode.then(checked_decoder())
-        use <- return(compose(config.change, decode.success))
-        use <- return(compose(value.List, Some))
+  let is_selected = fn(key) { set.contains(set.from_list(selected), key) }
 
-        case checked {
-          True -> {
-            let set = set.from_list(selected)
-            use <- bool.guard(set.contains(set, key), selected)
-            list.append(selected, [key])
-          }
+  let change = fn(key) {
+    use checked <- decode.then(checked_decoder())
+    use <- return(compose(config.change, decode.success))
+    use <- return(compose(value.List, Some))
 
-          False -> {
-            use have <- list.filter(selected)
-            key != have
-          }
-        }
-      },
-    ),
-  )
+    case checked {
+      True -> {
+        let set = set.from_list(selected)
+        use <- bool.guard(set.contains(set, key), selected)
+        list.append(selected, [key])
+      }
+
+      False -> {
+        use have <- list.filter(selected)
+        key != have
+      }
+    }
+  }
+
+  let context =
+    Context(config:, kind: "checkbox", group_index: 0, is_selected:, change:)
+
+  state.run(field(), context:)
 }
 
 fn field() -> State(Element(message), Context(message)) {
