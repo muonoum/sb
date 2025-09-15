@@ -38,7 +38,7 @@ pub fn decoder(results: Results) -> Zero(Layout) {
       |> state.from_result
 
     // TODO
-    [#(unknown, _)] -> props.fail(report.new(error.Message(unknown)))
+    [#(unknown, _)] -> props.fail(report.new(error.UnknownKind(unknown)))
     _bad -> props.fail(report.new(error.Message("bad layout")))
   }
 }

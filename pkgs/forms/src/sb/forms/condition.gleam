@@ -93,7 +93,7 @@ fn kind_decoder() -> Props(Condition) {
     }
 
     // TODO
-    [#(unknown, _)] -> props.fail(report.new(error.Message(unknown)))
+    [#(unknown, _)] -> props.fail(report.new(error.UnknownKind(unknown)))
     _bad -> props.fail(report.new(error.Message("bad condition")))
   }
 }
