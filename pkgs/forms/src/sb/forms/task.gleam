@@ -152,10 +152,8 @@ pub fn decoder(
     zero.list(decoder.from(decode.list(decode.string)))
   })
 
-  use runners <- props.try("runners", access.decoder(fn() { defaults.runners }))
-  use approvers <- props.try("approvers", {
-    access.decoder(fn() { defaults.approvers })
-  })
+  use runners <- props.try("runners", access.decoder(defaults.runners))
+  use approvers <- props.try("approvers", { access.decoder(defaults.approvers) })
 
   use fields <- props.try("fields", {
     use dynamic <- zero.list

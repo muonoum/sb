@@ -100,8 +100,8 @@ fn tasks_v1_decoder() -> Props(Kind) {
     zero.list(decoder.from(decode.list(decode.string)))
   })
 
-  use runners <- props.try("runners", access.decoder(access.none))
-  use approvers <- props.try("approvers", access.decoder(access.none))
+  use runners <- props.try("runners", access.decoder(access.none()))
+  use approvers <- props.try("approvers", access.decoder(access.none()))
   let defaults = task.Defaults(category:, runners:, approvers:)
   props.succeed(TasksV1(defaults))
 }
