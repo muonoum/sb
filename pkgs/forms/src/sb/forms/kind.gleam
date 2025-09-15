@@ -335,7 +335,6 @@ fn checkbox_decoder(sources sources: custom.Sources) -> Props(Kind) {
     props.decode(_, options.decoder(sources:))
   })
 
-  // TODO: checkbox
   props.succeed(Checkbox([], layout:, options:))
 }
 

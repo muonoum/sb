@@ -92,7 +92,6 @@ fn kind_decoder() -> Props(Condition) {
       condition_decoder(dynamic, NotDefined, NotEqual)
     }
 
-    // TODO
     [#(unknown, _)] -> props.fail(report.new(error.UnknownKind(unknown)))
     bad -> props.fail(report.new(error.bad_format(bad)))
   }

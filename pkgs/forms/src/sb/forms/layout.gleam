@@ -36,7 +36,6 @@ pub fn decoder(results: Results) -> Zero(Layout) {
       props.decode(dynamic, grid_decoder(results))
       |> state.from_result
 
-    // TODO
     [#(unknown, _)] -> props.fail(report.new(error.UnknownKind(unknown)))
     bad -> props.fail(report.new(error.bad_format(bad)))
   }
