@@ -46,21 +46,8 @@ pub fn to_json(value: Value) -> Json {
 // TODO
 pub fn keys(value: Value) -> Result(List(Value), Nil) {
   case value {
-    List(list) -> {
-      use value <- list.try_map(list)
-
-      case value {
-        // Pair(key, _value) -> Ok(String(key))
-        String(key) -> Ok(String(key))
-        value -> Ok(value)
-      }
-    }
-
-    Object(pairs) ->
-      list.map(pairs, pair.first)
-      |> list.map(String)
-      |> Ok
-
+    List(list) -> Ok(list)
+    Object(pairs) -> Ok(list.map(pairs, pair.first) |> list.map(String))
     _value -> Error(Nil)
   }
 }

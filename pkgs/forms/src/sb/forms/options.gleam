@@ -50,20 +50,19 @@ pub fn keys(options: Options) -> List(Value) {
 }
 
 pub fn is_loading(options: Options, is_loading: fn(Source) -> Bool) -> Bool {
+  let unwrap = fn(source) {
+    case reset.unwrap(source) {
+      Ok(source) -> is_loading(source)
+      Error(_report) -> False
+    }
+  }
+
   case options {
-    SingleSource(source) ->
-      case reset.unwrap(source) {
-        Ok(source) -> is_loading(source)
-        Error(_report) -> False
-      }
+    SingleSource(source) -> unwrap(source)
 
     SourceGroups(groups) -> {
       use Group(_label, source) <- list.any(groups)
-
-      case reset.unwrap(source) {
-        Ok(source) -> is_loading(source)
-        Error(_report) -> False
-      }
+      unwrap(source)
     }
   }
 }

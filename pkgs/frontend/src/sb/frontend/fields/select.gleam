@@ -161,8 +161,8 @@ pub fn multi_select(
       deselect: fn(value: Value) -> message {
         use <- return(config.change)
         use <- return(compose(value.List, Some))
-        let selected = list.map(selected, choice.key)
-        use key <- list.filter_map(selected)
+        let keys = list.map(selected, choice.key)
+        use key <- list.filter_map(keys)
         use <- bool.guard(key == value, Error(Nil))
         Ok(key)
       },

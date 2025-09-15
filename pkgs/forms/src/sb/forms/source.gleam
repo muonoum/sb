@@ -52,9 +52,12 @@ pub type Source {
 pub fn is_loading(source: Source) -> Bool {
   case source {
     Loading(..) -> True
+    Literal(..) -> False
+    Reference(..) -> False
+    Template(..) -> False
+    Command(..) -> False
     Fetch(body: option.Some(body), ..) -> is_loading(body)
-    Literal(..) | Reference(..) | Template(..) -> False
-    Command(..) | Fetch(..) -> False
+    Fetch(..) -> False
   }
 }
 
@@ -85,8 +88,7 @@ pub fn value(source: Source) -> Result(Value, Nil) {
 
 // TODO
 pub fn keys(source: Source) -> List(Value) {
-  value(source)
-  |> result.try(value.keys)
+  result.try(value(source), value.keys)
   |> result.unwrap([])
 }
 
