@@ -2,12 +2,13 @@ import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/result
+import sb/extra/function.{return}
 import sb/extra/report.{type Report}
 import sb/extra/state_eval as state
 import sb/forms/decoder
 import sb/forms/error.{type Error}
-import sb/forms/props
-import sb/forms/zero
+import sb/forms/props.{type Props}
+import sb/forms/zero.{type Zero}
 
 pub type Results =
   List(Result(String, Report(Error)))
@@ -18,30 +19,36 @@ pub type Layout {
   Grid(results: Results, areas: List(String), style: Dict(String, String))
 }
 
-pub fn decoder(
-  results: Results,
-  dynamic: Dynamic,
-) -> Result(Layout, Report(Error)) {
+pub fn decoder(results: Results) -> Zero(Layout) {
+  use dynamic <- zero.new(Results(results))
+
   use <- result.lazy_or(
     decoder.run(dynamic, decode.list(decode.string))
     |> result.map(Ids(results:, ids: _)),
   )
 
-  props.decode(dynamic, {
-    use grid <- props.get("grid", {
-      decoder.from(decode.dict(decode.string, decode.dynamic))
-    })
+  use <- return(props.decode(dynamic, _))
+  use dict <- props.get_dict
 
-    use <- state.do(props.replace(grid))
-    use areas <- props.get("areas", decoder.from(decode.list(decode.string)))
+  case dict.to_list(dict) {
+    [#("grid", dynamic)] -> {
+      use <- return(state.from_result)
+      use <- return(props.decode(dynamic, _))
+      grid_decoder(results)
+    }
 
-    use style <- props.try("style", {
-      zero.lazy(
-        dict.new,
-        decoder.from(decode.dict(decode.string, decode.string)),
-      )
-    })
+    // TODO
+    [#(unknown, _)] -> props.fail(report.new(error.Message(unknown)))
+    bad -> props.fail(report.new(error.Message("bad layout")))
+  }
+}
 
-    props.succeed(Grid(results, areas:, style:))
+fn grid_decoder(results: Results) -> Props(Layout) {
+  use areas <- props.get("areas", decoder.from(decode.list(decode.string)))
+
+  use style <- props.try("style", {
+    zero.lazy(dict.new, decoder.from(decode.dict(decode.string, decode.string)))
   })
+
+  props.succeed(Grid(results, areas:, style:))
 }

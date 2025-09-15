@@ -73,8 +73,8 @@ pub fn reset(options: Options, refs: Set(String)) -> Options {
 
     SourceGroups(groups) ->
       SourceGroups({
-        use group <- list.map(groups)
-        Group(..group, source: reset.maybe(group.source, refs))
+        use Group(label:, source:) <- list.map(groups)
+        Group(label:, source: reset.maybe(source, refs))
       })
   }
 }
@@ -85,21 +85,19 @@ pub fn evaluate(
   search search: Option(String),
   handlers handlers: Handlers,
 ) -> Options {
+  let evaluate = fn(source) {
+    use result <- reset.map(source)
+    use source <- result.try(result)
+    source.evaluate(source, scope, search:, handlers:)
+  }
+
   case options {
-    SingleSource(source) -> {
-      use <- return(SingleSource)
-      use result <- reset.map(source)
-      use source <- result.try(result)
-      source.evaluate(source, scope, search:, handlers:)
-    }
+    SingleSource(source) -> SingleSource(evaluate(source))
 
     SourceGroups(groups) -> {
       use <- return(SourceGroups)
-      use Group(label, source) <- list.map(groups)
-      use <- return(Group(label, _))
-      use result <- reset.map(source)
-      use source <- result.try(result)
-      source.evaluate(source, scope, search:, handlers:)
+      use Group(label:, source:) <- list.map(groups)
+      Group(label:, source: evaluate(source))
     }
   }
 }

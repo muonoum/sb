@@ -3,6 +3,7 @@ import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/result
 import sb/extra/function.{return}
+import sb/extra/report
 import sb/extra/state_eval as state
 import sb/forms/decoder
 import sb/forms/error
@@ -91,8 +92,9 @@ fn kind_decoder() -> Props(Condition) {
       condition_decoder(dynamic, NotDefined, NotEqual)
     }
 
-    [#(_unknown, _)] -> todo as "unknown condition"
-    _bad -> todo as "bad condition"
+    // TODO
+    [#(unknown, _)] -> props.fail(report.new(error.Message(unknown)))
+    _bad -> props.fail(report.new(error.Message("bad condition")))
   }
 }
 
@@ -118,6 +120,7 @@ fn condition_decoder(
         Ok(value) -> props.succeed(equal(id, value))
       }
 
-    _bad -> todo as "bad condition"
+    // TODO
+    _bad -> props.fail(report.new(error.Message("bad condition")))
   }
 }

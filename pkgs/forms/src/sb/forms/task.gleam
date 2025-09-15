@@ -169,9 +169,7 @@ pub fn decoder(
   })
 
   let results = list.map(fields, result.map(_, pair.first))
-  use layout <- props.try("layout", {
-    zero.new(layout.Results(results), layout.decoder(results, _))
-  })
+  use layout <- props.try("layout", layout.decoder(results))
 
   props.succeed(Task(
     id:,
