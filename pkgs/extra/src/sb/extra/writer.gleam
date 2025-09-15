@@ -1,4 +1,4 @@
-import sb/extra/difference_list.{type DList} as diff
+import sb/extra/diff_list.{type DList} as diff
 
 pub type Writer(v, ctx) {
   Writer(v, DList(ctx))
