@@ -87,11 +87,29 @@ category: List(String)
 runners: Access # default: none
 approvers: Access # default: none
 command: List(String) # optional
-layout: List(String) | .. # optional
+layout: List(String) | Layout # optional
 fields: List(Field) # optional
 ```
 
 [`Access`](#access)
+[`Layout`](#layout)
+
+## Layout
+
+### List
+
+```yaml
+layout: List(Id)
+```
+
+### Grid
+
+```yaml
+layout:
+  grid:
+    areas: List(String)
+    style: Dict(String, String)
+```
 
 ## Field
 

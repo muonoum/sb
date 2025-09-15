@@ -16,6 +16,8 @@ pub type Results =
 pub type Layout {
   Results(results: Results)
   Ids(results: Results, ids: List(String))
+  // TODO: Hvordan håndtere styling? Tailwind-klasser vil være problematisk siden
+  // de inkluderes basert på bruk ved bygging. Kun standard CSS/inline-styles?
   Grid(results: Results, areas: List(String), style: Dict(String, String))
 }
 
