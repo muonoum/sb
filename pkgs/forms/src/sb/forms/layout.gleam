@@ -31,11 +31,9 @@ pub fn decoder(results: Results) -> Zero(Layout) {
   use dict <- props.get_dict
 
   case dict.to_list(dict) {
-    [#("grid", dynamic)] -> {
-      use <- return(state.from_result)
-      use <- return(props.decode(dynamic, _))
-      grid_decoder(results)
-    }
+    [#("grid", dynamic)] ->
+      props.decode(dynamic, grid_decoder(results))
+      |> state.from_result
 
     // TODO
     [#(unknown, _)] -> props.fail(report.new(error.Message(unknown)))
