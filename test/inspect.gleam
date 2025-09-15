@@ -92,7 +92,9 @@ fn inspect_report(report: Report(Error)) -> String {
 }
 
 fn inspect_choice(choice: Choice) -> String {
-  inspect_value(choice.key) <> "=" <> inspect_value(choice.value)
+  inspect_value(choice.key(choice))
+  <> "="
+  <> inspect_value(choice.value(choice))
 }
 
 fn single_selected(selected: Option(Choice)) -> String {

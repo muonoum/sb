@@ -1,6 +1,6 @@
 import sb/forms/value.{type Value}
 
-pub type Choice {
+pub opaque type Choice {
   Choice(key: Value, value: Value)
 }
 

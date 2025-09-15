@@ -95,8 +95,8 @@ pub type Config(message) {
 pub opaque type Context(message) {
   Context(
     config: Config(message),
-    select: fn(Option(Value)) -> message,
-    deselect: fn(Value) -> message,
+    select: fn(Value) -> message,
+    deselect: fn(Choice) -> message,
   )
 }
 
@@ -114,9 +114,11 @@ pub fn select(
   config config: Config(message),
 ) -> Element(message) {
   let context =
-    Context(config:, select: config.change, deselect: {
-      fn(_) { config.change(None) }
-    })
+    Context(
+      config:,
+      select: compose(Some, config.change),
+      deselect: fn(_choice) { config.change(None) },
+    )
 
   use <- return(reader.run(_, context:))
   use <- field()
@@ -131,9 +133,9 @@ pub fn select(
           html.li(
             [
               core.classes(select_selected_style),
-              event.on_click(context.deselect(choice.key)),
+              event.on_click(config.change(None)),
             ],
-            [core.inline_value(choice.key)],
+            [core.inline_value(choice.key(choice))],
           ),
         ]),
       ])
@@ -147,23 +149,21 @@ pub fn multi_select(
   let context =
     Context(
       config:,
-      // TODO
-      select: fn(value: Option(Value)) -> message {
-        use <- return(config.change)
-        use value <- option.map(value)
-        use <- return(value.List)
-        let keys = list.map(selected, choice.key)
-        use <- bool.guard(list.contains(keys, value), keys)
-        list.append(keys, [value])
+      select: fn(key) -> message {
+        config.change({
+          use <- return(compose(value.List, Some))
+          let keys = list.map(selected, choice.key)
+          use <- bool.guard(list.contains(keys, key), keys)
+          list.append(keys, [key])
+        })
       },
-      // TODO
-      deselect: fn(value: Value) -> message {
-        use <- return(config.change)
-        use <- return(compose(value.List, Some))
-        let keys = list.map(selected, choice.key)
-        use key <- list.filter_map(keys)
-        use <- bool.guard(key == value, Error(Nil))
-        Ok(key)
+      deselect: fn(choice) {
+        config.change({
+          use <- return(compose(value.List, Some))
+          use key <- list.filter_map(list.map(selected, choice.key))
+          use <- bool.guard(key == choice.key(choice), Error(Nil))
+          Ok(key)
+        })
       },
     )
 
@@ -181,11 +181,11 @@ pub fn multi_select(
 
           html.li(
             [
-              event.on_click(context.deselect(choice.key)),
               attr.class("list-[square]"),
               core.classes(select_selected_style),
+              event.on_click(context.deselect(choice)),
             ],
-            [core.inline_value(choice.key)],
+            [core.inline_value(choice.key(choice))],
           )
         }),
       ])
@@ -332,7 +332,7 @@ fn group_members(
     element.fragment({
       use key <- list.map(keys)
       let attr = [
-        event.on_click(context.select(Some(key))),
+        event.on_click(context.select(key)),
         core.classes(select_choice_style),
       ]
 
