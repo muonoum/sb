@@ -1,4 +1,3 @@
-import gleam/http
 import wisp
 
 // POST /api/form/form-id -- authorization, optional map from field ids to values --> form data or error
@@ -9,13 +8,12 @@ import wisp
 
 pub fn service(request: wisp.Request) -> wisp.Response {
   case request.method, wisp.path_segments(request) {
-    http.Get, ["form", _id] -> todo
-    http.Post, ["form", _id] -> todo
-    http.Put, ["form"] -> todo
-    http.Post, ["job"] -> todo
-    http.Get, ["job"] -> todo
-    http.Get, ["job", "follow"] -> todo
-
+    // http.Get, ["form", _id] -> todo
+    // http.Post, ["form", _id] -> todo
+    // http.Put, ["form"] -> todo
+    // http.Post, ["job"] -> todo
+    // http.Get, ["job"] -> todo
+    // http.Get, ["job", "follow"] -> todo
     _method, _segments -> wisp.not_found()
   }
 }

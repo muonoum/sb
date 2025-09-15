@@ -119,7 +119,7 @@ pub fn evaluate(
       case text.evaluate(text, scope, placeholder: search) {
         Error(report) -> Error(report)
         Ok(None) -> Ok(Command(text))
-        Ok(Some(_string)) -> todo as "evaluate command"
+        Ok(Some(_string)) -> report.error(error.Todo("evaluate command"))
       }
 
     Fetch(method:, uri:, headers:, body: None) -> {

@@ -468,7 +468,8 @@ fn grid_layout(
   _areas: List(String),
   _style: Dict(String, String),
 ) -> Reader(List(Element(Message)), Context) {
-  todo as "grid layout"
+  // TODO
+  reader.return([element.none()])
 }
 
 fn results_layout(

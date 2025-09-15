@@ -42,10 +42,10 @@ const select_search_style = [
   "group-last/input:rounded-b-md",
 ]
 
-const select_empty_style = [
-  "flex relative justify-center p-3", "font-medium text-3xl text-stone-500",
-  "border-t border-t-1 border-stone-500/30",
-]
+// const select_empty_style = [
+//   "flex relative justify-center p-3", "font-medium text-3xl text-stone-500",
+//   "border-t border-t-1 border-stone-500/30",
+// ]
 
 const select_options_style = [
   "flex flex-col grow overflow-y-auto", "w-full min-h-20 max-h-96",

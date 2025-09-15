@@ -9,6 +9,10 @@ run: check frontend
 check: check-frontend
 	gleam check
 
+.PHONY: watch
+watch: 
+	watchexec --exts gleam make check
+
 .PHONY: check-frontend
 check-frontend:
 	cd pkgs/frontend && gleam check

@@ -85,7 +85,8 @@ pub fn evaluate(value: Value, filter: Filter) -> Result(Value, Report(Error)) {
 
     RegexReplace(pattern: _, replacements: _, error_message: _) ->
       case value {
-        value.String(_string) -> todo as "evaluate regex replace"
+        value.String(_string) ->
+          report.error(error.Todo("evaluate regex replace"))
         value -> report.error(error.BadValue(value))
       }
 

@@ -77,15 +77,15 @@ pub fn websocket_router(
             dispatch(message(store.get_task(store, task_id)))
           },
           step: fn(_task, _search, _message) {
-            use _dispatch <- effect.from
-            todo
+            // use _dispatch <- effect.from
+            effect.none()
           },
         ),
       )
 
-    ["components", "jobs", "requested"] -> component_service(request, todo)
-    ["components", "jobs", "started"] -> component_service(request, todo)
-    ["components", "jobs", "finished"] -> component_service(request, todo)
+    // ["components", "jobs", "requested"] -> component_service(request, todo)
+    // ["components", "jobs", "started"] -> component_service(request, todo)
+    // ["components", "jobs", "finished"] -> component_service(request, todo)
     _else -> next_router(request)
   }
 }

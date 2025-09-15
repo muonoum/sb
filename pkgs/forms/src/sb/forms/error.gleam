@@ -18,6 +18,7 @@ pub type Error {
   PathContext(String)
   IndexContext(Int)
 
+  Todo(String)
   DuplicateId(String)
   DuplicateKey(Value)
   DuplicateNames(name: String, category: List(String))
