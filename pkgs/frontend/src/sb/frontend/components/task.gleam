@@ -77,6 +77,7 @@ pub opaque type Message {
   ResetForm
   StartJob
   Evaluate
+  Evaluated(Result(Task, Report(Error)))
   ToggleDebug
   ToggleLayout
   Change(field_id: String, value: Option(Value), delay: Int)
@@ -165,7 +166,19 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
 
     StartJob -> #(model, effect.none())
 
-    Evaluate -> #(model, effect.none())
+    Evaluate -> {
+      use state <- with_state(model)
+
+      let search = {
+        use _id, search <- dict.map_values(state.search)
+        search.applied
+      }
+
+      #(model, handlers.step(state.task, search, Evaluated))
+    }
+
+    Evaluated(Error(_report)) -> #(model, effect.none())
+    Evaluated(Ok(_task)) -> #(model, effect.none())
 
     ToggleDebug -> #(Model(..model, debug: !model.debug), effect.none())
 
@@ -177,10 +190,7 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
       use state <- with_state(model)
 
       case task.update(state.task, field_id, value) {
-        Error(report) -> {
-          echo report
-          #(model, effect.none())
-        }
+        Error(_report) -> #(model, effect.none())
 
         Ok(task) if delay == 0 -> {
           let state = loadable.succeed(State(..state, task:))
