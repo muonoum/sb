@@ -10,7 +10,7 @@ import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
 import lustre/server_component as server
-import sb/extra/function.{compose, identity, return}
+import sb/extra/function.{compose, return}
 import sb/extra/report.{type Report}
 import sb/extra/reset.{type Reset}
 import sb/extra/state.{type State}
