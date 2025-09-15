@@ -80,7 +80,7 @@ pub fn get_notifier(
   |> report.replace_error(error.BadId(id))
 }
 
-pub fn get_comamnds(
+pub fn get_command(
   store: process.Subject(Message),
   id: String,
 ) -> Result(Command, Report(Error)) {
