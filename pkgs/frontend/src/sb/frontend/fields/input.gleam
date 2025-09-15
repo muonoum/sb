@@ -35,7 +35,7 @@ pub type Config(message) {
 pub opaque type Context(message) {
   Context(
     kind: String,
-    group_index: Int,
+    group_index: String,
     is_selected: fn(Value) -> Bool,
     change: fn(Value) -> Decoder(message),
     config: Config(message),
@@ -51,7 +51,7 @@ fn get_context() -> State(Context(message), Context(message)) {
   state.return(context)
 }
 
-fn update_group_index(group_index: Int) -> State(Nil, Context(message)) {
+fn put_group_index(group_index: String) -> State(Nil, Context(message)) {
   use context <- state.update
   Context(..context, group_index:)
 }
@@ -69,7 +69,7 @@ pub fn radio(
   let change = fn(key) { decode.success(config.change(Some(key))) }
 
   let context =
-    Context(kind: "radio", group_index: 0, is_selected:, change:, config:)
+    Context(kind: "radio", group_index: "0", is_selected:, change:, config:)
 
   state.run(field(), context:)
 }
@@ -97,7 +97,7 @@ pub fn checkbox(
   }
 
   let context =
-    Context(config:, kind: "checkbox", group_index: 0, is_selected:, change:)
+    Context(config:, kind: "checkbox", group_index: "0", is_selected:, change:)
 
   state.run(field(), context:)
 }
@@ -112,7 +112,7 @@ fn field() -> State(Element(message), Context(message)) {
       use <- return(state.sequence)
       use group, group_index <- list.index_map(groups)
       let options.Group(label:, source:) = group
-      use <- state.do(update_group_index(group_index))
+      use <- state.do(put_group_index(int.to_string(group_index)))
       use group_source <- state.bind(group_source(source))
 
       element.fragment([group_label(label), group_source])
@@ -167,10 +167,11 @@ fn group_members(value: Value) -> State(Element(message), Context(message)) {
       use choices <- state.bind({
         use <- return(state.sequence)
         use choice, item_index <- list.index_map(keys)
-        let group_index = int.to_string(context.group_index)
-        let item_index = int.to_string(item_index)
-        let dom_id = string.join([group_index, item_index, config.id], "-")
-        group_choice(choice, dom_id)
+
+        group_choice(choice, {
+          [context.group_index, int.to_string(item_index), config.id]
+          |> string.join("-")
+        })
       })
 
       let attr = [

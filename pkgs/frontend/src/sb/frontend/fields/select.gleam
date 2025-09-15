@@ -179,15 +179,13 @@ pub fn multi_select(
       html.div([core.classes(select_selected_container_style)], [
         html.ul([attr.class("flex flex-col ps-2")], {
           use key <- list.map(selected)
+          let attr = [
+            attr.class("list-[square]"),
+            core.classes(select_selected_style),
+            event.on_click(context.deselect(key)),
+          ]
 
-          html.li(
-            [
-              attr.class("list-[square]"),
-              core.classes(select_selected_style),
-              event.on_click(context.deselect(key)),
-            ],
-            [core.inline_value(key)],
-          )
+          html.li(attr, [core.inline_value(key)])
         }),
       ])
   }
@@ -199,8 +197,9 @@ fn field(
   use selected <- reader.bind(selected())
   use search <- reader.bind(search())
   use options <- reader.bind(options())
-  use <- return(reader.return)
+
   html.div([core.classes(select_style)], [selected, search, options])
+  |> reader.return
 }
 
 fn search() -> Reader(Element(message), Context(message)) {

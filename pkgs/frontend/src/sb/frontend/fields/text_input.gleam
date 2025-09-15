@@ -31,17 +31,16 @@ pub fn text(value: String, config: Config(message)) -> Element(message) {
 }
 
 pub fn textarea(value: String, config: Config(message)) -> Element(message) {
-  html.textarea(
-    [
-      attr.value(value),
-      attr.class("grow shadow-inner min-h-(--minimum-textarea-height)"),
-      core.classes(input_style),
-      event.on_input(config.input),
-      case config.placeholder {
-        Some(string) -> attr.placeholder(string)
-        None -> attr.none()
-      },
-    ],
-    value,
-  )
+  let attr = [
+    attr.value(value),
+    attr.class("grow shadow-inner min-h-(--minimum-textarea-height)"),
+    core.classes(input_style),
+    event.on_input(config.input),
+    case config.placeholder {
+      Some(string) -> attr.placeholder(string)
+      None -> attr.none()
+    },
+  ]
+
+  html.textarea(attr, value)
 }

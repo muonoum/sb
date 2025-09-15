@@ -70,7 +70,7 @@ pub fn main() {
     wisp.random_string(64)
   }
 
-  let http_server_spec =
+  let server_spec =
     router.service(_, static_handler)
     |> wisp_mist.handler(secret_key_base)
     |> router.websocket_router(store_interval:, store:)
@@ -82,7 +82,7 @@ pub fn main() {
   let assert Ok(_) =
     supervisor.start({
       supervisor.new(supervisor.OneForOne)
-      |> supervisor.add(http_server_spec)
+      |> supervisor.add(server_spec)
       |> supervisor.add(store_spec)
     })
 
