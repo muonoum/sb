@@ -29,7 +29,7 @@ pub fn none() -> Access {
 }
 
 pub fn decoder(default: Access) -> Zero(Access) {
-  use dynamic <- zero.lazy(default)
+  use dynamic <- zero.new(default)
   use <- return(props.decode(dynamic, _))
   use <- state.do(props.check_keys(access_keys))
 
