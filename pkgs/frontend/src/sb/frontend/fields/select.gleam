@@ -116,7 +116,7 @@ pub fn select(
   let context =
     Context(
       config:,
-      select: compose(Some, config.change),
+      select: fn(key) { config.change(Some(key)) },
       deselect: fn(_choice) { config.change(None) },
     )
 
