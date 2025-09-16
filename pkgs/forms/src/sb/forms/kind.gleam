@@ -39,9 +39,9 @@ pub type Kind {
   Text(string: String, placeholder: Option(String))
   Textarea(string: String, placeholder: Option(String))
   Data(source: Reset(Result(Source, Report(Error))))
-  Radio(choice: Option(Choice), layout: Layout, options: Options)
-  Select(choice: Option(Choice), placeholder: Option(String), options: Options)
-  Checkbox(choices: List(Choice), layout: Layout, options: Options)
+  Radio(choice: Option(Choice), options: Options, layout: Layout)
+  Select(choice: Option(Choice), options: Options, placeholder: Option(String))
+  Checkbox(choices: List(Choice), options: Options, layout: Layout)
 
   MultiSelect(
     choices: List(Choice),
@@ -59,9 +59,11 @@ pub fn sources(kind: Kind) -> List(Reset(Result(Source, Report(Error)))) {
   case kind {
     Text(..) | Textarea(..) -> []
     Data(source) -> [source]
-    Radio(options:, ..) | Select(options:, ..) -> options.sources(options)
-    Checkbox(options:, ..) | MultiSelect(options:, ..) ->
-      options.sources(options)
+
+    Radio(options:, ..)
+    | Select(options:, ..)
+    | Checkbox(options:, ..)
+    | MultiSelect(options:, ..) -> options.sources(options)
   }
 }
 
@@ -74,10 +76,10 @@ pub fn is_loading(kind: Kind, is_loading: fn(Source) -> Bool) -> Bool {
       |> result.map(is_loading)
       |> result.unwrap(False)
 
-    Radio(options:, ..) | Select(options:, ..) ->
-      options.is_loading(options, is_loading)
-    Checkbox(options:, ..) | MultiSelect(options:, ..) ->
-      options.is_loading(options, is_loading)
+    Radio(options:, ..)
+    | Select(options:, ..)
+    | Checkbox(options:, ..)
+    | MultiSelect(options:, ..) -> options.is_loading(options, is_loading)
   }
 }
 
@@ -98,24 +100,26 @@ pub fn reset(kind: Kind, refs: Set(String)) -> Kind {
       Select(..kind, choice:, options:)
     }
 
-    Checkbox(choices:, layout:, options:) -> {
+    Checkbox(choices:, options:, ..) -> {
       let options = options.reset(options, refs)
       let choices = select_multiple(choices, options)
-      Checkbox(choices:, layout:, options:)
+      Checkbox(..kind, choices:, options:)
     }
 
-    MultiSelect(choices:, placeholder:, options:) -> {
+    MultiSelect(choices:, options:, ..) -> {
       let options = options.reset(options, refs)
       let choices = select_multiple(choices, options)
-      MultiSelect(choices:, placeholder:, options:)
+      MultiSelect(..kind, choices:, options:)
     }
   }
 }
 
+// TODO
 fn select_one(selected: Option(Choice), options: Options) -> Option(Choice) {
-  let selected =
-    option.map(selected, choice.key)
-    |> option.map(options.select(options, _))
+  let selected = {
+    use choice <- option.map(selected)
+    options.select(options, choice.key(choice))
+  }
 
   case selected {
     None | Some(Error(..)) -> None
@@ -123,10 +127,12 @@ fn select_one(selected: Option(Choice), options: Options) -> Option(Choice) {
   }
 }
 
+// TODO
 fn select_multiple(selected: List(Choice), options: Options) -> List(Choice) {
-  let selected =
-    list.map(selected, choice.key)
-    |> list.try_map(options.select(options, _))
+  let selected = {
+    use choice <- list.try_map(selected)
+    options.select(options, choice.key(choice))
+  }
 
   case selected {
     Ok([]) | Error(..) -> []
@@ -160,16 +166,18 @@ pub fn evaluate(
 
     Checkbox(choices:, layout:, options:) ->
       options.evaluate(options, scope, search:, handlers:)
-      |> Checkbox(choices:, layout:, options: _)
+      |> Checkbox(choices:, options: _, layout:)
 
     MultiSelect(choices:, placeholder:, options:) ->
       options.evaluate(options, scope, search:, handlers:)
-      |> MultiSelect(choices:, placeholder:, options: _)
+      |> MultiSelect(choices:, options: _, placeholder:)
   }
 }
 
 pub fn update(kind: Kind, value: Option(Value)) -> Result(Kind, Report(Error)) {
   case kind, value {
+    Data(..), _value -> report.error(error.BadKind("data"))
+
     Text(..), None -> Ok(Text(..kind, string: ""))
     Textarea(..), None -> Ok(Textarea(..kind, string: ""))
 
@@ -177,8 +185,8 @@ pub fn update(kind: Kind, value: Option(Value)) -> Result(Kind, Report(Error)) {
     Textarea(..), Some(value.String(string)) -> Ok(Textarea(..kind, string:))
 
     Radio(..), None -> Ok(Radio(..kind, choice: None))
-    Checkbox(..), None -> Ok(Checkbox(..kind, choices: []))
     Select(..), None -> Ok(Select(..kind, choice: None))
+    Checkbox(..), None -> Ok(Checkbox(..kind, choices: []))
     MultiSelect(..), None -> Ok(MultiSelect(..kind, choices: []))
 
     Radio(options:, ..), Some(key) -> {
@@ -186,14 +194,14 @@ pub fn update(kind: Kind, value: Option(Value)) -> Result(Kind, Report(Error)) {
       Ok(Radio(..kind, choice: Some(choice), options:))
     }
 
-    Checkbox(options:, ..), Some(value.List(keys)) -> {
-      use choices <- result.try(list.try_map(keys, options.select(options, _)))
-      Ok(Checkbox(..kind, choices:, options:))
-    }
-
     Select(options:, ..), Some(key) -> {
       use choice <- result.try(options.select(options, key))
       Ok(Select(..kind, choice: Some(choice), options:))
+    }
+
+    Checkbox(options:, ..), Some(value.List(keys)) -> {
+      use choices <- result.try(list.try_map(keys, options.select(options, _)))
+      Ok(Checkbox(..kind, choices:, options:))
     }
 
     MultiSelect(options:, ..), Some(value.List(keys)) -> {
@@ -201,19 +209,22 @@ pub fn update(kind: Kind, value: Option(Value)) -> Result(Kind, Report(Error)) {
       Ok(MultiSelect(..kind, choices:, options:))
     }
 
-    Text(..), Some(value) -> report.error(error.BadValue(value))
-    Textarea(..), Some(value) -> report.error(error.BadValue(value))
-    Checkbox(..), Some(value) -> report.error(error.BadValue(value))
-    MultiSelect(..), Some(value) -> report.error(error.BadValue(value))
-    Data(..), _value -> report.error(error.BadKind("data"))
+    Text(..), Some(value)
+    | Textarea(..), Some(value)
+    | Checkbox(..), Some(value)
+    | MultiSelect(..), Some(value)
+    -> report.error(error.BadValue(value))
   }
 }
 
 pub fn value(kind: Kind) -> Option(Result(Value, Report(Error))) {
   case kind {
-    Text("", ..) | Textarea("", ..) -> None
-    Radio(None, ..) | Select(None, ..) -> None
-    Checkbox([], ..) | MultiSelect([], ..) -> None
+    Text("", ..)
+    | Textarea("", ..)
+    | Radio(None, ..)
+    | Select(None, ..)
+    | Checkbox([], ..)
+    | MultiSelect([], ..) -> None
 
     Text(string:, ..) | Textarea(string:, ..) -> Some(Ok(value.String(string)))
 

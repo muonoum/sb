@@ -572,12 +572,11 @@ fn field_meta(
   field: Field,
   search: Option(DebouncedSearch),
 ) -> Reader(Element(Message), Context) {
-  use state <- reader.bind(get_state())
   use debug <- reader.bind(get_debug())
   use <- return(reader.return)
 
   html.div([core.classes(field_meta_style)], case debug {
-    True -> field_debug(id, field, search, state.debounce)
+    True -> field_debug(id, field, search)
 
     False -> [
       html.div([attr.class("font-semibold px-4")], [html.text(id)]),
@@ -595,22 +594,12 @@ fn field_debug(
   id: String,
   field: Field,
   search: Option(DebouncedSearch),
-  _debounce: Int,
 ) -> List(Element(message)) {
   let sources = kind.sources(field.kind)
   let initial_sources = list.map(sources, reset.initial)
 
   [
-    html.div([attr.class("flex gap-2 font-semibold px-4")], [
-      html.text(id),
-      // {
-    //   use <- bool.guard(debounce == 0, element.none())
-    //   html.div([attr.class("flex gap-1 text-gray-500 font-mono font-bold")], [
-    //     html.div([], [element.text("～")]),
-    //     html.div([], [element.text(int.to_string(debounce))]),
-    //   ])
-    // },
-    ]),
+    html.div([attr.class("font-semibold px-4")], [html.text(id)]),
     case initial_sources {
       initial if sources == initial -> element.none()
 
