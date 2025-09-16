@@ -52,22 +52,18 @@ pub type Source {
 pub fn is_loading(source: Source) -> Bool {
   case source {
     Loading(..) -> True
-    Literal(..) -> False
-    Reference(..) -> False
-    Template(..) -> False
-    Command(..) -> False
     Fetch(body: option.Some(body), ..) -> is_loading(body)
-    Fetch(..) -> False
+
+    Literal(..) | Reference(..) | Template(..) | Command(..) | Fetch(..) ->
+      False
   }
 }
 
 pub fn refs(source: Source) -> List(String) {
   case source {
-    Literal(..) -> []
-    Loading(..) -> []
+    Literal(..) | Loading(..) -> []
     Reference(id) -> [id]
-    Template(text) -> text.refs(text)
-    Command(text) -> text.refs(text)
+    Template(text) | Command(text) -> text.refs(text)
 
     Fetch(uri:, body:, ..) ->
       list.unique(list.append(
@@ -265,6 +261,7 @@ fn seen_decoder(
         |> report.error_context(error.BadKind("fetch"))
       })
 
+    // TODO
     [#("kind", _dynamic)] -> kind_decoder(seen, sources:)
     [#(name, _)] -> props.fail(report.new(error.UnknownKind(name)))
     _else -> kind_decoder(seen, sources:)
