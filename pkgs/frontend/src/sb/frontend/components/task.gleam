@@ -74,16 +74,16 @@ pub opaque type Handlers {
 pub opaque type Message {
   Load(String)
   Receive(Result(Task, Report(Error)))
-  ResetForm
-  StartJob
-  Evaluate
-  Evaluated(Result(Task, Report(Error)))
-  ToggleDebug
-  ToggleLayout
   Change(field_id: String, value: Option(Value), delay: Int)
   ApplyChange(debounce: Int)
   Search(field_id: String, string: String)
   ApplySearch(field_id: String, debounce: Int)
+  Evaluate
+  Evaluated(Result(Task, Report(Error)))
+  ResetForm
+  StartJob
+  ToggleDebug
+  ToggleLayout
 }
 
 pub opaque type Model {
@@ -119,7 +119,7 @@ pub fn app(
     // TODO: Denne trigger to ganger når siden lastes
     component.on_attribute_change("task-id", fn(string) {
       case string.trim(string) {
-        "" -> Ok(Receive(report.error(error.BadId("<empty>"))))
+        "" -> Ok(Receive(report.error(error.BadId(""))))
         id -> Ok(Load(id))
       }
     }),
@@ -155,37 +155,6 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
       #(Model(..model, state:), dispatch_evaluate())
     }
 
-    ResetForm ->
-      case model.state {
-        loadable.Loaded(_status, State(task:, ..)) -> {
-          #(model, effect.from(apply(Load(task.id))))
-        }
-
-        _else -> #(model, event.emit("reset", json.null()))
-      }
-
-    StartJob -> #(model, effect.none())
-
-    Evaluate -> {
-      use state <- with_state(model)
-
-      let search = {
-        use _id, search <- dict.map_values(state.search)
-        search.applied
-      }
-
-      #(model, handlers.step(state.task, search, Evaluated))
-    }
-
-    Evaluated(Error(_report)) -> #(model, effect.none())
-    Evaluated(Ok(_task)) -> #(model, effect.none())
-
-    ToggleDebug -> #(Model(..model, debug: !model.debug), effect.none())
-
-    ToggleLayout -> {
-      #(Model(..model, use_layout: !model.use_layout), effect.none())
-    }
-
     Change(field_id:, value:, delay:) -> {
       use state <- with_state(model)
 
@@ -208,7 +177,7 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
 
     ApplyChange(debounce:) -> {
       use state <- with_state(model)
-      use <- bool.guard(state.debounce == debounce, #(model, effect.none()))
+      use <- bool.guard(state.debounce != debounce, #(model, effect.none()))
       let state = loadable.succeed(State(..state, debounce: 0))
       #(Model(..model, state:), dispatch_evaluate())
     }
@@ -249,13 +218,43 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
           let search =
             DebouncedSearch(..search, applied: search.string, debounce: 0)
             |> dict.insert(state.search, field_id, _)
-          let state = State(..state, search:)
           let state = loadable.succeed(State(..state, search:))
           #(Model(..model, state:), dispatch_evaluate())
         }
 
         _else -> #(model, effect.none())
       }
+    }
+
+    Evaluate -> {
+      use state <- with_state(model)
+
+      let search = {
+        use _id, search <- dict.map_values(state.search)
+        search.applied
+      }
+
+      #(model, handlers.step(state.task, search, Evaluated))
+    }
+
+    Evaluated(Error(_report)) -> #(model, effect.none())
+    Evaluated(Ok(_task)) -> #(model, effect.none())
+
+    ResetForm ->
+      case model.state {
+        loadable.Loaded(_status, State(task:, ..)) -> {
+          #(model, effect.from(apply(Load(task.id))))
+        }
+
+        _else -> #(model, event.emit("reset", json.null()))
+      }
+
+    StartJob -> #(model, effect.none())
+
+    ToggleDebug -> #(Model(..model, debug: !model.debug), effect.none())
+
+    ToggleLayout -> {
+      #(Model(..model, use_layout: !model.use_layout), effect.none())
     }
   }
 }
@@ -573,11 +572,12 @@ fn field_meta(
   field: Field,
   search: Option(DebouncedSearch),
 ) -> Reader(Element(Message), Context) {
+  use state <- reader.bind(get_state())
   use debug <- reader.bind(get_debug())
   use <- return(reader.return)
 
   html.div([core.classes(field_meta_style)], case debug {
-    True -> field_debug(id, field, search)
+    True -> field_debug(id, field, search, state.debounce)
 
     False -> [
       html.div([attr.class("font-semibold px-4")], [html.text(id)]),
@@ -595,12 +595,22 @@ fn field_debug(
   id: String,
   field: Field,
   search: Option(DebouncedSearch),
+  _debounce: Int,
 ) -> List(Element(message)) {
   let sources = kind.sources(field.kind)
   let initial_sources = list.map(sources, reset.initial)
 
   [
-    html.div([attr.class("font-semibold px-4")], [html.text(id)]),
+    html.div([attr.class("flex gap-2 font-semibold px-4")], [
+      html.text(id),
+      // {
+    //   use <- bool.guard(debounce == 0, element.none())
+    //   html.div([attr.class("flex gap-1 text-gray-500 font-mono font-bold")], [
+    //     html.div([], [element.text("～")]),
+    //     html.div([], [element.text(int.to_string(debounce))]),
+    //   ])
+    // },
+    ]),
     case initial_sources {
       initial if sources == initial -> element.none()
 

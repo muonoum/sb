@@ -30,6 +30,14 @@ fields:
       - Voluptate nulla deserunt qui pariatur laboris velit quis cupidatat proident dolor pariatur.
       - Ut qui sint ex eiusmod officia cillum.
 --- 
+name: Text input
+fields:
+  - id: text
+    kind: text
+
+  - id: textarea
+    kind: textarea
+--- 
 name: Input1
 fields:
   - id: radio
