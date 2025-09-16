@@ -66,7 +66,7 @@ pub fn app(
 }
 
 fn init(_flags, handlers: Handlers) -> #(Model, Effect(Message)) {
-  let model = Model(handlers:, nodes: loadable.Initial, search: "")
+  let model = Model(handlers:, nodes: loadable.Empty, search: "")
   #(model, effect.from(fn(dispatch) { dispatch(Load) }))
 }
 
@@ -99,7 +99,7 @@ fn select(nodes: Zipper(Node), search: String) -> Zipper(Node) {
 
 fn view(model: Model) -> Element(Message) {
   core.page(case model.nodes {
-    loadable.Initial -> [element.none()]
+    loadable.Empty -> [element.none()]
     loadable.Loading -> [element.none()]
     loadable.Failed(_status, report, _value) -> [core.inspect([], report)]
     loadable.Loaded(_status, nodes) -> [view_nodes(nodes)]

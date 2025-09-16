@@ -128,7 +128,7 @@ pub fn app(
 
 pub fn init(_flags, handlers: Handlers) -> #(Model, Effect(Message)) {
   let model =
-    Model(handlers:, debug: True, use_layout: True, state: loadable.Initial)
+    Model(handlers:, debug: True, use_layout: True, state: loadable.Empty)
   #(model, effect.none())
 }
 
@@ -344,7 +344,7 @@ fn get_task() -> Reader(Task, Context) {
 fn page(model: Model) -> Element(Message) {
   core.page([
     case model.state {
-      loadable.Initial | loadable.Loading -> element.none()
+      loadable.Empty | loadable.Loading -> element.none()
 
       loadable.Failed(_status, report, _value) ->
         sheet.view(

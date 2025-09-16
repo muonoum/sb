@@ -6,7 +6,7 @@ pub type Status {
 }
 
 pub type Loadable(a, e) {
-  Initial
+  Empty
   Loading
   Loaded(Status, a)
   Failed(Status, e, Option(a))
@@ -22,7 +22,7 @@ pub fn fail(error: e, value: Option(v)) -> Loadable(v, e) {
 
 pub fn reload(loadable: Loadable(_, _)) -> Loadable(_, _) {
   case loadable {
-    Initial -> Loading
+    Empty -> Loading
     Loading -> Loading
     Loaded(_status, value) -> Loaded(Reloading, value)
     Failed(_status, error, value) -> Failed(Reloading, error, value)
@@ -31,7 +31,7 @@ pub fn reload(loadable: Loadable(_, _)) -> Loadable(_, _) {
 
 pub fn map(loadable: Loadable(a, _), mapper: fn(a) -> b) -> Loadable(b, _) {
   case loadable {
-    Initial -> Initial
+    Empty -> Empty
     Loading -> Loading
     Loaded(status, value) -> Loaded(status, mapper(value))
     Failed(status, error, Some(value)) ->
