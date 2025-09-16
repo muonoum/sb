@@ -4,6 +4,7 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/set.{type Set}
+import sb/extra/function.{return}
 import sb/extra/report.{type Report}
 import sb/extra/reset.{type Reset}
 import sb/extra/state_eval as state
@@ -248,37 +249,30 @@ pub fn decoder(
   sources sources: custom.Sources,
   then check_keys: fn(List(String)) -> Props(Nil),
 ) -> Props(Kind) {
+  use <- return(props.error_context(error.BadKind(name)))
+
   case name {
     "data" -> {
       use <- state.do(check_keys(data_keys))
       data_decoder(sources:)
-      |> props.error_context(error.BadKind(name))
     }
 
-    "text" ->
-      state.do(check_keys(text_keys), text_decoder)
-      |> props.error_context(error.BadKind(name))
-
-    "textarea" ->
-      state.do(check_keys(textarea_keys), textarea_decoder)
-      |> props.error_context(error.BadKind(name))
+    "text" -> state.do(check_keys(text_keys), text_decoder)
+    "textarea" -> state.do(check_keys(textarea_keys), textarea_decoder)
 
     "radio" -> {
       use <- state.do(check_keys(radio_keys))
       radio_decoder(sources:)
-      |> props.error_context(error.BadKind(name))
     }
 
     "checkbox" -> {
       use <- state.do(check_keys(checkbox_keys))
       checkbox_decoder(sources:)
-      |> props.error_context(error.BadKind(name))
     }
 
     "select" -> {
       use <- state.do(check_keys(select_keys))
       select_decoder(sources:)
-      |> props.error_context(error.BadKind(name))
     }
 
     unknown -> props.fail(report.new(error.UnknownKind(unknown)))

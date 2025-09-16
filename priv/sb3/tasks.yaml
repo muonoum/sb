@@ -15,6 +15,16 @@ category: [Tests]
 ---
 name: Select
 fields:
+  - id: values
+    kind: select
+    source.literal:
+      - null
+      - true
+      - false
+      - [foo, bar]
+      - { foo: bar }
+      - [10, 20, 30, 3.14]
+
   - id: select
     kind: select
     source.literal:

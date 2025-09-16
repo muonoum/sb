@@ -53,7 +53,6 @@ pub fn is_loading(source: Source) -> Bool {
   case source {
     Loading(..) -> True
     Fetch(body: option.Some(body), ..) -> is_loading(body)
-
     Literal(..) | Reference(..) | Template(..) | Command(..) | Fetch(..) ->
       False
   }
@@ -74,7 +73,6 @@ pub fn refs(source: Source) -> List(String) {
   }
 }
 
-// TODO
 pub fn value(source: Source) -> Result(Value, Nil) {
   case source {
     Literal(value) -> Ok(value)
@@ -82,7 +80,6 @@ pub fn value(source: Source) -> Result(Value, Nil) {
   }
 }
 
-// TODO
 pub fn keys(source: Source) -> List(Value) {
   result.try(value(source), value.keys)
   |> result.unwrap([])
@@ -301,8 +298,12 @@ fn kind_decoder(
       props.succeed(Command(command))
     }
 
-    "fetch" -> fetch_decoder(seen, sources:)
-    name -> props.fail(report.new(error.UnknownKind(name)))
+    "fetch" -> {
+      use <- state.do(props.check_keys(fetch_keys))
+      fetch_decoder(seen, sources:)
+    }
+
+    unknown -> props.fail(report.new(error.UnknownKind(unknown)))
   }
 }
 
@@ -310,8 +311,6 @@ fn fetch_decoder(
   seen: Set(String),
   sources sources: custom.Sources,
 ) -> Props(Source) {
-  use <- state.do(props.check_keys(fetch_keys))
-
   use method <- props.try("method", {
     use dynamic <- zero.new(http.Get)
     use string <- result.try(decoder.run(dynamic, decode.string))

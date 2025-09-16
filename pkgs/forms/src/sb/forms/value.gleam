@@ -43,7 +43,6 @@ pub fn to_json(value: Value) -> Json {
   }
 }
 
-// TODO
 pub fn keys(value: Value) -> Result(List(Value), Nil) {
   case value {
     List(list) -> Ok(list)
@@ -52,12 +51,11 @@ pub fn keys(value: Value) -> Result(List(Value), Nil) {
   }
 }
 
-// TODO
 pub fn match(value: Value, term: String) -> Bool {
   let term = string.lowercase(term)
 
   case value {
-    Null -> False
+    Null -> string.contains("null", term)
 
     String(string) -> {
       let string = string.lowercase(string)
