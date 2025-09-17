@@ -41,8 +41,8 @@ assets/Inter:
 	curl --silent -L $(inter) | bsdtar -C assets -s /^web/Inter/ -xf- web
 
 .PHONY: commit
-commit: message ?= $(shell git diff --name-only --cached | sed -r 's,([^ /]+/)+([^/ ]+),\2,g')
+commit: message ?= $(shell git diff --name-only --cached | xargs basename)
 commit:
-	test -n "$(message)"
-	git commit -m "$(message)"
+	test -n "$(shell echo $(message) | xargs)"
+	git commit -m "$(shell echo $(message) | xargs)"
 
