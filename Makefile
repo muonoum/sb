@@ -11,7 +11,7 @@ check: check-frontend
 
 .PHONY: watch
 watch: .restart
-	watchexec --restart --watch .restart make
+	watchexec --clear --quiet --restart --stop-signal INT --stop-timeout 150ms --watch .restart make
 
 .restart:
 	touch .restart
