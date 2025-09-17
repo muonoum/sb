@@ -15,9 +15,9 @@ import sb/extra_erlang
 import sb/forms/handlers.{type Handlers}
 import sb/forms/task
 import sb/frontend
-import sb/frontend/components/errors
+import sb/frontend/components/errors as errors_component
 import sb/frontend/components/task as task_component
-import sb/frontend/components/tasks
+import sb/frontend/components/tasks as tasks_component
 import sb/store
 import wisp
 
@@ -49,7 +49,7 @@ pub fn websocket_router(
     ["components", "errors"] ->
       component_service(
         request,
-        errors.app(
+        errors_component.app(
           schedule: extra_erlang.schedule(store_interval, _),
           load: fn(message) {
             use dispatch <- effect.from
@@ -61,7 +61,7 @@ pub fn websocket_router(
     ["components", "tasks"] ->
       component_service(
         request,
-        tasks.app(
+        tasks_component.app(
           schedule: extra_erlang.schedule(store_interval, _),
           load: fn(message) {
             use dispatch <- effect.from

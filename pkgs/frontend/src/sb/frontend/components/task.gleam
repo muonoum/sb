@@ -254,12 +254,9 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
       io.println(debug.inspect_scope(scope))
       let next = loadable.succeed(State(..state, task:, scope:))
       let model = Model(..model, state: next)
-
-      use <- bool.guard(scope == state.scope && task == state.task, {
-        #(model, effect.none())
-      })
-
-      #(model, dispatch_evaluate())
+      let changed = scope != state.scope || task != state.task
+      use <- bool.guard(changed, #(model, dispatch_evaluate()))
+      #(model, effect.none())
     }
 
     ResetForm ->

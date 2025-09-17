@@ -144,8 +144,8 @@ fn select_multiple(selected: List(Choice), options: Options) -> List(Choice) {
 pub fn evaluate(
   kind: Kind,
   scope: Scope,
-  search: Option(String),
-  handlers: Handlers,
+  search search: Option(String),
+  handlers handlers: Handlers,
 ) -> Kind {
   case kind {
     Text(..) | Textarea(..) -> kind

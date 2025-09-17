@@ -54,12 +54,12 @@ pub fn reset(field: Field, refs: Set(String)) -> Field {
 pub fn evaluate(
   field: Field,
   scope: Scope,
-  search: Option(String),
-  handlers: Handlers,
+  search search: Option(String),
+  handlers handlers: Handlers,
 ) -> Field {
   Field(
     ..field,
-    kind: kind.evaluate(field.kind, scope, search, handlers),
+    kind: kind.evaluate(field.kind, scope, search:, handlers:),
     disabled: reset.map(field.disabled, condition.evaluate(_, scope)),
     hidden: reset.map(field.hidden, condition.evaluate(_, scope)),
     ignored: reset.map(field.ignored, condition.evaluate(_, scope)),
