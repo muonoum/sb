@@ -16,6 +16,10 @@ watch: .restart
 .restart:
 	touch .restart
 
+.PHONY: watch-check
+watch-check: 
+	watchexec --exts gleam make check
+
 .PHONY: run
 run: build-frontend
 	gleam run
@@ -35,10 +39,6 @@ clean-pkgs:
 .PHONY: clean-pkgs-manifests
 clean-pkgs-manifests:
 	find pkgs -maxdepth 2 -name manifest.toml -delete
-
-.PHONY: watch-check
-watch-check: 
-	watchexec --exts gleam make check
 
 .PHONY: build-frontend
 build-frontend: assets/Inter assets/Iosevka
