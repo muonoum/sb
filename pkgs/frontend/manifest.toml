@@ -2,8 +2,9 @@
 # You typically do not need to edit this file
 
 packages = [
+  { name = "birl", version = "1.8.0", build_tools = ["gleam"], requirements = ["gleam_regexp", "gleam_stdlib", "ranger"], otp_app = "birl", source = "hex", outer_checksum = "2AC7BA26F998E3DFADDB657148BD5DDFE966958AD4D6D6957DD0D22E5B56C400" },
   { name = "exception", version = "2.1.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "exception", source = "hex", outer_checksum = "329D269D5C2A314F7364BD2711372B6F2C58FA6F39981572E5CA68624D291F8C" },
-  { name = "extra", version = "1.0.0", build_tools = ["gleam"], requirements = ["gleam_stdlib", "gleam_yielder"], source = "local", path = "../extra" },
+  { name = "extra", version = "1.0.0", build_tools = ["gleam"], requirements = ["gleam_stdlib", "gleam_yielder", "pocket_watch"], source = "local", path = "../extra" },
   { name = "extra_client", version = "1.0.0", build_tools = ["gleam"], requirements = ["gleam_stdlib", "lustre", "plinth"], source = "local", path = "../extra_client" },
   { name = "forms", version = "1.0.0", build_tools = ["gleam"], requirements = ["exception", "extra", "gleam_community_ansi", "gleam_http", "gleam_json", "gleam_regexp", "gleam_stdlib"], source = "local", path = "../forms" },
   { name = "gleam_community_ansi", version = "1.4.3", build_tools = ["gleam"], requirements = ["gleam_community_colour", "gleam_regexp", "gleam_stdlib"], otp_app = "gleam_community_ansi", source = "hex", outer_checksum = "8A62AE9CC6EA65BEA630D95016D6C07E4F9973565FA3D0DE68DC4200D8E0DD27" },
@@ -15,12 +16,16 @@ packages = [
   { name = "gleam_otp", version = "1.1.0", build_tools = ["gleam"], requirements = ["gleam_erlang", "gleam_stdlib"], otp_app = "gleam_otp", source = "hex", outer_checksum = "7987CBEBC8060B88F14575DEF546253F3116EBE2A5DA6FD82F38243FCE97C54B" },
   { name = "gleam_regexp", version = "1.1.1", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleam_regexp", source = "hex", outer_checksum = "9C215C6CA84A5B35BB934A9B61A9A306EC743153BE2B0425A0D032E477B062A9" },
   { name = "gleam_stdlib", version = "0.63.2", build_tools = ["gleam"], requirements = [], otp_app = "gleam_stdlib", source = "hex", outer_checksum = "962B25C667DA07F4CAB32001F44D3C41C1A89E58E3BBA54F183B482CF6122150" },
+  { name = "gleam_time", version = "1.4.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleam_time", source = "hex", outer_checksum = "DCDDC040CE97DA3D2A925CDBBA08D8A78681139745754A83998641C8A3F6587E" },
   { name = "gleam_yielder", version = "1.1.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleam_yielder", source = "hex", outer_checksum = "8E4E4ECFA7982859F430C57F549200C7749823C106759F4A19A78AEA6687717A" },
   { name = "houdini", version = "1.2.0", build_tools = ["gleam"], requirements = [], otp_app = "houdini", source = "hex", outer_checksum = "5DB1053F1AF828049C2B206D4403C18970ABEF5C18671CA3C2D2ED0DD64F6385" },
+  { name = "humanise", version = "1.1.0", build_tools = ["gleam"], requirements = ["gleam_stdlib", "gleam_time"], otp_app = "humanise", source = "hex", outer_checksum = "5B78C52863B673F7D903117BE9262628210946406E04B6AB09554D5C2A7F15F0" },
   { name = "lustre", version = "5.3.5", build_tools = ["gleam"], requirements = ["gleam_erlang", "gleam_json", "gleam_otp", "gleam_stdlib", "houdini"], otp_app = "lustre", source = "hex", outer_checksum = "5CBB5DD2849D8316A2101792FC35AEB58CE4B151451044A9C2A2A70A2F7FCEB8" },
   { name = "lustre_portal", version = "1.0.0", build_tools = ["gleam"], requirements = ["gleam_stdlib", "lustre"], otp_app = "lustre_portal", source = "hex", outer_checksum = "8D45CD689749119DEA664E6BF0F3CF8055C07CF689FA98220DDD1B3F04107F34" },
   { name = "modem", version = "2.1.1", build_tools = ["gleam"], requirements = ["gleam_stdlib", "lustre"], otp_app = "modem", source = "hex", outer_checksum = "444332FF806610B955D57389B3643245BBEC61A705A61B4FF7E67E3AF148F339" },
   { name = "plinth", version = "0.7.2", build_tools = ["gleam"], requirements = ["gleam_javascript", "gleam_json", "gleam_stdlib"], otp_app = "plinth", source = "hex", outer_checksum = "3D70AF096A6F46DC71023C28B16BCCC6D7FAB9A467711426DAEB05902022B08F" },
+  { name = "pocket_watch", version = "1.0.0", build_tools = ["gleam"], requirements = ["birl", "gleam_stdlib", "humanise"], otp_app = "pocket_watch", source = "hex", outer_checksum = "CD8784CAC29735CDC2E6A67212FFC1C60A13A48D8F74470CE3DE15D41447227C" },
+  { name = "ranger", version = "1.4.0", build_tools = ["gleam"], requirements = ["gleam_stdlib", "gleam_yielder"], otp_app = "ranger", source = "hex", outer_checksum = "C8988E8F8CDBD3E7F4D8F2E663EF76490390899C2B2885A6432E942495B3E854" },
 ]
 
 [requirements]
