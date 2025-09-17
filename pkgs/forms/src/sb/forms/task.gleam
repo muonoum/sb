@@ -54,8 +54,9 @@ pub fn evaluate(
 ) -> #(Task, Scope) {
   let fields = evaluate_fields(task.fields, scope1, search, handlers)
   let scope2 = field_values(fields)
-  let fields = reset_changed(fields, changed_refs(scope1, scope2))
-  #(Task(..task, fields:), field_values(fields))
+  let changed = changed_refs(scope1, scope2)
+  let fields = reset_changed(fields, changed)
+  #(Task(..task, fields:), scope2)
 }
 
 fn evaluate_fields(
