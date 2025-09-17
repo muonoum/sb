@@ -35,7 +35,6 @@ pub fn main() {
   }
 
   let store_name = process.new_name("store")
-  let store = process.named_subject(store_name)
 
   let store_spec =
     store.supervised(
@@ -93,6 +92,8 @@ pub fn main() {
 
     Handlers(command:, http:)
   }
+
+  let store = process.named_subject(store_name)
 
   let server_spec =
     router.service(_, static_handler)

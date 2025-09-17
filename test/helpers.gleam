@@ -2,8 +2,10 @@ import exception.{type Exception}
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
+import gleam/erlang/process
 import gleam/list
 import gleam/result
+import gleeunit/should
 import sb/extra/dots
 import sb/extra/report.{type Report}
 import sb/forms/custom
@@ -11,6 +13,16 @@ import sb/forms/error.{type Error}
 import sb/forms/field.{type Field}
 import sb/forms/props
 import sb/forms/source.{type Source}
+import sb/store
+
+pub fn start_store() {
+  let name = process.new_name("store")
+  let config =
+    store.Config(prefix: "test_data/store", interval: 0, pattern: "**/*.yaml")
+  store.start(name, config)
+  |> should.be_ok
+  process.named_subject(name)
+}
 
 pub fn load_documents(
   data: String,
