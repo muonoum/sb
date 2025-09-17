@@ -50,3 +50,6 @@ commit:
 	test -n "$(commit_message)"
 	git commit -m "$(commit_message)"
 
+.PHONY: push
+push: commit
+	git push
