@@ -10,8 +10,11 @@ check: check-frontend
 	gleam check
 
 .PHONY: watch
-watch:
+watch: .restart
 	watchexec --restart --watch .restart make
+
+.restart:
+	touch .restart
 
 .PHONY: watch-check
 watch-check: 
