@@ -5,6 +5,20 @@ inter = https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip
 run: frontend
 	gleam run
 
+.PHONY: clean
+clean:
+	cd pkgs/extra && gleam clean
+	cd pkgs/extra_client && gleam clean
+	cd pkgs/extra_server && gleam clean
+	cd pkgs/forms && gleam clean
+	cd pkgs/frontend && gleam clean
+	gleam clean
+
+.PHONY: clean-manifests
+clean-manifests:
+	find pkgs -name manifest.toml -delete
+	rm manifest.toml
+
 .PHONY: check
 check: check-frontend
 	gleam check

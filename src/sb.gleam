@@ -82,12 +82,17 @@ pub fn main() {
     }
   }
 
-  let handlers =
-    Handlers(..handlers.empty(), http: fn(request) {
+  let handlers = {
+    let command = handlers.empty_command()
+
+    let http = fn(request) {
       httpc.send(request, httpc_options)
       |> result.map_error(dynamic_extra.from)
       |> report.map_error(error.HttpError)
-    })
+    }
+
+    Handlers(command:, http:)
+  }
 
   let server_spec =
     router.service(_, static_handler)
