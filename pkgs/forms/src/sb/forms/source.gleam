@@ -85,6 +85,14 @@ pub fn keys(source: Source) -> List(Value) {
   |> result.unwrap([])
 }
 
+pub fn has_placeholder(source: Source) -> Bool {
+  case source {
+    Loading(..) | Literal(..) | Reference(..) -> False
+    Command(text) | Template(text) | Fetch(uri: text, ..) ->
+      text.has_placeholder(text)
+  }
+}
+
 pub fn evaluate(
   source: Source,
   scope: Scope,

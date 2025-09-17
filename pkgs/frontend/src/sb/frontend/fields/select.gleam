@@ -74,7 +74,7 @@ const select_selected_choice_style = [
 fn has_placeholder(source: Reset(Result(Source, Report(Error)))) -> Bool {
   case reset.unwrap(reset.initial(source)) {
     Error(_report) -> False
-    Ok(_source) -> False
+    Ok(source) -> source.has_placeholder(source)
   }
 }
 

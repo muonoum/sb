@@ -38,6 +38,11 @@ pub fn refs(text: Text) -> List(String) {
   }
 }
 
+pub fn has_placeholder(text: Text) -> Bool {
+  use part <- list.any(text.parts)
+  part == Placeholder
+}
+
 pub fn evaluate(
   text: Text,
   scope: Scope,

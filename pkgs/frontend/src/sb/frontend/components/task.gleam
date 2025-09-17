@@ -195,6 +195,8 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
 
     Search(field_id:, string: "") -> {
       // TODO: Reset field placeholder
+      // TODO: Bør det være mulig å søke med placeholder, gjøre et valg,
+      // og så søke igjen for å gjøre flere valg? Beholder tidligere valg.
       use state <- resolved(model)
       let search = dict.delete(state.search, field_id)
       let state = loadable.succeed(State(..state, search:))
