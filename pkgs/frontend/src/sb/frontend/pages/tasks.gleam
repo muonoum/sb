@@ -26,7 +26,8 @@ pub opaque type Message {
 }
 
 pub fn init(uri: Uri) -> #(Model, Effect(Message)) {
-  let model = Model(search: extra.get_query(uri, "search"), debounce_search: 0)
+  let search = extra.get_query(uri, "search")
+  let model = Model(search:, debounce_search: 0)
   #(model, effect.none())
 }
 

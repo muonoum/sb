@@ -3,6 +3,8 @@ import lustre/element.{type Element}
 import lustre/element/html
 import lustre/portal
 
+// TODO: Rename links til menu
+
 const links_target = "sb-links"
 
 const actions_target = "sb-actions"
