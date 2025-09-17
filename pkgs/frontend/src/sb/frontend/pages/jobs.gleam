@@ -1,5 +1,6 @@
 import gleam/bool
 import gleam/dynamic/decode.{type Decoder}
+import gleam/result
 import gleam/uri.{type Uri}
 import lustre/attribute.{type Attribute} as attr
 import lustre/effect.{type Effect}
@@ -8,6 +9,8 @@ import lustre/element/html
 import lustre/event
 import lustre/server_component as server
 import sb/extra
+import sb/extra/function
+import sb/extra_client
 import sb/frontend/components/core
 import sb/frontend/components/header
 import sb/frontend/components/search
@@ -66,10 +69,32 @@ pub fn init(uri: Uri) -> #(Model, Effect(Message)) {
 
 pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
   case message {
-    ScrollTo(_) -> #(model, effect.none())
-    ScrollToTop -> #(model, effect.none())
+    ScrollTo(state) -> #(model, scroll_to_state(state))
+    ScrollToTop -> #(model, scroll_to_top())
     SetFilter(filter) -> #(Model(..model, filter:), effect.none())
     Search(_string) -> #(model, effect.none())
+  }
+}
+
+fn scroll_to_top() -> Effect(Message) {
+  use _dispatch <- effect.from()
+  use <- function.return(result.unwrap(_, Nil))
+  use element <- result.map(extra_client.get_element("sb-page"))
+  extra_client.scroll_to_top(element)
+}
+
+fn scroll_to_state(state: State) -> Effect(Message) {
+  use _dispatch <- effect.from()
+  use <- function.return(result.unwrap(_, Nil))
+  use element <- result.map(extra_client.get_element(get_state_id(state)))
+  extra_client.scroll_into_view(element)
+}
+
+fn get_state_id(state: State) -> String {
+  case state {
+    Requested -> "sb-requested-jobs"
+    Started -> "sb-started-jobs"
+    Finished -> "sb-finished-jobs"
   }
 }
 
