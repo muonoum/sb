@@ -63,16 +63,16 @@ const field_padding_style = [
   "w-(--sheet-width) h-screen", "bg-white group-even:bg-stone-50",
 ]
 
-pub type Loader =
+pub type LoadMessage =
   fn(Result(Task, Report(Error))) -> Message
 
-pub type Evaluator =
+pub type StepMessage =
   fn(Task, Scope) -> Message
 
 pub opaque type Handlers {
   Handlers(
-    load: fn(String, Loader) -> Effect(Message),
-    step: fn(Task, Scope, Dict(String, String), Evaluator) -> Effect(Message),
+    load: fn(String, LoadMessage) -> Effect(Message),
+    step: fn(Task, Scope, Dict(String, String), StepMessage) -> Effect(Message),
     schedule: fn(Int, Message) -> Effect(Message),
   )
 }
@@ -116,8 +116,9 @@ type DebouncedSearch {
 }
 
 pub fn app(
-  load load: fn(String, Loader) -> Effect(Message),
-  step step: fn(Task, Scope, Dict(String, String), Evaluator) -> Effect(Message),
+  load load: fn(String, LoadMessage) -> Effect(Message),
+  step step: fn(Task, Scope, Dict(String, String), StepMessage) ->
+    Effect(Message),
   schedule schedule: fn(Int, Message) -> Effect(Message),
 ) -> lustre.App(Nil, Model, Message) {
   let handlers = Handlers(load:, step:, schedule:)

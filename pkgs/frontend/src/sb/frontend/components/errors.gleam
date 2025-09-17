@@ -13,7 +13,7 @@ import sb/forms/error.{type Error}
 import sb/frontend/components/core
 import sb/frontend/components/icons
 
-type Loader =
+pub type LoadMessage =
   fn(List(Report(Error))) -> Message
 
 pub opaque type Model {
@@ -33,13 +33,13 @@ pub opaque type Message {
 pub opaque type Handlers {
   Handlers(
     schedule: fn(Message) -> Effect(Message),
-    load: fn(Loader) -> Effect(Message),
+    load: fn(LoadMessage) -> Effect(Message),
   )
 }
 
 pub fn app(
   schedule schedule: fn(Message) -> Effect(Message),
-  load load: fn(Loader) -> Effect(Message),
+  load load: fn(LoadMessage) -> Effect(Message),
 ) -> lustre.App(Nil, Model, Message) {
   let handlers = Handlers(schedule:, load:)
   lustre.component(init(_, handlers), update, view, options: [])

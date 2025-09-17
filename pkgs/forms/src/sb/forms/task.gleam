@@ -48,13 +48,13 @@ pub type Task {
 
 pub fn evaluate(
   task: Task,
-  scope scope1: Scope,
+  scope1: Scope,
   search search: Dict(String, String),
   handlers handlers: Handlers,
 ) -> #(Task, Scope) {
   let fields = evaluate_fields(task.fields, scope1, search, handlers)
   let scope2 = field_values(fields)
-  let fields = reset_changed(changed_fields(scope1, scope2), fields)
+  let fields = reset_changed(fields, changed_refs(scope1, scope2))
   #(Task(..task, fields:), field_values(fields))
 }
 
@@ -77,18 +77,17 @@ fn field_values(fields: Dict(String, Field)) -> Scope {
   |> option.unwrap(scope)
 }
 
-fn changed_fields(a: Scope, b: Scope) -> Set(String) {
-  set.from_list({
-    use #(id, next) <- list.filter_map(dict.to_list(a))
-    use last <- result.try(dict.get(b, id))
-    use <- bool.guard(last == next, Error(Nil))
-    Ok(id)
-  })
+fn changed_refs(scope1: Scope, scope2: Scope) -> Set(String) {
+  use <- return(set.from_list)
+  use #(id, next) <- list.filter_map(dict.to_list(scope1))
+  use last <- result.try(dict.get(scope2, id))
+  use <- bool.guard(last == next, Error(Nil))
+  Ok(id)
 }
 
 fn reset_changed(
-  refs: Set(String),
   fields: Dict(String, Field),
+  refs: Set(String),
 ) -> Dict(String, Field) {
   use <- bool.guard(set.is_empty(refs), fields)
   use _id, field <- dict.map_values(fields)

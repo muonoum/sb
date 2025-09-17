@@ -51,9 +51,10 @@ pub fn websocket_router(
         request,
         errors_component.app(
           schedule: extra_erlang.schedule(store_interval, _),
-          load: fn(message) {
+          load: fn(message: errors_component.LoadMessage) {
             use dispatch <- effect.from
-            dispatch(message(store.get_errors(store)))
+            let errors = store.get_errors(store)
+            dispatch(message(errors))
           },
         ),
       )
@@ -63,9 +64,10 @@ pub fn websocket_router(
         request,
         tasks_component.app(
           schedule: extra_erlang.schedule(store_interval, _),
-          load: fn(message) {
+          load: fn(message: tasks_component.LoadMessage) {
             use dispatch <- effect.from
-            dispatch(message(store.get_tasks(store)))
+            let tasks = store.get_tasks(store)
+            dispatch(message(tasks))
           },
         ),
       )
@@ -75,14 +77,14 @@ pub fn websocket_router(
         request,
         task_component.app(
           schedule: extra_erlang.schedule,
-          load: fn(task_id, message: task_component.Loader) {
+          load: fn(task_id, message: task_component.LoadMessage) {
             use dispatch <- effect.from
-            let result = store.get_task(store, task_id)
-            dispatch(message(result))
+            let task = store.get_task(store, task_id)
+            dispatch(message(task))
           },
-          step: fn(task, scope, search, message: task_component.Evaluator) {
+          step: fn(task, scope, search, message: task_component.StepMessage) {
             use dispatch <- effect.from
-            let #(task, scope) = task.evaluate(task, scope:, search:, handlers:)
+            let #(task, scope) = task.evaluate(task, scope, search:, handlers:)
             dispatch(message(task, scope))
           },
         ),

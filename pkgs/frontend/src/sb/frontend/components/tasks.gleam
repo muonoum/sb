@@ -28,13 +28,13 @@ const grid_layout = [
   "grid-rows-[masonry] gap-6 auto-cols-min",
 ]
 
-type Loader =
+pub type LoadMessage =
   fn(List(Task)) -> Message
 
 pub opaque type Handlers {
   Handlers(
     schedule: fn(Message) -> Effect(Message),
-    load: fn(Loader) -> Effect(Message),
+    load: fn(LoadMessage) -> Effect(Message),
   )
 }
 
@@ -54,7 +54,7 @@ pub opaque type Message {
 
 pub fn app(
   schedule schedule: fn(Message) -> Effect(Message),
-  load load: fn(Loader) -> Effect(Message),
+  load load: fn(LoadMessage) -> Effect(Message),
 ) -> lustre.App(Nil, Model, Message) {
   let handlers = Handlers(schedule:, load:)
 
