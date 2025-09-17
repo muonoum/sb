@@ -240,22 +240,23 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
     }
 
     Evaluate -> {
-      use state <- resolved(model)
+      use State(task:, scope:, search:, ..) <- resolved(model)
 
       let search = {
-        use _id, search <- dict.map_values(state.search)
+        use _id, search <- dict.map_values(search)
         search.applied
       }
 
-      #(model, handlers.step(state.task, state.scope, search, Evaluated))
+      let step = handlers.step(task, scope, search, Evaluated)
+      #(model, step)
     }
 
     Evaluated(task, scope) -> {
       use state <- resolved(model)
       io.println(debug.inspect_scope(scope))
-      let next = loadable.succeed(State(..state, task:, scope:))
-      let model = Model(..model, state: next)
       let changed = scope != state.scope || task != state.task
+      let state = loadable.succeed(State(..state, task:, scope:))
+      let model = Model(..model, state:)
       use <- bool.guard(changed, #(model, step()))
       #(model, effect.none())
     }

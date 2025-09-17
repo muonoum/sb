@@ -1,3 +1,4 @@
+import gleam/bool
 import gleam/dict
 import gleam/dynamic/decode
 import gleam/io
@@ -37,6 +38,7 @@ pub fn main() {
   }
 
   let search = dict.new()
+  let scope = dict.new()
   let handlers =
     Handlers(..handlers.empty(), http: fn(request) {
       httpc.send(request, [])
@@ -44,23 +46,28 @@ pub fn main() {
       |> report.map_error(error.HttpError)
     })
 
-  let scope = dict.new()
+  inspect(task, scope)
 
+  let #(task, scope) = evaluate_run(task, scope, search, handlers)
+  let task = update(task, "2-select", Some(String("bar")))
+  let #(task, scope) = evaluate_run(task, scope, search, handlers)
+  let task = update(task, "2-select", Some(String("baz")))
+  let #(_task, _scope) = evaluate_run(task, scope, search, handlers)
+}
+
+pub fn inspect(task, scope) {
   debug.inspect_task(task) |> io.println
   debug.inspect_scope(scope) |> io.println
   io.println("")
+}
 
-  let #(task, scope) = evaluate_step(task, scope, search, handlers)
-  let #(task, scope) = evaluate_step(task, scope, search, handlers)
-  let #(task, scope) = evaluate_step(task, scope, search, handlers)
-  let task = update(task, "2-select", Some(String("bar")))
-  let #(task, scope) = evaluate_step(task, scope, search, handlers)
-  let #(task, scope) = evaluate_step(task, scope, search, handlers)
-  let #(task, scope) = evaluate_step(task, scope, search, handlers)
-  let task = update(task, "2-select", Some(String("baz")))
-  let #(task, scope) = evaluate_step(task, scope, search, handlers)
-  let #(task, scope) = evaluate_step(task, scope, search, handlers)
-  let #(_task, _scope) = evaluate_step(task, scope, search, handlers)
+pub fn evaluate_run(task1, scope1, search, handlers) {
+  let #(task2, scope2) = task.step(task1, scope1, search, handlers)
+  inspect(task2, scope2)
+  use <- bool.lazy_guard(scope1 != scope2 || task1 != task2, fn() {
+    evaluate_run(task2, scope2, search, handlers)
+  })
+  #(task2, scope2)
 }
 
 pub fn evaluate_step(task1, scope1, search, handlers) {
