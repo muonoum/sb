@@ -1,6 +1,8 @@
 import gleam/bool
 import gleam/dynamic/decode.{type Decoder}
+import gleam/option.{None, Some}
 import gleam/result
+import gleam/string
 import gleam/uri.{type Uri}
 import lustre/attribute.{type Attribute} as attr
 import lustre/effect.{type Effect}
@@ -8,6 +10,7 @@ import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
 import lustre/server_component as server
+import modem
 import sb/extra
 import sb/extra/function
 import sb/extra_client
@@ -17,8 +20,10 @@ import sb/frontend/components/search
 import sb/frontend/components/sheet
 import sb/frontend/portals
 
+const search_debounce = 250
+
 pub opaque type Model {
-  Model(filter: Filter, search: String)
+  Model(filter: Filter, search: String, debounce: Int)
 }
 
 pub type Filter {
@@ -49,6 +54,7 @@ pub type Message {
   ScrollTo(State)
   SetFilter(Filter)
   Search(String)
+  ApplySearch(String, debounce: Int)
 }
 
 pub fn init(uri: Uri) -> #(Model, Effect(Message)) {
@@ -64,7 +70,7 @@ pub fn init(uri: Uri) -> #(Model, Effect(Message)) {
       search:,
     )
 
-  #(Model(filter:, search:), effect.none())
+  #(Model(filter:, search:, debounce: 0), effect.none())
 }
 
 pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
@@ -72,7 +78,35 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
     ScrollTo(state) -> #(model, scroll_to_state(state))
     ScrollToTop -> #(model, scroll_to_top())
     SetFilter(filter) -> #(Model(..model, filter:), effect.none())
-    Search(_string) -> #(model, effect.none())
+
+    Search("") -> {
+      let filter = Filter(..model.filter, search: "")
+      let effect = modem.replace("/jobber", None, None)
+      #(Model(filter:, search: "", debounce: 0), effect)
+    }
+
+    Search(search) -> {
+      let debounce = model.debounce + 1
+      let effect =
+        extra_client.schedule(search_debounce, ApplySearch(search, debounce))
+      #(Model(..model, debounce:, search:), effect)
+    }
+
+    ApplySearch(search, debounce:) if debounce == model.debounce -> {
+      let trimmed_search = string.trim(search)
+
+      let query = {
+        let search = uri.percent_encode(trimmed_search)
+        use <- bool.guard(search == "", None)
+        Some("search=" <> search)
+      }
+
+      let filter = Filter(..model.filter, search: trimmed_search)
+      let effect = modem.replace("/jobber", query, None)
+      #(Model(..model, search:, filter:), effect)
+    }
+
+    ApplySearch(_search, debounce: _) -> #(model, effect.none())
   }
 }
 
