@@ -1,4 +1,4 @@
-name = "extra_erlang"
+name = "extra_server"
 version = "1.0.0"
 
 [erlang]

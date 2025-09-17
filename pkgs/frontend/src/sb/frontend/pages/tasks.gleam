@@ -9,7 +9,7 @@ import lustre/event
 import lustre/server_component as server
 import modem
 import sb/extra
-import sb/extra_javascript
+import sb/extra_client
 import sb/frontend/components/header
 import sb/frontend/components/search
 import sb/frontend/portals
@@ -42,7 +42,7 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
 
       #(
         Model(debounce_search:, search:),
-        extra_javascript.schedule(
+        extra_client.schedule(
           search_debounce,
           ApplySearch(search, debounce_search),
         ),

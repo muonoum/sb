@@ -11,7 +11,7 @@ import mist
 import sb/api
 import sb/component
 import sb/extra/function.{identity}
-import sb/extra_erlang
+import sb/extra_server
 import sb/forms/handlers.{type Handlers}
 import sb/forms/task
 import sb/frontend
@@ -50,7 +50,7 @@ pub fn websocket_router(
       component_service(
         request,
         errors_component.app(
-          schedule: extra_erlang.schedule(store_interval, _),
+          schedule: extra_server.schedule(store_interval, _),
           load: fn(message: errors_component.LoadMessage) {
             use dispatch <- effect.from
             let errors = store.get_errors(store)
@@ -63,7 +63,7 @@ pub fn websocket_router(
       component_service(
         request,
         tasks_component.app(
-          schedule: extra_erlang.schedule(store_interval, _),
+          schedule: extra_server.schedule(store_interval, _),
           load: fn(message: tasks_component.LoadMessage) {
             use dispatch <- effect.from
             let tasks = store.get_tasks(store)
@@ -76,7 +76,7 @@ pub fn websocket_router(
       component_service(
         request,
         task_component.app(
-          schedule: extra_erlang.schedule,
+          schedule: extra_server.schedule,
           load: fn(task_id, message: task_component.LoadMessage) {
             use dispatch <- effect.from
             let task = store.get_task(store, task_id)

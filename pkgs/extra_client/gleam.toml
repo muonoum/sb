@@ -1,4 +1,4 @@
-name = "extra_javascript"
+name = "extra_client"
 version = "1.0.0"
 target = "javascript"
 

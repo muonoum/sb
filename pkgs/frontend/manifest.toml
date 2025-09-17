@@ -4,7 +4,7 @@
 packages = [
   { name = "exception", version = "2.1.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "exception", source = "hex", outer_checksum = "329D269D5C2A314F7364BD2711372B6F2C58FA6F39981572E5CA68624D291F8C" },
   { name = "extra", version = "1.0.0", build_tools = ["gleam"], requirements = ["gleam_stdlib", "gleam_yielder"], source = "local", path = "../extra" },
-  { name = "extra_javascript", version = "1.0.0", build_tools = ["gleam"], requirements = ["gleam_stdlib", "lustre", "plinth"], source = "local", path = "../extra_javascript" },
+  { name = "extra_client", version = "1.0.0", build_tools = ["gleam"], requirements = ["gleam_stdlib", "lustre", "plinth"], source = "local", path = "../extra_client" },
   { name = "forms", version = "1.0.0", build_tools = ["gleam"], requirements = ["exception", "extra", "gleam_community_ansi", "gleam_http", "gleam_json", "gleam_regexp", "gleam_stdlib"], source = "local", path = "../forms" },
   { name = "gleam_community_ansi", version = "1.4.3", build_tools = ["gleam"], requirements = ["gleam_community_colour", "gleam_regexp", "gleam_stdlib"], otp_app = "gleam_community_ansi", source = "hex", outer_checksum = "8A62AE9CC6EA65BEA630D95016D6C07E4F9973565FA3D0DE68DC4200D8E0DD27" },
   { name = "gleam_community_colour", version = "2.0.2", build_tools = ["gleam"], requirements = ["gleam_json", "gleam_stdlib"], otp_app = "gleam_community_colour", source = "hex", outer_checksum = "E34DD2C896AC3792151EDA939DA435FF3B69922F33415ED3C4406C932FBE9634" },
@@ -25,7 +25,7 @@ packages = [
 
 [requirements]
 extra = { path = "../extra" }
-extra_javascript = { path = "../extra_javascript" }
+extra_client = { path = "../extra_client" }
 forms = { path = "../forms" }
 gleam_json = { version = ">= 3.0.2 and < 4.0.0" }
 gleam_stdlib = { version = ">= 0.44.0 and < 2.0.0" }
