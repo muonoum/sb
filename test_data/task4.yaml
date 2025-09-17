@@ -1,0 +1,21 @@
+name: Task
+category: [Tests]
+runners.users: everyone
+fields:
+  - id: "1"
+    kind: select
+    source.literal:
+      - key1: [a, b, c]
+      - key2: string
+
+  - id: "2"
+    kind: data
+    source.reference: "1"
+
+  # - id: "3"
+  #   kind: select
+  #   source.reference: "1"
+
+  # - id: "4"
+  #   kind: data
+  #   source.reference: "3"

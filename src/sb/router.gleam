@@ -12,6 +12,8 @@ import sb/api
 import sb/component
 import sb/extra/function.{identity}
 import sb/extra_erlang
+import sb/forms/handlers.{type Handlers}
+import sb/forms/task as task2
 import sb/frontend
 import sb/frontend/components/errors
 import sb/frontend/components/task
@@ -39,6 +41,7 @@ pub fn websocket_router(
   next_router: fn(Request(_)) -> Response(_),
   store_interval store_interval: Int,
   store store: process.Subject(store.Message),
+  handlers handlers: Handlers,
 ) -> fn(Request(_)) -> Response(_) {
   use request <- identity
 
@@ -74,11 +77,13 @@ pub fn websocket_router(
           schedule: extra_erlang.schedule,
           load: fn(task_id, message) {
             use dispatch <- effect.from
-            dispatch(message(store.get_task(store, task_id)))
+            let result = store.get_task(store, task_id)
+            dispatch(message(result))
           },
-          step: fn(_task, _search, _message) {
-            // use _dispatch <- effect.from
-            effect.none()
+          step: fn(task, scope, search, message) {
+            use dispatch <- effect.from
+            let #(task, scope) = task2.evaluate(task, scope, search, handlers)
+            dispatch(message(task, scope))
           },
         ),
       )

@@ -12,7 +12,7 @@ packages = [
   { name = "extra_erlang", version = "1.0.0", build_tools = ["gleam"], requirements = ["exception", "extra", "gleam_erlang", "gleam_http", "gleam_stdlib", "lustre", "yamerl"], source = "local", path = "pkgs/extra_erlang" },
   { name = "extra_javascript", version = "1.0.0", build_tools = ["gleam"], requirements = ["gleam_stdlib", "lustre", "plinth"], source = "local", path = "pkgs/extra_javascript" },
   { name = "filepath", version = "1.1.2", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "filepath", source = "hex", outer_checksum = "B06A9AF0BF10E51401D64B98E4B627F1D2E48C154967DA7AF4D0914780A6D40A" },
-  { name = "forms", version = "1.0.0", build_tools = ["gleam"], requirements = ["exception", "extra", "gleam_http", "gleam_json", "gleam_regexp", "gleam_stdlib"], source = "local", path = "pkgs/forms" },
+  { name = "forms", version = "1.0.0", build_tools = ["gleam"], requirements = ["exception", "extra", "gleam_community_ansi", "gleam_http", "gleam_json", "gleam_regexp", "gleam_stdlib"], source = "local", path = "pkgs/forms" },
   { name = "frontend", version = "1.0.0", build_tools = ["gleam"], requirements = ["extra", "extra_javascript", "forms", "gleam_json", "gleam_stdlib", "lustre", "lustre_portal", "modem", "plinth"], source = "local", path = "pkgs/frontend" },
   { name = "glam", version = "2.0.3", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "glam", source = "hex", outer_checksum = "237C2CE218A2A0A5D46D625F8EF5B78F964BC91018B78D692B17E1AB84295229" },
   { name = "glance", version = "5.0.1", build_tools = ["gleam"], requirements = ["gleam_stdlib", "glexer"], otp_app = "glance", source = "hex", outer_checksum = "7F216D97935465FF4AC46699CD1C3E0FB19CB678B002E4ACAFCE256E96312F14" },

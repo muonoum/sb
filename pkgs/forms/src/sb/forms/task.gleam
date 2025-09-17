@@ -48,26 +48,16 @@ pub type Task {
 
 pub fn evaluate(
   task: Task,
-  scope: Scope,
-  search: Dict(String, String),
-  handlers: Handlers,
+  scope scope1: Scope,
+  search search: Dict(String, String),
+  handlers handlers: Handlers,
 ) -> #(Task, Scope) {
-  let values = field_values(task.fields)
-
+  let fields = evaluate_fields(task.fields, scope1, search, handlers)
+  let scope2 = field_values(fields)
   let fields =
-    changed_fields(scope, values)
-    |> reset_changed(task.fields)
-    |> evaluate_fields(values, search, handlers)
-
-  #(Task(..task, fields:), field_values(fields))
-}
-
-fn field_values(fields: Dict(String, Field)) -> Scope {
-  use scope, id, field <- dict.fold(fields, dict.new())
-
-  field.value(field)
-  |> option.map(dict.insert(scope, id, _))
-  |> option.unwrap(scope)
+    changed_fields(scope1, scope2)
+    |> reset_changed(fields)
+  #(Task(..task, fields:), scope2)
 }
 
 fn changed_fields(a: Scope, b: Scope) -> Set(String) {
@@ -77,6 +67,14 @@ fn changed_fields(a: Scope, b: Scope) -> Set(String) {
     use <- bool.guard(last == next, Error(Nil))
     Ok(id)
   })
+}
+
+fn field_values(fields: Dict(String, Field)) -> Scope {
+  use scope, id, field <- dict.fold(fields, dict.new())
+
+  field.value(field)
+  |> option.map(dict.insert(scope, id, _))
+  |> option.unwrap(scope)
 }
 
 fn reset_changed(

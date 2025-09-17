@@ -6,7 +6,12 @@ import gleam/int
 import gleam/otp/static_supervisor as supervisor
 import gleam/result
 import mist
+import sb/extra/dynamic as dynamic_extra
 import sb/extra/function.{identity}
+import sb/extra/httpc
+import sb/extra/report
+import sb/forms/error
+import sb/forms/handlers.{Handlers}
 import sb/router
 import sb/store
 import wisp
@@ -70,10 +75,24 @@ pub fn main() {
     wisp.random_string(64)
   }
 
+  let httpc_options = {
+    case envoy.get("CA_CERTS") {
+      Ok(ca_certs) -> [httpc.ca_certs(ca_certs)]
+      Error(Nil) -> []
+    }
+  }
+
+  let handlers =
+    Handlers(..handlers.empty(), http: fn(request) {
+      httpc.send(request, httpc_options)
+      |> result.map_error(dynamic_extra.from)
+      |> report.map_error(error.HttpError)
+    })
+
   let server_spec =
     router.service(_, static_handler)
     |> wisp_mist.handler(secret_key_base)
-    |> router.websocket_router(store_interval:, store:)
+    |> router.websocket_router(store_interval:, store:, handlers:)
     |> mist.new
     |> mist.bind(http_address)
     |> mist.port(http_port)

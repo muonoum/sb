@@ -13,6 +13,24 @@ category: [Tests]
 #       - Voluptate nulla deserunt qui pariatur laboris velit quis cupidatat proident dolor pariatur.
 #       - Ut qui sint ex eiusmod officia cillum.
 ---
+name: References
+layout:
+  - b
+  - c
+fields:
+  - id: a
+    kind: data
+    source.literal:
+      - a: [a, b, c]
+      - b: [d, e, f]
+      - c: [g, h, i]
+  - id: b
+    kind: select
+    source.reference: a
+  - id: c
+    kind: select
+    source.reference: b
+---
 name: Select
 fields:
   - id: values

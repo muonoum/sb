@@ -1,6 +1,9 @@
 name = "extra_erlang"
 version = "1.0.0"
 
+[erlang]
+extra_applications = ["inets", "ssl"]
+
 [dependencies]
 gleam_stdlib = ">= 0.44.0 and < 2.0.0"
 yamerl = ">= 0.10.0 and < 1.0.0"

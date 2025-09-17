@@ -1,0 +1,6 @@
+name: Task
+category: [Tests]
+fields:
+  - id: data
+    kind: data
+    source.fetch: http://localhost:1980/mock/lorem/sentences/3/3

@@ -17,11 +17,6 @@ import sb/forms/source.{type Source}
 import sb/forms/task.{type Task}
 import sb/forms/value.{type Value}
 
-pub fn inspect_task(task: Task) {
-  inspect_fields(task.fields)
-  |> string.join("\n")
-}
-
 pub fn inspect_scope(scope: Scope) -> String {
   let values = {
     use #(id, value) <- list.map(dict.to_list(scope))
@@ -36,6 +31,10 @@ pub fn inspect_scope(scope: Scope) -> String {
 
   use <- bool.guard(values == [], ansi.yellow("*"))
   string.join(values, " ")
+}
+
+pub fn inspect_task(task: Task) {
+  string.join(inspect_fields(task.fields), "\n")
 }
 
 pub fn inspect_fields(fields: dict.Dict(String, Field)) -> List(String) {
@@ -84,14 +83,27 @@ fn inspect_kind(kind: Kind) -> String {
   }
 }
 
-fn inspect_report(report: Report(Error)) -> String {
-  ansi.red(string.inspect(report.issue(report)))
+fn inspect_source(source: Reset(Result(Source, Report(Error)))) -> String {
+  case reset.unwrap(source) {
+    Error(report) -> inspect_report(report)
+    Ok(source.Literal(value)) -> inspect_value(value)
+    Ok(source.Loading(..)) -> ansi.yellow("Loading")
+    Ok(source.Reference(id)) -> ansi.grey("-->") <> ansi.pink(id)
+    Ok(source.Template(_text)) -> inspect_todo("template")
+    Ok(source.Command(_text)) -> inspect_todo("command")
+    Ok(source.Fetch(..)) -> inspect_todo("fetch")
+  }
 }
 
-fn inspect_choice(choice: Choice) -> String {
-  inspect_value(choice.key(choice))
-  <> "="
-  <> inspect_value(choice.value(choice))
+fn inspect_options(options: Options) -> String {
+  case options.sources(options) {
+    [source] -> inspect_source(source)
+
+    sources -> {
+      list.map(sources, inspect_source)
+      |> string.join("|")
+    }
+  }
 }
 
 fn single_selected(selected: Option(Choice)) -> String {
@@ -112,41 +124,14 @@ fn multiple_selected(selected: List(Choice)) -> String {
   }
 }
 
-fn inspect_options(options: Options) -> String {
-  case options.sources(options) {
-    [source] -> inspect_source(source)
-
-    sources -> {
-      list.map(sources, inspect_source)
-      |> string.join("|")
-    }
-  }
+fn inspect_choice(choice: Choice) -> String {
+  inspect_value(choice.key(choice))
+  <> "="
+  <> inspect_value(choice.value(choice))
 }
 
-fn inspect_source(source: Reset(Result(Source, Report(Error)))) -> String {
-  case reset.unwrap(source) {
-    Error(report) -> inspect_report(report)
-    Ok(source.Literal(value)) -> inspect_value(value)
-    Ok(source.Loading(..)) -> ansi.yellow("Loading")
-    Ok(source.Reference(id)) -> ansi.grey("-->") <> ansi.pink(id)
-    Ok(source.Template(_text)) -> inspect_todo("template")
-    Ok(source.Command(_text)) -> inspect_todo("command")
-    Ok(source.Fetch(..)) -> inspect_todo("fetch")
-  }
-}
-
-fn inspect_todo(text: String) -> String {
-  ansi.black(ansi.bg_red("TODO[" <> text <> "]"))
-}
-
-pub fn inspect_option_value(
-  value: Option(Result(Value, Report(Error))),
-) -> String {
-  case value {
-    option.None -> ansi.yellow("*")
-    option.Some(Error(report)) -> inspect_report(report)
-    option.Some(Ok(value)) -> inspect_value(value)
-  }
+fn inspect_report(report: Report(Error)) -> String {
+  ansi.red(string.inspect(report.issue(report)))
 }
 
 pub fn inspect_value(value: Value) -> String {
@@ -170,4 +155,8 @@ pub fn inspect_value(value: Value) -> String {
 
     value.String(string) -> ansi.cyan(string)
   }
+}
+
+fn inspect_todo(text: String) -> String {
+  ansi.black(ansi.bg_red("TODO(" <> text <> ")"))
 }

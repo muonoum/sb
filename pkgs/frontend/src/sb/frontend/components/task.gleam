@@ -1,5 +1,6 @@
 import gleam/bool
 import gleam/dict.{type Dict}
+import gleam/io
 import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -20,10 +21,12 @@ import sb/extra/report.{type Report}
 import sb/extra/reset
 import sb/forms/choice
 import sb/forms/condition
+import sb/forms/debug
 import sb/forms/error.{type Error}
 import sb/forms/field.{type Field}
 import sb/forms/kind
 import sb/forms/layout
+import sb/forms/scope.{type Scope}
 import sb/forms/source.{type Source}
 import sb/forms/task.{type Task}
 import sb/forms/value.{type Value}
@@ -63,10 +66,13 @@ const field_padding_style = [
 type Loader =
   fn(Result(Task, Report(Error))) -> Message
 
+type Evaluator =
+  fn(Task, Scope) -> Message
+
 pub opaque type Handlers {
   Handlers(
     load: fn(String, Loader) -> Effect(Message),
-    step: fn(Task, Dict(String, String), Loader) -> Effect(Message),
+    step: fn(Task, Scope, Dict(String, String), Evaluator) -> Effect(Message),
     schedule: fn(Int, Message) -> Effect(Message),
   )
 }
@@ -79,7 +85,7 @@ pub opaque type Message {
   Search(field_id: String, string: String)
   ApplySearch(field_id: String, debounce: Int)
   Evaluate
-  Evaluated(Result(Task, Report(Error)))
+  Evaluated(Task, Scope)
   ResetForm
   StartJob
   ToggleDebug
@@ -90,7 +96,7 @@ pub opaque type Model {
   Model(
     handlers: Handlers,
     debug: Bool,
-    use_layout: Bool,
+    layout: Bool,
     state: Loadable(State, Report(Error)),
   )
 }
@@ -98,6 +104,7 @@ pub opaque type Model {
 type State {
   State(
     task: Task,
+    scope: Scope,
     search: Dict(String, DebouncedSearch),
     debounce: Int,
     validated: Bool,
@@ -110,7 +117,7 @@ type DebouncedSearch {
 
 pub fn app(
   load load: fn(String, Loader) -> Effect(Message),
-  step step: fn(Task, Dict(String, String), Loader) -> Effect(Message),
+  step step: fn(Task, Scope, Dict(String, String), Evaluator) -> Effect(Message),
   schedule schedule: fn(Int, Message) -> Effect(Message),
 ) -> lustre.App(Nil, Model, Message) {
   let handlers = Handlers(load:, step:, schedule:)
@@ -127,8 +134,7 @@ pub fn app(
 }
 
 pub fn init(_flags, handlers: Handlers) -> #(Model, Effect(Message)) {
-  let model =
-    Model(handlers:, debug: True, use_layout: True, state: loadable.Empty)
+  let model = Model(handlers:, debug: True, layout: True, state: loadable.Empty)
   #(model, effect.none())
 }
 
@@ -149,7 +155,13 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
     Receive(Ok(task)) -> {
       let state =
         loadable.succeed({
-          State(task:, search: dict.new(), debounce: 0, validated: False)
+          State(
+            task:,
+            scope: dict.new(),
+            search: dict.new(),
+            debounce: 0,
+            validated: False,
+          )
         })
 
       #(Model(..model, state:), dispatch_evaluate())
@@ -234,11 +246,17 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
         search.applied
       }
 
-      #(model, handlers.step(state.task, search, Evaluated))
+      #(model, handlers.step(state.task, state.scope, search, Evaluated))
     }
 
-    Evaluated(Error(_report)) -> #(model, effect.none())
-    Evaluated(Ok(_task)) -> #(model, effect.none())
+    Evaluated(task, scope) -> {
+      use state <- with_state(model)
+      io.println(debug.inspect_scope(scope))
+      let next = loadable.succeed(State(..state, task:, scope:))
+      let model = Model(..model, state: next)
+      use <- bool.guard(scope == state.scope, #(model, effect.none()))
+      #(model, dispatch_evaluate())
+    }
 
     ResetForm ->
       case model.state {
@@ -254,7 +272,7 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
     ToggleDebug -> #(Model(..model, debug: !model.debug), effect.none())
 
     ToggleLayout -> {
-      #(Model(..model, use_layout: !model.use_layout), effect.none())
+      #(Model(..model, layout: !model.layout), effect.none())
     }
   }
 }
@@ -318,7 +336,7 @@ fn page_header(model: Model) -> Element(Message) {
 }
 
 type Context {
-  Context(debug: Bool, use_layout: Bool, state: State)
+  Context(debug: Bool, layout: Bool, state: State)
 }
 
 fn get_debug() -> Reader(Bool, Context) {
@@ -326,9 +344,9 @@ fn get_debug() -> Reader(Bool, Context) {
   reader.return(debug)
 }
 
-fn get_use_layout() -> Reader(Bool, Context) {
-  use Context(use_layout:, ..) <- reader.bind(reader.ask)
-  reader.return(use_layout)
+fn get_layout() -> Reader(Bool, Context) {
+  use Context(layout:, ..) <- reader.bind(reader.ask)
+  reader.return(layout)
 }
 
 fn get_state() -> Reader(State, Context) {
@@ -355,8 +373,7 @@ fn page(model: Model) -> Element(Message) {
         )
 
       loadable.Loaded(_status, State(task:, ..) as state) -> {
-        let context =
-          Context(debug: model.debug, use_layout: model.use_layout, state:)
+        let context = Context(debug: model.debug, layout: model.layout, state:)
 
         reader.run(context:, reader: {
           use header <- reader.bind(task_header())
@@ -394,7 +411,7 @@ fn task_name(name: String) -> Element(message) {
 
 fn task_options() -> Reader(Element(Message), Context) {
   use debug <- reader.bind(get_debug())
-  use use_layout <- reader.bind(get_use_layout())
+  use layout <- reader.bind(get_layout())
   use <- return(reader.return)
 
   html.div([core.classes(["flex gap-3 items-center p-1 rounded-sm"])], [
@@ -405,7 +422,7 @@ fn task_options() -> Reader(Element(Message), Context) {
         disabled_option(ToggleDebug, "show debug", icons.eye_slash_outline)
     },
 
-    case use_layout {
+    case layout {
       True -> enabled_option(ToggleLayout, "hide layout", icons.squares22)
       False -> disabled_option(ToggleLayout, "show layout", icons.squares22)
     },
@@ -453,9 +470,9 @@ fn task_description(description: String) -> Element(message) {
 
 fn task_fields() -> Reader(List(Element(Message)), Context) {
   use task <- reader.bind(get_task())
-  use use_layout <- reader.bind(get_use_layout())
+  use layout <- reader.bind(get_layout())
 
-  case task.layout, use_layout {
+  case task.layout, layout {
     layout, False -> results_layout(layout.results)
     layout.Ids(ids:, ..), _use_layout -> list_layout(ids)
     layout.Grid(areas:, style:, ..), _use_layout -> grid_layout(areas, style)
