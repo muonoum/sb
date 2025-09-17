@@ -1,0 +1,8 @@
+---
+version: 1.4.0
+title: evaluate--task-single-data-literal
+file: ./test/sb_test.gleam
+test_name: evaluate_single_data_literal_test
+---
+[32mdata[39m [90mdata [39m[36mvalue[39m[90m ==> [39m[36mvalue[39m
+[33m*[39m

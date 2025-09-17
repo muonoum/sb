@@ -56,7 +56,7 @@ pub fn main() {
 }
 
 pub fn evaluate_step(task1, scope1, search, handlers) {
-  let #(task2, scope2) = task.evaluate(task1, scope1, search, handlers)
+  let #(task2, scope2) = task.step(task1, scope1, search, handlers)
   debug.inspect_task(task2) |> io.println
   debug.inspect_scope(scope2) |> io.println
   io.println("")

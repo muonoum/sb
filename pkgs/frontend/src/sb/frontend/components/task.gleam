@@ -165,18 +165,18 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
           )
         })
 
-      #(Model(..model, state:), dispatch_evaluate())
+      #(Model(..model, state:), step())
     }
 
     Change(field_id:, value:, delay:) -> {
-      use state <- with_state(model)
+      use state <- resolved(model)
 
       case task.update(state.task, field_id, value) {
         Error(_report) -> #(model, effect.none())
 
         Ok(task) if delay == 0 -> {
           let state = loadable.succeed(State(..state, task:))
-          #(Model(..model, state:), dispatch_evaluate())
+          #(Model(..model, state:), step())
         }
 
         Ok(task) -> {
@@ -189,22 +189,22 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
     }
 
     ApplyChange(debounce:) -> {
-      use state <- with_state(model)
+      use state <- resolved(model)
       use <- bool.guard(state.debounce != debounce, #(model, effect.none()))
       let state = loadable.succeed(State(..state, debounce: 0))
-      #(Model(..model, state:), dispatch_evaluate())
+      #(Model(..model, state:), step())
     }
 
     Search(field_id:, string: "") -> {
       // TODO: Reset field placeholder
-      use state <- with_state(model)
+      use state <- resolved(model)
       let search = dict.delete(state.search, field_id)
       let state = loadable.succeed(State(..state, search:))
-      #(Model(..model, state:), dispatch_evaluate())
+      #(Model(..model, state:), step())
     }
 
     Search(field_id:, string:) -> {
-      use state <- with_state(model)
+      use state <- resolved(model)
 
       let search = {
         use <- result.lazy_unwrap(dict.get(state.search, field_id))
@@ -224,7 +224,7 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
 
     ApplySearch(field_id:, debounce:) -> {
       // TODO: Reset field placeholder
-      use state <- with_state(model)
+      use state <- resolved(model)
 
       case dict.get(state.search, field_id) {
         Ok(search) if search.debounce == debounce -> {
@@ -232,7 +232,7 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
             DebouncedSearch(..search, applied: search.string, debounce: 0)
             |> dict.insert(state.search, field_id, _)
           let state = loadable.succeed(State(..state, search:))
-          #(Model(..model, state:), dispatch_evaluate())
+          #(Model(..model, state:), step())
         }
 
         _else -> #(model, effect.none())
@@ -240,7 +240,7 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
     }
 
     Evaluate -> {
-      use state <- with_state(model)
+      use state <- resolved(model)
 
       let search = {
         use _id, search <- dict.map_values(state.search)
@@ -251,12 +251,12 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
     }
 
     Evaluated(task, scope) -> {
-      use state <- with_state(model)
+      use state <- resolved(model)
       io.println(debug.inspect_scope(scope))
       let next = loadable.succeed(State(..state, task:, scope:))
       let model = Model(..model, state: next)
       let changed = scope != state.scope || task != state.task
-      use <- bool.guard(changed, #(model, dispatch_evaluate()))
+      use <- bool.guard(changed, #(model, step()))
       #(model, effect.none())
     }
 
@@ -279,11 +279,11 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
   }
 }
 
-fn dispatch_evaluate() -> Effect(Message) {
+fn step() -> Effect(Message) {
   effect.from(apply(Evaluate))
 }
 
-fn with_state(model: Model, then: fn(State) -> #(Model, Effect(message))) {
+fn resolved(model: Model, then: fn(State) -> #(Model, Effect(message))) {
   case model.state {
     loadable.Loaded(loadable.Resolved, state) -> then(state)
     _state -> #(model, effect.none())

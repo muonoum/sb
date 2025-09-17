@@ -1,0 +1,9 @@
+---
+version: 1.4.0
+title: evaluate--select-with-reference-to-data--step4
+file: ./test/sb_test.gleam
+test_name: evaluate_select_with_reference_to_data_test
+---
+[32mdata[39m [90mdata [39m#[[36ma[39m [36mb[39m [36mc[39m][90m ==> [39m#[[36ma[39m [36mb[39m [36mc[39m]
+[32mselect[39m [90mselect [39m#[[36ma[39m [36mb[39m [36mc[39m][90m ==> [39m[36mb[39m=[36mb[39m
+data[90m=[39m#[[36ma[39m [36mb[39m [36mc[39m] select[90m=[39m[36mb[39m

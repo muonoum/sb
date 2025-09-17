@@ -1,0 +1,19 @@
+kind: tasks/v1
+category: [Test]
+---
+name: Single data literal
+fields:
+  - id: data
+    kind: data
+    source.literal: value
+---
+name: Select with reference to data
+fields:
+  - id: data
+    kind: data
+    source.literal: [a, b, c]
+
+  - id: select
+    kind: select
+    source.reference: data
+

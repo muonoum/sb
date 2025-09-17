@@ -46,7 +46,7 @@ pub type Task {
   )
 }
 
-pub fn evaluate(
+pub fn step(
   task: Task,
   scope1: Scope,
   search search: Dict(String, String),

@@ -84,7 +84,7 @@ pub fn websocket_router(
           },
           step: fn(task, scope, search, message: task_component.StepMessage) {
             use dispatch <- effect.from
-            let #(task, scope) = task.evaluate(task, scope, search:, handlers:)
+            let #(task, scope) = task.step(task, scope, search:, handlers:)
             dispatch(message(task, scope))
           },
         ),
