@@ -551,6 +551,7 @@ fn field_container(
   use field_meta <- reader.bind(field_meta(id, field, search))
   use field_content <- reader.bind(field_content(id, field, search))
   use <- return(reader.return)
+
   [field_content, field_meta, field_padding()]
   |> html.div([core.classes(field_row_style)], _)
 }
