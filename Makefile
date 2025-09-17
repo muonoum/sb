@@ -1,31 +1,37 @@
 iosevka = https://github.com/be5invis/Iosevka/releases/download/v33.2.7/PkgWebFont-IosevkaSS13-33.2.7.zip
 inter = https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip
 
-.PHONY: run
-run: frontend
-	gleam run
-
-.PHONY: clean
-clean:
-	cd pkgs/extra && gleam clean
-	cd pkgs/extra_client && gleam clean
-	cd pkgs/extra_server && gleam clean
-	cd pkgs/forms && gleam clean
-	cd pkgs/frontend && gleam clean
-	gleam clean
-
-.PHONY: clean-manifests
-clean-manifests:
-	find pkgs -name manifest.toml -delete
-	rm manifest.toml
+.PHONY: build
+build: frontend
+	gleam build
 
 .PHONY: check
 check: check-frontend
 	gleam check
 
+.PHONY: run
+run: frontend
+	gleam run
+
+.PHONY: clean
+clean: clean-pkgs
+	gleam clean
+
+.PHONY: clean-manifests
+clean-manifests: clean-pkgs-manifests
+	rm manifest.toml
+
+.PHONY: clean-pkgs
+clean-pkgs:
+	find pkgs -maxdepth 2 -name gleam.toml -execdir gleam clean \;
+
+.PHONY: clean-pkgs-manifests
+clean-pkgs-manifests:
+	find pkgs -maxdepth 2 -name manifest.toml -delete
+
 .PHONY: watch
 watch: .restart
-	watchexec --clear --quiet --restart --stop-signal INT --stop-timeout 150ms --watch .restart make
+	watchexec --clear --quiet --restart --stop-signal INT --stop-timeout 150ms --watch .restart make run
 
 .restart:
 	touch .restart
