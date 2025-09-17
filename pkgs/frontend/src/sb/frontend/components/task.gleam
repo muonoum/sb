@@ -63,10 +63,10 @@ const field_padding_style = [
   "w-(--sheet-width) h-screen", "bg-white group-even:bg-stone-50",
 ]
 
-type Loader =
+pub type Loader =
   fn(Result(Task, Report(Error))) -> Message
 
-type Evaluator =
+pub type Evaluator =
   fn(Task, Scope) -> Message
 
 pub opaque type Handlers {
@@ -254,7 +254,11 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
       io.println(debug.inspect_scope(scope))
       let next = loadable.succeed(State(..state, task:, scope:))
       let model = Model(..model, state: next)
-      use <- bool.guard(scope == state.scope, #(model, effect.none()))
+
+      use <- bool.guard(scope == state.scope && task == state.task, {
+        #(model, effect.none())
+      })
+
       #(model, dispatch_evaluate())
     }
 

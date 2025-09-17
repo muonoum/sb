@@ -1,6 +1,20 @@
 name: Task
 category: [Tests]
 fields:
-  - id: data
+  - id: 1-fetch
     kind: data
-    source.fetch: http://localhost:1980/mock/lorem/sentences/3/3
+    source.fetch:
+      url: http://localhost:1980/mock/echo?delay=500
+      method: post
+      body.literal: [foo, bar, baz]
+
+  - id: 2-select
+    kind: select
+    source.reference: 1-fetch
+
+  - id: 3-fetch
+    kind: data
+    source.fetch:
+      method: post
+      url: http://localhost:1980/mock/echo?delay=500
+      body.reference: 2-select

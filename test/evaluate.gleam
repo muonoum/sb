@@ -3,8 +3,7 @@ import gleam/dynamic/decode
 import gleam/io
 import gleam/option.{Some}
 import gleam/result
-import gleam/string
-import inspect
+import gleam_community/ansi
 import sb/extra/dots
 import sb/extra/dynamic as dynamic_extra
 import sb/extra/httpc
@@ -49,21 +48,31 @@ pub fn main() {
 
   let #(task, scope) = evaluate_step(task, scope, search, handlers)
   let #(task, scope) = evaluate_step(task, scope, search, handlers)
+  let #(task, scope) = evaluate_step(task, scope, search, handlers)
+  let task = update(task, "2-select", Some(String("bar")))
+  let #(task, scope) = evaluate_step(task, scope, search, handlers)
+  let #(task, scope) = evaluate_step(task, scope, search, handlers)
+  let #(_task, _scope) = evaluate_step(task, scope, search, handlers)
 }
 
-pub fn evaluate_step(task, scope, search, handlers) {
-  io.println("evaluate")
-  let #(task, scope2) = task.evaluate(task, scope, search, handlers)
-  debug.inspect_task(task) |> io.println
+pub fn evaluate_step(task1, scope1, search, handlers) {
+  let #(task2, scope2) = task.evaluate(task1, scope1, search, handlers)
+  debug.inspect_task(task2) |> io.println
   debug.inspect_scope(scope2) |> io.println
   io.println("")
-  #(task, scope2)
+  #(task2, scope2)
 }
 
 pub fn update(task, id, value) {
-  io.println("update " <> id <> " --> " <> string.inspect(value))
+  io.println(
+    ansi.grey("update ")
+    <> debug.inspect_id(id)
+    <> ansi.grey(" --> ")
+    <> debug.inspect_option_value(value),
+  )
+
   let assert Ok(task) = task.update(task, id, value)
-  inspect.inspect_task(task) |> io.println
+  debug.inspect_task(task) |> io.println
   io.println("")
   task
 }

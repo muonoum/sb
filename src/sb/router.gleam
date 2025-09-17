@@ -13,10 +13,10 @@ import sb/component
 import sb/extra/function.{identity}
 import sb/extra_erlang
 import sb/forms/handlers.{type Handlers}
-import sb/forms/task as task2
+import sb/forms/task
 import sb/frontend
 import sb/frontend/components/errors
-import sb/frontend/components/task
+import sb/frontend/components/task as task_component
 import sb/frontend/components/tasks
 import sb/store
 import wisp
@@ -73,16 +73,16 @@ pub fn websocket_router(
     ["components", "task"] ->
       component_service(
         request,
-        task.app(
+        task_component.app(
           schedule: extra_erlang.schedule,
-          load: fn(task_id, message) {
+          load: fn(task_id, message: task_component.Loader) {
             use dispatch <- effect.from
             let result = store.get_task(store, task_id)
             dispatch(message(result))
           },
-          step: fn(task, scope, search, message) {
+          step: fn(task, scope, search, message: task_component.Evaluator) {
             use dispatch <- effect.from
-            let #(task, scope) = task2.evaluate(task, scope, search, handlers)
+            let #(task, scope) = task.evaluate(task, scope:, search:, handlers:)
             dispatch(message(task, scope))
           },
         ),

@@ -268,12 +268,25 @@ fn group_source(
     Error(report), _debug ->
       return(core.inspect([attr.class("p-3 text-red-800")], report))
 
-    // TODO: Loading
     Ok(source), False ->
-      return(html.div([attr.class("p-3")], [core.inspect([], source)]))
+      case config.is_loading(source) {
+        False -> reader.return(element.none())
+
+        True ->
+          return(
+            html.div([attr.class("p-3 self-center")], [
+              core.spinner([], config.is_loading(source)),
+            ]),
+          )
+      }
 
     Ok(source), True ->
-      return(html.div([attr.class("p-3")], [core.inspect([], source)]))
+      return(
+        html.div([attr.class("flex gap-2 p-3")], [
+          core.inspect([], source),
+          core.spinner([], config.is_loading(source)),
+        ]),
+      )
   }
 }
 
@@ -288,12 +301,15 @@ fn group_value(
       group_members(label, keys)
     }
 
-    // TODO 
     Ok(keys), True -> group_members(label, keys)
 
     Error(report), _has_placeholder ->
-      core.inspect([attr.class("p-3 text-red-800")], report)
-      |> reader.return
+      reader.return(
+        element.fragment([
+          group_label(label),
+          core.inspect([attr.class("p-3 text-red-800")], report),
+        ]),
+      )
   }
 }
 

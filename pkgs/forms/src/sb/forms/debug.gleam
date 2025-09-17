@@ -1,10 +1,12 @@
 import gleam/bool
 import gleam/dict
+import gleam/http
 import gleam/int
 import gleam/list
 import gleam/option.{type Option}
 import gleam/string
 import gleam_community/ansi
+import sb/extra/function
 import sb/extra/report.{type Report}
 import sb/extra/reset.{type Reset}
 import sb/forms/choice.{type Choice}
@@ -15,6 +17,7 @@ import sb/forms/options.{type Options}
 import sb/forms/scope.{type Scope}
 import sb/forms/source.{type Source}
 import sb/forms/task.{type Task}
+import sb/forms/text.{type Text}
 import sb/forms/value.{type Value}
 
 pub fn inspect_scope(scope: Scope) -> String {
@@ -29,8 +32,12 @@ pub fn inspect_scope(scope: Scope) -> String {
     }
   }
 
-  use <- bool.guard(values == [], ansi.yellow("*"))
+  use <- bool.guard(values == [], inspect_empty())
   string.join(values, " ")
+}
+
+pub fn inspect_empty() -> String {
+  ansi.yellow("*")
 }
 
 pub fn inspect_task(task: Task) {
@@ -39,17 +46,21 @@ pub fn inspect_task(task: Task) {
 
 pub fn inspect_fields(fields: dict.Dict(String, Field)) -> List(String) {
   use #(id, field) <- list.map(dict.to_list(fields))
-  ansi.green(id) <> " " <> inspect_kind(field.kind)
+  inspect_id(id) <> " " <> inspect_kind(field.kind)
+}
+
+pub fn inspect_id(id: String) -> String {
+  ansi.green(id)
 }
 
 fn inspect_kind(kind: Kind) -> String {
   case kind {
     kind.Data(source:) ->
       ansi.grey("data ")
-      <> inspect_source(source)
+      <> inspect_reset_source(source)
       <> ansi.grey(" ==> ")
       <> case kind.value(kind) {
-        option.None -> ansi.yellow("*")
+        option.None -> inspect_empty()
         option.Some(Error(report)) -> inspect_report(report)
         option.Some(Ok(value)) -> inspect_value(value)
       }
@@ -83,24 +94,66 @@ fn inspect_kind(kind: Kind) -> String {
   }
 }
 
-fn inspect_source(source: Reset(Result(Source, Report(Error)))) -> String {
+fn inspect_reset_source(source: Reset(Result(Source, Report(Error)))) -> String {
   case reset.unwrap(source) {
     Error(report) -> inspect_report(report)
-    Ok(source.Literal(value)) -> inspect_value(value)
-    Ok(source.Loading(..)) -> ansi.yellow("Loading")
-    Ok(source.Reference(id)) -> ansi.grey("-->") <> ansi.pink(id)
-    Ok(source.Template(_text)) -> inspect_todo("template")
-    Ok(source.Command(_text)) -> inspect_todo("command")
-    Ok(source.Fetch(..)) -> inspect_todo("fetch")
+    Ok(source) -> inspect_source(source)
   }
+}
+
+fn inspect_source(source: Source) -> String {
+  case source {
+    source.Literal(value) -> inspect_value(value)
+    source.Loading(..) -> ansi.yellow("Loading")
+    source.Reference(id) -> ansi.grey("-->") <> ansi.pink(id)
+    source.Template(_text) -> inspect_todo("template")
+    source.Command(_text) -> inspect_todo("command")
+    source.Fetch(method:, uri:, headers:, body:) ->
+      inspect_fetch(method, uri, headers, body)
+  }
+}
+
+fn inspect_fetch(
+  method: http.Method,
+  uri: Text,
+  _headers: List(#(String, String)),
+  body: Option(Source),
+) -> String {
+  [
+    Ok([
+      ansi.cyan(http.method_to_string(method)),
+      inspect_text(uri),
+    ]),
+    case body {
+      option.None -> Error(Nil)
+      option.Some(source) -> Ok(["<--", inspect_source(source)])
+    },
+  ]
+  |> list.filter_map(function.identity)
+  |> list.flatten
+  |> string.join(" ")
+}
+
+pub fn inspect_text(text: Text) -> String {
+  let parts = {
+    use part <- list.map(text.parts)
+
+    case part {
+      text.Placeholder -> "{{_}}"
+      text.Reference(id) -> "{{" <> id <> "}}"
+      text.Static(string) -> string
+    }
+  }
+
+  string.join(parts, "")
 }
 
 fn inspect_options(options: Options) -> String {
   case options.sources(options) {
-    [source] -> inspect_source(source)
+    [source] -> inspect_reset_source(source)
 
     sources -> {
-      list.map(sources, inspect_source)
+      list.map(sources, inspect_reset_source)
       |> string.join("|")
     }
   }
@@ -109,13 +162,13 @@ fn inspect_options(options: Options) -> String {
 fn single_selected(selected: Option(Choice)) -> String {
   case selected {
     option.Some(choice) -> inspect_choice(choice)
-    option.None -> ansi.yellow("*")
+    option.None -> inspect_empty()
   }
 }
 
 fn multiple_selected(selected: List(Choice)) -> String {
   case selected {
-    [] -> ansi.yellow("*")
+    [] -> inspect_empty()
     list ->
       "["
       <> list.map(list, inspect_choice)
@@ -132,6 +185,13 @@ fn inspect_choice(choice: Choice) -> String {
 
 fn inspect_report(report: Report(Error)) -> String {
   ansi.red(string.inspect(report.issue(report)))
+}
+
+pub fn inspect_option_value(value: Option(Value)) -> String {
+  case value {
+    option.None -> inspect_empty()
+    option.Some(value) -> inspect_value(value)
+  }
 }
 
 pub fn inspect_value(value: Value) -> String {
