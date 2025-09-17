@@ -40,9 +40,11 @@ assets/Iosevka:
 assets/Inter:
 	curl --silent -L $(inter) | bsdtar -C assets -s /^web/Inter/ -xf- web
 
+commit_message = $(shell echo $(message) | xargs)
+
 .PHONY: commit
 commit: message ?= $(shell git diff --name-only --cached | xargs basename)
 commit:
-	test -n "$(shell echo $(message) | xargs)"
-	git commit -m "$(shell echo $(message) | xargs)"
+	test -n "$(commit_message)"
+	git commit -m "$(commit_message)"
 
