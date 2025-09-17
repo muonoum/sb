@@ -4,7 +4,7 @@ import gleam/option.{None, Some}
 import gleam/result
 import gleam/string
 import gleam/uri.{type Uri}
-import lustre/attribute.{type Attribute} as attr
+import lustre/attribute.{type Attribute, attribute} as attr
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
@@ -200,8 +200,76 @@ fn body(model: Model) -> Element(Message) {
   ])
 }
 
-fn view_jobs(_model: Model) -> Element(Message) {
-  html.div([attr.class("flex flex-col basis-4/6")], [])
+fn view_jobs(model: Model) -> Element(Message) {
+  let Model(filter:, ..) = model
+
+  let ownership = case filter.ownership {
+    AllJobs -> "all-jobs"
+    MyApprovals -> "my-approvals"
+    MyJobs -> "my-jobs"
+  }
+
+  html.div([attr.class("flex flex-col basis-4/6")], [
+    started_jobs(filter, ownership),
+    requested_jobs(filter, ownership),
+    finished_jobs(filter, ownership),
+  ])
+}
+
+fn started_jobs(filter: Filter, ownership: String) -> Element(message) {
+  server.element(
+    [
+      attr.id("sb-started-jobs"),
+      server.route("/components/jobs/started"),
+      attribute("data-search", filter.search),
+      attribute("data-ownership", ownership),
+      attribute("data-status", {
+        case filter.started {
+          True -> "all"
+          False -> "none"
+        }
+      }),
+    ],
+    [],
+  )
+}
+
+fn requested_jobs(filter: Filter, ownership: String) -> Element(message) {
+  server.element(
+    [
+      attr.id("sb-requested-jobs"),
+      server.route("/components/jobs/requested"),
+      attribute("data-search", filter.search),
+      attribute("data-ownership", ownership),
+      attribute("data-status", {
+        case filter.requested {
+          True -> "all"
+          False -> "none"
+        }
+      }),
+    ],
+    [],
+  )
+}
+
+fn finished_jobs(filter: Filter, ownership: String) -> Element(message) {
+  server.element(
+    [
+      attr.id("sb-finished-jobs"),
+      server.route("/components/jobs/finished"),
+      attribute("data-search", filter.search),
+      attribute("data-ownership", ownership),
+      attribute("data-status", {
+        case filter.succeeded, filter.failed {
+          True, True -> "all"
+          False, False -> "none"
+          True, False -> "succeeded"
+          False, True -> "failed"
+        }
+      }),
+    ],
+    [],
+  )
 }
 
 fn view_sidebar(filter: Filter) -> Element(Message) {
@@ -221,7 +289,7 @@ fn view_sidebar(filter: Filter) -> Element(Message) {
   )
 }
 
-fn sidebar_header() -> Element(Message) {
+fn sidebar_header() -> Element(message) {
   html.div([core.classes(["flex items-start justify-between mb-4"])], [
     html.h1([attr.class("text-xl font-semibold")], [html.text("Jobber")]),
   ])
@@ -324,10 +392,10 @@ fn select_started_jobs(filter: Filter) -> Element(Message) {
       attr.class("accent-cyan-800"),
       attr.type_("checkbox"),
       attr.id("started-jobs"),
+      checked(filter.started),
       server.include(event.on("change", set_started_jobs(filter)), [
         "target.checked",
       ]),
-      checked(filter.started),
     ]),
     html.label([attr.class("select-none"), attr.for("started-jobs")], [
       html.text("Aktive jobber"),
@@ -366,10 +434,10 @@ fn select_failed_jobs(filter: Filter) -> Element(Message) {
       attr.class("accent-cyan-800"),
       attr.type_("checkbox"),
       attr.id("failed-jobs"),
+      checked(filter.failed),
       server.include(event.on("change", set_failed_jobs(filter)), [
         "target.checked",
       ]),
-      checked(filter.failed),
     ]),
     html.label([attr.class("select-none"), attr.for("failed-jobs")], [
       html.text("Jobber med feil"),
@@ -383,10 +451,10 @@ fn select_successful_jobs(filter: Filter) -> Element(Message) {
       attr.class("accent-cyan-800"),
       attr.type_("checkbox"),
       attr.id("successful-jobs"),
+      checked(filter.succeeded),
       server.include(event.on("change", set_successful_jobs(filter)), [
         "target.checked",
       ]),
-      checked(filter.succeeded),
     ]),
     html.label([attr.class("select-none"), attr.for("successful-jobs")], [
       html.text("Vellykkede jobber"),
