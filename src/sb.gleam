@@ -82,6 +82,7 @@ pub fn main() {
   }
 
   let handlers = {
+    // TODO
     let command = handlers.empty_command()
 
     let http = fn(request) {

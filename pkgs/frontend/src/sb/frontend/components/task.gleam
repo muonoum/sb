@@ -1,6 +1,5 @@
 import gleam/bool
 import gleam/dict.{type Dict}
-import gleam/io
 import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -21,7 +20,6 @@ import sb/extra/report.{type Report}
 import sb/extra/reset
 import sb/forms/choice
 import sb/forms/condition
-import sb/forms/debug
 import sb/forms/error.{type Error}
 import sb/forms/field.{type Field}
 import sb/forms/kind
@@ -253,12 +251,11 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
 
     Evaluated(task, scope) -> {
       use state <- resolved(model)
-      io.println(debug.inspect_scope(scope))
       let changed = scope != state.scope || task != state.task
-      let state = loadable.succeed(State(..state, task:, scope:))
-      let model = Model(..model, state:)
+      let state = State(..state, task:, scope:)
+      let model = Model(..model, state: loadable.succeed(state))
       use <- bool.guard(changed, #(model, step()))
-      #(model, effect.none())
+      #(validate(state, model), effect.none())
     }
 
     ResetForm ->
@@ -278,6 +275,11 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
       #(Model(..model, layout: !model.layout), effect.none())
     }
   }
+}
+
+fn validate(state: State, model: Model) -> Model {
+  let state = State(..state, validated: task.validate(state.task))
+  Model(..model, state: loadable.succeed(state))
 }
 
 fn step() -> Effect(Message) {

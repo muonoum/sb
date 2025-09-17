@@ -95,6 +95,12 @@ fn reset_changed(
   field.reset(field, refs)
 }
 
+pub fn validate(task: Task) -> Bool {
+  use field <- list.all(dict.values(task.fields))
+  option.map(field.value(field), result.is_ok)
+  |> option.unwrap(True)
+}
+
 pub fn update(
   task: Task,
   id: String,
