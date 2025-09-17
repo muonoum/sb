@@ -1,7 +1,7 @@
 import gleam/dict
 import gleeunit/should
 import helpers
-import sb/extra/yaml
+import sb/extra_server/yaml
 import sb/forms/custom
 
 pub const short_fetch = "

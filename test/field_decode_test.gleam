@@ -2,7 +2,7 @@ import gleam/dict
 import gleam/result
 import gleeunit/should
 import helpers
-import sb/extra/yaml
+import sb/extra_server/yaml
 import sb/forms/custom
 
 const custom_fields = "

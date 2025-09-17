@@ -6,9 +6,9 @@ import gleam/result
 import gleam_community/ansi
 import sb/extra/dots
 import sb/extra/dynamic as dynamic_extra
-import sb/extra/httpc
 import sb/extra/report
-import sb/extra/yaml
+import sb/extra_server/httpc
+import sb/extra_server/yaml
 import sb/forms/access
 import sb/forms/custom
 import sb/forms/debug

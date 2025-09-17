@@ -13,11 +13,11 @@ import gleam/set.{type Set}
 import sb/extra/dots
 import sb/extra/function.{compose, identity, return}
 import sb/extra/list as list_extra
-import sb/extra/path
 import sb/extra/report.{type Report}
 import sb/extra/state.{type State}
 import sb/extra/writer.{type Writer}
-import sb/extra/yaml
+import sb/extra_server/path
+import sb/extra_server/yaml
 import sb/forms/command.{type Command}
 import sb/forms/custom.{type Custom}
 import sb/forms/decoder

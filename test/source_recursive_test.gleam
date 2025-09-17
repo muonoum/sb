@@ -2,7 +2,7 @@ import gleam/result
 import gleeunit/should
 import helpers
 import sb/extra/report
-import sb/extra/yaml
+import sb/extra_server/yaml
 import sb/forms/custom
 import sb/forms/error
 
