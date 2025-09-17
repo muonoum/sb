@@ -46,10 +46,18 @@ pub fn main() {
 
   let scope = dict.new()
 
+  debug.inspect_task(task) |> io.println
+  debug.inspect_scope(scope) |> io.println
+  io.println("")
+
   let #(task, scope) = evaluate_step(task, scope, search, handlers)
   let #(task, scope) = evaluate_step(task, scope, search, handlers)
   let #(task, scope) = evaluate_step(task, scope, search, handlers)
   let task = update(task, "2-select", Some(String("bar")))
+  let #(task, scope) = evaluate_step(task, scope, search, handlers)
+  let #(task, scope) = evaluate_step(task, scope, search, handlers)
+  let #(task, scope) = evaluate_step(task, scope, search, handlers)
+  let task = update(task, "2-select", Some(String("baz")))
   let #(task, scope) = evaluate_step(task, scope, search, handlers)
   let #(task, scope) = evaluate_step(task, scope, search, handlers)
   let #(_task, _scope) = evaluate_step(task, scope, search, handlers)
