@@ -42,8 +42,9 @@ pub type Error {
   BadCondition(String)
   BadFormat(Dynamic)
 
-  FileError
   DecodeError(List(decode.DecodeError))
+  FileError
+  HttpError(Dynamic)
   JsonError(json.DecodeError)
   RegexError(regexp.CompileError)
   TextError(parser.Message(String))

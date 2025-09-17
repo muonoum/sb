@@ -20,9 +20,7 @@ import sb/forms/value.{type Value}
 
 pub fn inspect_task(task: Task) {
   inspect_fields(task.fields)
-  |> list.map(fn(v) { " " <> v })
   |> string.join("\n")
-  |> io.println
 }
 
 pub fn inspect_scope(scope: Scope) -> String {

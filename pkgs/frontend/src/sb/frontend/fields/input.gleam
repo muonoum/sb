@@ -10,7 +10,7 @@ import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
 import lustre/server_component as server
-import sb/extra/function.{compose, return}
+import sb/extra/function.{compose, identity, return}
 import sb/extra/report.{type Report}
 import sb/extra/reset.{type Reset}
 import sb/extra/state.{type State}
@@ -35,7 +35,7 @@ pub type Config(message) {
 pub opaque type Context(message) {
   Context(
     kind: String,
-    group_index: String,
+    group_index: Int,
     is_selected: fn(Value) -> Bool,
     change: fn(Value) -> Decoder(message),
     config: Config(message),
@@ -51,7 +51,7 @@ fn get_context() -> State(Context(message), Context(message)) {
   state.return(context)
 }
 
-fn put_group_index(group_index: String) -> State(Nil, Context(message)) {
+fn put_group_index(group_index: Int) -> State(Nil, Context(message)) {
   use context <- state.update
   Context(..context, group_index:)
 }
@@ -69,7 +69,7 @@ pub fn radio(
   let change = fn(key) { decode.success(config.change(Some(key))) }
 
   let context =
-    Context(kind: "radio", group_index: "0", is_selected:, change:, config:)
+    Context(kind: "radio", group_index: 0, is_selected:, change:, config:)
 
   state.run(field(), context:)
 }
@@ -81,7 +81,7 @@ pub fn checkbox(
   let is_selected = fn(key) { set.contains(set.from_list(selected), key) }
 
   let select = fn(key) {
-    use <- function.identity
+    use <- identity
     let set = set.from_list(selected)
     use <- bool.guard(set.contains(set, key), selected)
     list.append(selected, [key])
@@ -97,7 +97,7 @@ pub fn checkbox(
   }
 
   let context =
-    Context(config:, kind: "checkbox", group_index: "0", is_selected:, change:)
+    Context(config:, kind: "checkbox", group_index: 0, is_selected:, change:)
 
   state.run(field(), context:)
 }
@@ -112,7 +112,7 @@ fn field() -> State(Element(message), Context(message)) {
       use <- return(state.sequence)
       use group, group_index <- list.index_map(groups)
       let options.Group(label:, source:) = group
-      use <- state.do(put_group_index(int.to_string(group_index)))
+      use <- state.do(put_group_index(group_index))
       use group_source <- state.bind(group_source(source))
 
       element.fragment([group_label(label), group_source])
@@ -156,7 +156,7 @@ fn group_source(
 }
 
 fn group_members(value: Value) -> State(Element(message), Context(message)) {
-  use context <- state.bind(get_context())
+  use Context(group_index:, ..) <- state.bind(get_context())
   use config <- state.bind(get_config())
 
   case error.unique_keys(value) {
@@ -169,7 +169,7 @@ fn group_members(value: Value) -> State(Element(message), Context(message)) {
         use choice, item_index <- list.index_map(keys)
 
         group_choice(choice, {
-          [context.group_index, int.to_string(item_index), config.id]
+          [int.to_string(group_index), int.to_string(item_index), config.id]
           |> string.join("-")
         })
       })
