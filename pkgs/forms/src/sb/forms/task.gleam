@@ -126,16 +126,13 @@ pub fn decoder(
   use name <- props.get("name", decoder.from(decode.string))
 
   use category <- state.bind({
-    case defaults.category {
-      [] ->
-        props.get(
-          "category",
-          decoder.from(decode.list(decode.string)),
-          props.succeed,
-        )
+    use <- bool.guard(defaults.category != [], props.succeed(defaults.category))
 
-      _category -> props.succeed(defaults.category)
-    }
+    props.get(
+      "category",
+      decoder.from(decode.list(decode.string)),
+      props.succeed,
+    )
   })
 
   use id <- props.try("id", {

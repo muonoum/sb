@@ -39,3 +39,12 @@ pub fn map(loadable: Loadable(a, _), mapper: fn(a) -> b) -> Loadable(b, _) {
     Failed(status, error, None) -> Failed(status, error, None)
   }
 }
+
+pub fn unwrap(loadable: Loadable(v, _), or default: v) -> v {
+  case loadable {
+    Empty -> default
+    Loading -> default
+    Loaded(_status, value) -> value
+    Failed(_status, _error, _value) -> default
+  }
+}

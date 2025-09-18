@@ -143,13 +143,11 @@ pub fn expect(check: fn(i) -> Bool) -> Parser(i, i) {
     yielder.Next(value, rest) -> {
       case check(value) {
         True -> {
-          let position = position + 1
-
           Consumed(fn() {
             Success(
               value:,
-              state: State(rest, position),
-              message: Message(position:, error: None, labels: set.new()),
+              state: State(rest, position + 1),
+              message: Message(position + 1, error: None, labels: set.new()),
             )
           })
         }

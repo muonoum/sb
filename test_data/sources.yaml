@@ -1,5 +1,0 @@
-custom-source:
-  kind: fetch
-  url: http://example.org
-  body:
-    kind: custom-source

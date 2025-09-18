@@ -1,6 +1,0 @@
-name: Task
-category: [Tests]
-
-fields:
-  - id: a
-    kind: custom-field

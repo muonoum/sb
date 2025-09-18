@@ -1,5 +1,0 @@
-custom-field:
-  kind: select
-  source.kind: custom-source
-  filters:
-    - kind: custom-filter

@@ -21,7 +21,7 @@ import sb/forms/value.{String}
 
 pub fn main() {
   let assert Ok(task) = {
-    let assert Ok(dynamic) = yaml.decode_file("test_data/task5.yaml")
+    let assert Ok(dynamic) = yaml.decode_file("test_data/task2.yaml")
     let assert Ok([doc, ..]) = decode.run(dynamic, decode.list(decode.dynamic))
 
     dots.split(doc)

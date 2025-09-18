@@ -25,6 +25,7 @@ pub fn evaluate_single_data_literal_test() {
   let handlers = handlers.empty()
   let scope = dict.new()
   let search = dict.new()
+
   task.step(task, scope, search:, handlers:)
   string.join([debug.inspect_task(task), debug.inspect_scope(scope)], "\n")
   |> birdie.snap("evaluate--task-single-data-literal")

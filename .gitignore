@@ -3,3 +3,4 @@
 /priv/static
 build/
 /.restart
+/temp

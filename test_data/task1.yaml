@@ -1,25 +1,20 @@
-name: Select literal and data reference
+name: Task
 category: [Tests]
-runners.users: [alex]
-runners.groups: [admins]
-
 fields:
-  # - id: a
-  #   kind: select
-  #   source.literal: [a, b, c]
+  - id: 1-fetch
+    kind: data
+    source.fetch:
+      url: http://localhost:1980/mock/echo?delay=500
+      method: post
+      body.literal: [foo, bar, baz]
 
-  # - id: b
-  #   kind: mega
+  - id: 2-select
+    kind: select
+    source.reference: 1-fetch
 
-  # - id: c
-  #   kind: select
-  #   source.fetch:
-  #     url: asdf
-  #     body.literal: 10
-
-  - id: a
-    kind: radio
-    description: 10
-    label: null
-
-
+  - id: 3-fetch
+    kind: data
+    source.fetch:
+      method: post
+      url: http://localhost:1980/mock/echo?delay=500
+      body.reference: 2-select

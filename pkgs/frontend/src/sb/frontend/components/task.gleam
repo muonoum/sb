@@ -163,18 +163,18 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
           )
         })
 
-      #(Model(..model, state:), step())
+      #(Model(..model, state:), evaluate())
     }
 
     Change(field_id:, value:, delay:) -> {
-      use state <- resolved(model)
+      use state <- resolved_state(model)
 
       case task.update(state.task, field_id, value) {
         Error(_report) -> #(model, effect.none())
 
         Ok(task) if delay == 0 -> {
           let state = loadable.succeed(State(..state, task:))
-          #(Model(..model, state:), step())
+          #(Model(..model, state:), evaluate())
         }
 
         Ok(task) -> {
@@ -187,24 +187,24 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
     }
 
     ApplyChange(debounce:) -> {
-      use state <- resolved(model)
+      use state <- resolved_state(model)
       use <- bool.guard(state.debounce != debounce, #(model, effect.none()))
       let state = loadable.succeed(State(..state, debounce: 0))
-      #(Model(..model, state:), step())
+      #(Model(..model, state:), evaluate())
     }
 
     Search(field_id:, string: "") -> {
       // TODO: Reset field placeholder
       // TODO: Bør det være mulig å søke med placeholder, gjøre et valg,
       // og så søke igjen for å gjøre flere valg? Beholder tidligere valg.
-      use state <- resolved(model)
+      use state <- resolved_state(model)
       let search = dict.delete(state.search, field_id)
       let state = loadable.succeed(State(..state, search:))
-      #(Model(..model, state:), step())
+      #(Model(..model, state:), evaluate())
     }
 
     Search(field_id:, string:) -> {
-      use state <- resolved(model)
+      use state <- resolved_state(model)
 
       let search = {
         use <- result.lazy_unwrap(dict.get(state.search, field_id))
@@ -224,7 +224,7 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
 
     ApplySearch(field_id:, debounce:) -> {
       // TODO: Reset field placeholder
-      use state <- resolved(model)
+      use state <- resolved_state(model)
 
       case dict.get(state.search, field_id) {
         Ok(search) if search.debounce == debounce -> {
@@ -232,7 +232,7 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
             DebouncedSearch(..search, applied: search.string, debounce: 0)
             |> dict.insert(state.search, field_id, _)
           let state = loadable.succeed(State(..state, search:))
-          #(Model(..model, state:), step())
+          #(Model(..model, state:), evaluate())
         }
 
         _else -> #(model, effect.none())
@@ -240,7 +240,7 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
     }
 
     Evaluate -> {
-      use State(task:, scope:, search:, ..) <- resolved(model)
+      use State(task:, scope:, search:, ..) <- resolved_state(model)
 
       let search = {
         use _id, search <- dict.map_values(search)
@@ -252,11 +252,11 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
     }
 
     Evaluated(task, scope) -> {
-      use state <- resolved(model)
+      use state <- resolved_state(model)
       let changed = scope != state.scope || task != state.task
       let state = State(..state, task:, scope:)
       let model = Model(..model, state: loadable.succeed(state))
-      use <- bool.guard(changed, #(model, step()))
+      use <- bool.guard(changed, #(model, evaluate()))
       #(validate(state, model), effect.none())
     }
 
@@ -279,20 +279,20 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
   }
 }
 
-fn validate(state: State, model: Model) -> Model {
-  let state = State(..state, validated: task.validate(state.task))
-  Model(..model, state: loadable.succeed(state))
-}
-
-fn step() -> Effect(Message) {
-  effect.from(apply(Evaluate))
-}
-
-fn resolved(model: Model, then: fn(State) -> #(Model, Effect(message))) {
+fn resolved_state(model: Model, then: fn(State) -> #(Model, Effect(message))) {
   case model.state {
     loadable.Loaded(loadable.Resolved, state) -> then(state)
     _state -> #(model, effect.none())
   }
+}
+
+fn evaluate() -> Effect(Message) {
+  effect.from(apply(Evaluate))
+}
+
+fn validate(state: State, model: Model) -> Model {
+  let state = State(..state, validated: task.validate(state.task))
+  Model(..model, state: loadable.succeed(state))
 }
 
 fn is_loading(source: Source, field_id: String, task: Task) -> Bool {
