@@ -69,9 +69,9 @@ fn evaluate_step(
 
     [Reference(id), ..rest], _ ->
       case scope.value(scope, id) {
-        Error(Nil) -> Ok(None)
-        Ok(value.String(string)) -> next(rest, string)
-        Ok(value) -> report.error(error.BadValue(value))
+        None | Some(Error(_report)) -> Ok(None)
+        Some(Ok(value.String(string))) -> next(rest, string)
+        Some(Ok(value)) -> report.error(error.BadValue(value))
       }
   }
 }

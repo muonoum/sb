@@ -16,6 +16,7 @@ import sb/forms/debug
 import sb/forms/error
 import sb/forms/handlers.{Handlers}
 import sb/forms/props
+import sb/forms/scope
 import sb/forms/task
 import sb/forms/value.{String}
 
@@ -38,7 +39,7 @@ pub fn main() {
   }
 
   let search = dict.new()
-  let scope = dict.new()
+  let scope = scope.error()
   let handlers =
     Handlers(..handlers.empty(), http: fn(request) {
       httpc.send(request, [])

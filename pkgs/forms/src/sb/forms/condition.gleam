@@ -1,6 +1,7 @@
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
+import gleam/option.{None, Some}
 import gleam/result
 import sb/extra/function.{return}
 import sb/extra/report
@@ -43,28 +44,26 @@ pub fn evaluate(condition: Condition, scope: Scope) -> Condition {
 
     Defined(id) ->
       case scope.value(scope, id) {
-        Ok(_) -> Resolved(True)
-        Error(_) -> condition
+        Some(Ok(_)) -> Resolved(True)
+        Some(Error(_)) | None -> condition
       }
 
     NotDefined(id) ->
-      case dict.has_key(scope, id) {
-        True -> condition
-        False -> Resolved(True)
+      case scope.value(scope, id) {
+        Some(Ok(_)) -> condition
+        Some(Error(_)) | None -> Resolved(True)
       }
 
     Equal(id, value) ->
       case scope.value(scope, id) {
-        Ok(found) if found == value -> Resolved(True)
-        Ok(_) -> condition
-        Error(Nil) -> condition
+        Some(Ok(found)) if found == value -> Resolved(True)
+        Some(Ok(_)) | Some(Error(_)) | None -> condition
       }
 
     NotEqual(id, value) ->
       case scope.value(scope, id) {
-        Ok(found) if found == value -> condition
-        Ok(_) -> Resolved(True)
-        Error(Nil) -> Resolved(True)
+        Some(Ok(found)) if found == value -> condition
+        Some(Ok(_)) | Some(Error(_)) | None -> Resolved(True)
       }
   }
 }

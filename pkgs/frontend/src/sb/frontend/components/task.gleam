@@ -105,7 +105,6 @@ type State {
     scope: Scope,
     search: Dict(String, DebouncedSearch),
     debounce: Int,
-    validated: Bool,
   )
 }
 
@@ -153,15 +152,8 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
 
     Receive(Ok(task)) -> {
       let state =
-        loadable.succeed({
-          State(
-            task:,
-            scope: dict.new(),
-            search: dict.new(),
-            debounce: 0,
-            validated: False,
-          )
-        })
+        State(task:, scope: scope.error(), search: dict.new(), debounce: 0)
+        |> loadable.succeed
 
       #(Model(..model, state:), evaluate())
     }
@@ -257,7 +249,7 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
       let state = State(..state, task:, scope:)
       let model = Model(..model, state: loadable.succeed(state))
       use <- bool.guard(changed, #(model, evaluate()))
-      #(validate(state, model), effect.none())
+      #(model, effect.none())
     }
 
     ResetForm ->
@@ -290,11 +282,6 @@ fn evaluate() -> Effect(Message) {
   effect.from(apply(Evaluate))
 }
 
-fn validate(state: State, model: Model) -> Model {
-  let state = State(..state, validated: task.validate(state.task))
-  Model(..model, state: loadable.succeed(state))
-}
-
 fn is_loading(source: Source, field_id: String, task: Task) -> Bool {
   use <- bool.guard(when: source.is_loading(source), return: True)
   use ref <- list.any(source.refs(source))
@@ -311,9 +298,10 @@ fn view(model: Model) -> Element(Message) {
 }
 
 fn page_header(model: Model) -> Element(Message) {
-  let validated = case model.state {
-    loadable.Loaded(loadable.Resolved, State(validated:, ..)) -> validated
-    _else -> False
+  let validated = {
+    use <- return(loadable.unwrap(_, False))
+    use state <- loadable.map(model.state)
+    scope.is_ok(state.scope)
   }
 
   portals.into_actions([
@@ -598,14 +586,16 @@ fn field_meta(
   search: Option(DebouncedSearch),
 ) -> Reader(Element(Message), Context) {
   use debug <- reader.bind(get_debug())
+  use state <- reader.bind(get_state())
+  use field_debug <- reader.bind(field_debug(id, field, search))
   use <- return(reader.return)
 
   html.div([core.classes(field_meta_style)], case debug {
-    True -> field_debug(id, field, search)
+    True -> field_debug
 
     False -> [
       html.div([attr.class("font-semibold px-4")], [html.text(id)]),
-      case field.value(field) {
+      case scope.value(state.scope, id) {
         Some(Ok(_value)) | None -> element.none()
 
         Some(Error(report)) ->
@@ -619,9 +609,11 @@ fn field_debug(
   id: String,
   field: Field,
   search: Option(DebouncedSearch),
-) -> List(Element(message)) {
+) -> Reader(List(Element(message)), Context) {
   let sources = kind.sources(field.kind)
   let initial_sources = list.map(sources, reset.initial)
+  use state <- reader.bind(get_state())
+  use <- return(reader.return)
 
   [
     html.div([attr.class("font-semibold px-4")], [html.text(id)]),
@@ -653,7 +645,7 @@ fn field_debug(
       None -> element.none()
       Some(search) -> core.inspect([attr.class("px-4 text-pink-800")], search)
     },
-    case field.value(field) {
+    case scope.value(state.scope, id) {
       None -> element.none()
 
       Some(Ok(value)) ->

@@ -105,8 +105,8 @@ pub fn evaluate(
 
     Reference(id) ->
       case scope.value(scope, id) {
-        Ok(value) -> Ok(Literal(value))
-        Error(Nil) -> Ok(Reference(id))
+        Some(Ok(value)) -> Ok(Literal(value))
+        Some(Error(_)) | None -> Ok(Reference(id))
       }
 
     Template(text) ->

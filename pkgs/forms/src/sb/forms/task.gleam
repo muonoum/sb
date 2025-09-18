@@ -71,17 +71,17 @@ fn evaluate_fields(
 }
 
 fn field_values(fields: Dict(String, Field)) -> Scope {
-  use scope, id, field <- dict.fold(fields, dict.new())
+  use scope, id, field <- dict.fold(fields, scope.ok())
 
   field.value(field)
-  |> option.map(dict.insert(scope, id, _))
+  |> option.map(scope.put(scope, id, _))
   |> option.unwrap(scope)
 }
 
 fn changed_refs(scope1: Scope, scope2: Scope) -> Set(String) {
   use <- return(set.from_list)
-  use #(id, next) <- list.filter_map(dict.to_list(scope1))
-  use last <- result.try(dict.get(scope2, id))
+  use #(id, next) <- list.filter_map(scope.to_list(scope1))
+  use last <- result.try(scope.get(scope2, id))
   use <- bool.guard(last == next, Error(Nil))
   Ok(id)
 }
@@ -93,12 +93,6 @@ fn reset_changed(
   use <- bool.guard(set.is_empty(refs), fields)
   use _id, field <- dict.map_values(fields)
   field.reset(field, refs)
-}
-
-pub fn validate(task: Task) -> Bool {
-  use field <- list.all(dict.values(task.fields))
-  option.map(field.value(field), result.is_ok)
-  |> option.unwrap(True)
 }
 
 pub fn update(

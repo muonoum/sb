@@ -7,6 +7,7 @@ import gleeunit/should
 import helpers
 import sb/forms/debug
 import sb/forms/handlers
+import sb/forms/scope
 import sb/forms/task
 import sb/forms/value.{String}
 import sb/store
@@ -23,7 +24,7 @@ pub fn evaluate_single_data_literal_test() {
     |> should.be_ok
 
   let handlers = handlers.empty()
-  let scope = dict.new()
+  let scope = scope.error()
   let search = dict.new()
 
   task.step(task, scope, search:, handlers:)
@@ -39,7 +40,7 @@ pub fn evaluate_select_with_reference_to_data_test() {
     |> should.be_ok
 
   let handlers = handlers.empty()
-  let scope = dict.new()
+  let scope = scope.error()
   let search = dict.new()
 
   let #(task, scope) = task.step(task, scope, search:, handlers:)

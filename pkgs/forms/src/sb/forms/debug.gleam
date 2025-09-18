@@ -146,7 +146,7 @@ fn inspect_transition(value: String) -> String {
 
 pub fn inspect_scope(scope: Scope) -> String {
   let values = {
-    use #(id, value) <- list.map(dict.to_list(scope))
+    use #(id, value) <- list.map(scope.to_list(scope))
 
     id
     <> ansi.grey("=")
