@@ -298,36 +298,40 @@ fn view(model: Model) -> Element(Message) {
 }
 
 fn page_header(model: Model) -> Element(Message) {
-  let validated = {
-    use <- return(loadable.unwrap(_, False))
-    use state <- loadable.map(model.state)
-    scope.is_ok(state.scope)
-  }
-
   portals.into_actions([
     html.div([attr.class("flex gap-5")], [
-      core.button(button: [event.on_click(ResetForm)], label: [], body: [
-        html.text("Nullstill skjema"),
-      ]),
-      core.button(
-        button: [
-          event.on_click(StartJob),
-          attr.class("group"),
-          attr.disabled(!validated),
-        ],
-        body: [html.text("Utfør oppgave")],
-        label: [
-          core.classes([
-            "!no-underline transition-colors text-shadow-25 text-neutral-100",
-            case validated {
-              True -> "bg-emerald-600 group-hover:bg-emerald-700"
-              False -> "bg-zinc-400"
-            },
-          ]),
-        ],
-      ),
+      reset_form(),
+      start_job(scope(model)),
     ]),
   ])
+}
+
+fn reset_form() {
+  core.button(
+    label: [attr.class("underline group-hover:no-underline")],
+    body: [html.text("Nullstill skjema")],
+    button: [event.on_click(ResetForm)],
+  )
+}
+
+fn start_job(scope: Scope) -> Element(Message) {
+  let state = case scope.is_ok(scope) {
+    True -> "bg-emerald-600 group-hover:bg-emerald-700"
+    False -> "bg-zinc-400"
+  }
+
+  let button = [
+    event.on_click(StartJob),
+    attr.disabled(scope.is_error(scope)),
+    attr.class("group"),
+  ]
+
+  let label = [
+    core.classes([state, "transition-colors text-shadow-25 text-neutral-100"]),
+  ]
+
+  let body = [html.text("Utfør oppgave")]
+  core.button(body:, label:, button:)
 }
 
 type Context {
@@ -704,11 +708,11 @@ fn field_kind(
   let input_config = fn(layout, options) {
     input.Config(
       id:,
-      layout:,
-      options:,
-      change: Change(id, _, delay: 0),
       debug:,
+      layout:,
+      change: Change(id, _, delay: 0),
       is_loading:,
+      options:,
     )
   }
 
@@ -724,15 +728,15 @@ fn field_kind(
     }
 
     select.Config(
-      options:,
+      debug:,
       placeholder:,
-      is_loading:,
       search_value:,
       applied_search:,
+      options:,
+      is_loading:,
+      change: Change(id, _, delay: 0),
       search: Search(id, _),
       clear_search: Search(id, ""),
-      change: Change(id, _, delay: 0),
-      debug:,
     )
   }
 

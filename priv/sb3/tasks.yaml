@@ -133,4 +133,14 @@ fields:
     kind: radio
     layout: column
     source.reference: data2
+---
+name: Conditions
+fields:
+  - id: a
+    kind: checkbox
+    source.literal: [foo, bar]
+  - id: b
+    kind: checkbox
+    optional.unless.a: [foo]
+    source.literal: [baz, biz]
 

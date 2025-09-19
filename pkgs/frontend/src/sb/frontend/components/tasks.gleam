@@ -182,8 +182,8 @@ fn view_task(task: Task) -> Element(message) {
     html.span(
       [
         core.classes([
-          "flex underline", "group-hover:no-underline",
-          "font-medium text-sky-900",
+          "flex font-medium text-sky-900",
+          "underline group-hover:no-underline",
         ]),
       ],
       [html.text(task.name)],

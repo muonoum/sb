@@ -53,7 +53,7 @@ pub fn step(
   handlers handlers: Handlers,
 ) -> #(Task, Scope) {
   let fields = evaluate_fields(task.fields, scope1, search, handlers)
-  let scope2 = field_values(fields)
+  let scope2 = field_scope(fields)
   let changed = changed_refs(scope1, scope2)
   let fields = reset_changed(fields, changed)
   #(Task(..task, fields:), scope2)
@@ -70,7 +70,7 @@ fn evaluate_fields(
   field.evaluate(field, scope, search:, handlers:)
 }
 
-fn field_values(fields: Dict(String, Field)) -> Scope {
+fn field_scope(fields: Dict(String, Field)) -> Scope {
   use scope, id, field <- dict.fold(fields, scope.ok())
 
   field.value(field)

@@ -97,7 +97,6 @@ pub fn button(
   let label_attrs =
     list.append(label_attrs, [
       attr.class("rounded-sm font-medium pointer-events-none"),
-      attr.class("underline group-hover:no-underline"),
     ])
 
   html.button(attrs, [label(label_attrs, content)])

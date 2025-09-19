@@ -88,7 +88,7 @@ fn error_button(model: Model) -> Element(Message) {
   core.button(
     button: [event.on_click(Toggle), attr.class("group")],
     label: [
-      attr.class("flex items-center !no-underline"),
+      attr.class("flex items-center"),
       attr.class(case model.visibility {
         Hidden -> "text-red-800/80"
         Visible -> "text-neutral-100 bg-red-800/80 bg-red-800/80 text-shadow-25"
