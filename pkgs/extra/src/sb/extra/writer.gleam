@@ -22,7 +22,10 @@ pub fn bind(
   Writer(b, diff.append(ctx1, ctx2))
 }
 
-pub fn do(writer, then) {
+pub fn do(
+  writer: Writer(a, ctx),
+  then: fn() -> Writer(b, ctx),
+) -> Writer(b, ctx) {
   bind(writer, fn(_) { then() })
 }
 
