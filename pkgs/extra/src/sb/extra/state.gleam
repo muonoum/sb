@@ -18,13 +18,6 @@ pub fn return(value: v) -> State(v, ctx) {
   #(value, context)
 }
 
-pub fn do(
-  with state: State(a, ctx),
-  then then: fn() -> State(b, ctx),
-) -> State(b, ctx) {
-  bind(state, fn(_) { then() })
-}
-
 pub fn bind(
   with state: State(a, ctx),
   then then: fn(a) -> State(b, ctx),
@@ -32,6 +25,13 @@ pub fn bind(
   use context <- State
   let #(value, context) = state.run(context)
   step(state: then(value), context:)
+}
+
+pub fn do(
+  with state: State(a, ctx),
+  then then: fn() -> State(b, ctx),
+) -> State(b, ctx) {
+  bind(state, fn(_) { then() })
 }
 
 pub fn get() -> State(ctx, ctx) {
@@ -44,7 +44,7 @@ pub fn put(context: ctx) -> State(Nil, ctx) {
   #(Nil, context)
 }
 
-pub fn update(mapper: fn(ctx) -> ctx) {
+pub fn update(mapper: fn(ctx) -> ctx) -> State(Nil, ctx) {
   use context <- bind(get())
   put(mapper(context))
 }
@@ -78,43 +78,42 @@ pub fn sequence(states: List(State(v, ctx))) -> State(List(v), ctx) {
   map2(list, state, list.prepend)
 }
 
-// RESULT
+// Result
+
+pub fn from_result(result: Result(v, err)) -> State(Result(v, err), ctx) {
+  return(result)
+}
 
 pub fn succeed(value: v) -> State(Result(v, err), ctx) {
   return(Ok(value))
 }
 
 pub fn fail(error: err) -> State(Result(v, err), ctx) {
-  // TODO?
   return(Error(error))
 }
 
 pub fn try(
-  state: State(Result(a, err), ctx),
-  mapper: fn(a) -> State(Result(b, err), ctx),
+  with state: State(Result(a, err), ctx),
+  then then: fn(a) -> State(Result(b, err), ctx),
 ) -> State(Result(b, err), ctx) {
   use context <- State
   let #(result, context) = state.run(context)
 
   case result {
-    Ok(value) -> step(state: mapper(value), context:)
+    Ok(value) -> step(state: then(value), context:)
     Error(error) -> #(Error(error), context)
   }
 }
 
-pub fn attempt(
-  state: State(Result(v, err), ctx),
-  catch catch: fn(ctx, err) -> State(Result(v, err), ctx),
-) -> State(Result(v, err), ctx) {
-  use context1 <- State
-  let #(result, context2) = state.run(context1)
+pub fn map_error(
+  state: State(Result(_, a), ctx),
+  mapper: fn(a) -> b,
+) -> State(Result(_, b), ctx) {
+  use context <- State
+  let #(result, context) = state.run(context)
 
   case result {
-    Ok(value) -> #(Ok(value), context2)
-    Error(error) -> step(state: catch(context2, error), context: context1)
+    Ok(value) -> #(Ok(value), context)
+    Error(error) -> #(Error(mapper(error)), context)
   }
-}
-
-pub fn catch_error(_ctx: ctx, error: err) -> State(Result(v, err), ctx) {
-  return(Error(error))
 }
