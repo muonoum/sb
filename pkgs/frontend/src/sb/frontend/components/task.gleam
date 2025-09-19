@@ -707,9 +707,9 @@ fn debug_sources(
 }
 
 fn field_kind(id: String, field: Field) -> Reader(Element(Message), Context) {
+  use search <- reader.bind(get_search(id))
   use debug <- reader.bind(get_debug())
   use is_loading <- reader.bind(get_is_loading(id))
-  use search <- reader.bind(get_search(id))
   use <- return(reader.return)
 
   let text_input_config = fn(placeholder) {
