@@ -31,7 +31,7 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
 
 pub fn view(model: Model) -> Element(Message) {
   element.fragment([
-    portals.into_links([
+    portals.into_menu([
       header.inactive_menu("Oppgaver", "/oppgaver"),
       header.inactive_menu("Jobber", "/jobber"),
       header.inactive_menu("Hjelp", "/hjelp"),

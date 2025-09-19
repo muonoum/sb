@@ -24,7 +24,7 @@ pub fn view() -> Element(message) {
           ),
         ],
         [
-          portals.links(),
+          portals.menu(),
           core.filler(),
           portals.actions(),
         ],

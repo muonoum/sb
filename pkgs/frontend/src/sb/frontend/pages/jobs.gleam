@@ -163,7 +163,7 @@ fn set_successful_jobs(filter: Filter) -> Decoder(Message) {
 
 pub fn view(model: Model) -> Element(Message) {
   element.fragment([
-    portals.into_links([
+    portals.into_menu([
       header.inactive_menu("Oppgaver", "/oppgaver"),
       header.active_menu("Jobber", "/jobber"),
       header.inactive_menu("Hjelp", "/hjelp"),
