@@ -1,3 +1,4 @@
+import gleam/bool
 import gleam/json
 import gleam/list
 import gleam/option.{type Option}
@@ -14,6 +15,14 @@ pub fn maybe(
 ) -> Element(message) {
   option.map(value, to_element)
   |> option.lazy_unwrap(element.none)
+}
+
+pub fn maybe_list(
+  list: List(v),
+  to_element: fn(v) -> Element(message),
+) -> Element(message) {
+  use <- bool.lazy_guard(list == [], element.none)
+  element.fragment(list.map(list, to_element))
 }
 
 pub fn classes(names: List(String)) -> Attribute(message) {
