@@ -68,19 +68,19 @@ pub fn sources(kind: Kind) -> List(Reset(Result(Source, Report(Error)))) {
   }
 }
 
-pub fn is_loading(kind: Kind, is_loading: fn(Source) -> Bool) -> Bool {
+pub fn is_loading(kind: Kind, check: fn(Source) -> Bool) -> Bool {
   case kind {
     Text(..) | Textarea(..) -> False
 
     Data(source) ->
       reset.unwrap(source)
-      |> result.map(is_loading)
+      |> result.map(check)
       |> result.unwrap(False)
 
     Radio(options:, ..)
     | Select(options:, ..)
     | Checkbox(options:, ..)
-    | MultiSelect(options:, ..) -> options.is_loading(options, is_loading)
+    | MultiSelect(options:, ..) -> options.is_loading(options, check)
   }
 }
 

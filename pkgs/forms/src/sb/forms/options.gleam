@@ -48,10 +48,10 @@ pub fn keys(options: Options) -> List(Value) {
   }
 }
 
-pub fn is_loading(options: Options, is_loading: fn(Source) -> Bool) -> Bool {
+pub fn is_loading(options: Options, check: fn(Source) -> Bool) -> Bool {
   let unwrap = fn(source) {
     case reset.unwrap(source) {
-      Ok(source) -> is_loading(source)
+      Ok(source) -> check(source)
       Error(_report) -> False
     }
   }

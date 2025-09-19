@@ -271,6 +271,13 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
   }
 }
 
+fn scope(model: Model) -> Scope {
+  case model.state {
+    loadable.Loaded(loadable.Resolved, state) -> state.scope
+    _state -> scope.error()
+  }
+}
+
 fn resolved_state(model: Model, then: fn(State) -> #(Model, Effect(message))) {
   case model.state {
     loadable.Loaded(loadable.Resolved, state) -> then(state)
@@ -282,13 +289,18 @@ fn evaluate() -> Effect(Message) {
   effect.from(apply(Evaluate))
 }
 
-fn is_loading(source: Source, field_id: String, task: Task) -> Bool {
+fn source_is_loading(
+  source: Source,
+  field_id: String,
+  fields: Dict(String, Field),
+) -> Bool {
   use <- bool.guard(when: source.is_loading(source), return: True)
   use ref <- list.any(source.refs(source))
   use <- bool.guard(when: field_id == ref, return: False)
+  let check = source_is_loading(_, field_id, fields)
 
-  case dict.get(task.fields, ref) {
-    Ok(field) -> kind.is_loading(field.kind, is_loading(_, field_id, task))
+  case dict.get(fields, ref) {
+    Ok(field) -> kind.is_loading(field.kind, check)
     Error(Nil) -> False
   }
 }
@@ -356,6 +368,22 @@ fn get_state() -> Reader(State, Context) {
 fn get_task() -> Reader(Task, Context) {
   use State(task:, ..) <- reader.bind(get_state())
   reader.return(task)
+}
+
+fn get_scope() -> Reader(Scope, Context) {
+  use state <- reader.bind(get_state())
+  reader.return(state.scope)
+}
+
+fn get_search(id: String) -> Reader(Option(DebouncedSearch), Context) {
+  use state <- reader.bind(get_state())
+  option.from_result(dict.get(state.search, id))
+  |> reader.return
+}
+
+fn get_is_loading(id: String) -> Reader(fn(Source) -> Bool, Context) {
+  use task <- reader.bind(get_task())
+  reader.return(source_is_loading(_, id, task.fields))
 }
 
 fn page(model: Model) -> Element(Message) {
@@ -540,10 +568,8 @@ fn field_container(
   id: String,
   field: Field,
 ) -> Reader(Element(Message), Context) {
-  use state <- reader.bind(get_state())
-  let search = option.from_result(dict.get(state.search, id))
-  use field_meta <- reader.bind(field_meta(id, field, search))
-  use field_content <- reader.bind(field_content(id, field, search))
+  use field_meta <- reader.bind(field_meta(id, field))
+  use field_content <- reader.bind(field_content(id, field))
   use <- return(reader.return)
 
   [field_content, field_meta, field_padding()]
@@ -557,14 +583,8 @@ fn field_padding() -> Element(Message) {
   ])
 }
 
-fn field_content(
-  id: String,
-  field: Field,
-  search: Option(DebouncedSearch),
-) -> Reader(Element(Message), Context) {
-  use task <- reader.bind(get_task())
-  let is_loading = is_loading(_, id, task)
-  use field_kind <- reader.bind(field_kind(id, field, search, is_loading))
+fn field_content(id: String, field: Field) -> Reader(Element(Message), Context) {
+  use field_kind <- reader.bind(field_kind(id, field))
   use <- return(reader.return)
 
   html.div([core.classes(field_content_style)], [
@@ -584,14 +604,10 @@ fn field_description(text: String) -> Element(message) {
   html.div([attr.class("font-medium text-zinc-500 text-sm")], [html.text(text)])
 }
 
-fn field_meta(
-  id: String,
-  field: Field,
-  search: Option(DebouncedSearch),
-) -> Reader(Element(Message), Context) {
+fn field_meta(id: String, field: Field) -> Reader(Element(Message), Context) {
   use debug <- reader.bind(get_debug())
-  use state <- reader.bind(get_state())
-  use field_debug <- reader.bind(field_debug(id, field, search))
+  use scope <- reader.bind(get_scope())
+  use field_debug <- reader.bind(field_debug(id, field))
   use <- return(reader.return)
 
   html.div([core.classes(field_meta_style)], case debug {
@@ -599,7 +615,7 @@ fn field_meta(
 
     False -> [
       html.div([attr.class("font-semibold px-4")], [html.text(id)]),
-      case scope.value(state.scope, id) {
+      case scope.value(scope, id) {
         Some(Ok(_value)) | None -> element.none()
 
         Some(Error(report)) ->
@@ -612,11 +628,11 @@ fn field_meta(
 fn field_debug(
   id: String,
   field: Field,
-  search: Option(DebouncedSearch),
 ) -> Reader(List(Element(message)), Context) {
   let sources = kind.sources(field.kind)
   let initial_sources = list.map(sources, reset.initial)
-  use state <- reader.bind(get_state())
+  use search <- reader.bind(get_search(id))
+  use scope <- reader.bind(get_scope())
   use <- return(reader.return)
 
   [
@@ -649,7 +665,7 @@ fn field_debug(
       None -> element.none()
       Some(search) -> core.inspect([attr.class("px-4 text-pink-800")], search)
     },
-    case scope.value(state.scope, id) {
+    case scope.value(scope, id) {
       None -> element.none()
 
       Some(Ok(value)) ->
@@ -690,13 +706,10 @@ fn debug_sources(
   }
 }
 
-fn field_kind(
-  id: String,
-  field: Field,
-  search: Option(DebouncedSearch),
-  is_loading: fn(Source) -> Bool,
-) -> Reader(Element(Message), Context) {
+fn field_kind(id: String, field: Field) -> Reader(Element(Message), Context) {
   use debug <- reader.bind(get_debug())
+  use is_loading <- reader.bind(get_is_loading(id))
+  use search <- reader.bind(get_search(id))
   use <- return(reader.return)
 
   let text_input_config = fn(placeholder) {

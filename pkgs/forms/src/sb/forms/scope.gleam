@@ -52,9 +52,5 @@ pub fn put(scope: Scope, id, result) -> Scope {
 }
 
 pub fn value(scope: Scope, key: String) -> Option(Result(Value, Report(Error))) {
-  case dict.get(unwrap(scope), key) {
-    Error(Nil) -> None
-    Ok(Error(report)) -> Some(Error(report))
-    Ok(Ok(value)) -> Some(Ok(value))
-  }
+  option.from_result(get(scope, key))
 }
