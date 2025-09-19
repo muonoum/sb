@@ -1,5 +1,5 @@
 import gleam/dict.{type Dict}
-import gleam/option.{type Option, None, Some}
+import gleam/option.{type Option}
 import gleam/result
 import sb/extra/report.{type Report}
 import sb/forms/error.{type Error}
