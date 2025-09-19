@@ -606,8 +606,8 @@ fn field_description(text: String) -> Element(message) {
 
 fn field_meta(id: String, field: Field) -> Reader(Element(Message), Context) {
   use debug <- reader.bind(get_debug())
-  use scope <- reader.bind(get_scope())
   use field_debug <- reader.bind(field_debug(id, field))
+  use scope <- reader.bind(get_scope())
   use <- return(reader.return)
 
   html.div([core.classes(field_meta_style)], case debug {
