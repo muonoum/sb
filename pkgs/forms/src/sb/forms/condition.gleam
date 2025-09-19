@@ -44,26 +44,26 @@ pub fn evaluate(condition: Condition, scope: Scope) -> Condition {
 
     Defined(id) ->
       case scope.value(scope, id) {
-        Some(Ok(_)) -> Resolved(True)
         Some(Error(_)) | None -> condition
+        Some(Ok(_)) -> Resolved(True)
       }
 
     NotDefined(id) ->
       case scope.value(scope, id) {
-        Some(Ok(_)) -> condition
-        Some(Error(_)) | None -> Resolved(True)
+        Some(Error(_)) | Some(Ok(_)) -> condition
+        None -> Resolved(True)
       }
 
     Equal(id, value) ->
       case scope.value(scope, id) {
-        Some(Ok(found)) if found == value -> Resolved(True)
-        Some(Ok(_)) | Some(Error(_)) | None -> condition
+        Some(Error(_)) | None -> condition
+        Some(Ok(found)) -> Resolved(found == value)
       }
 
     NotEqual(id, value) ->
       case scope.value(scope, id) {
-        Some(Ok(found)) if found == value -> condition
-        Some(Ok(_)) | Some(Error(_)) | None -> Resolved(True)
+        Some(Error(_)) | None -> condition
+        Some(Ok(found)) -> Resolved(found != value)
       }
   }
 }
