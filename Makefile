@@ -5,10 +5,6 @@ inter = https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip
 build: build-frontend
 	gleam build
 
-.PHONY: check
-check: check-frontend
-	gleam check
-
 .PHONY: watch
 watch: .restart
 	watchexec --clear --quiet --restart --stop-signal INT --stop-timeout 150ms --watch .restart make run
@@ -18,7 +14,15 @@ watch: .restart
 
 .PHONY: watch-check
 watch-check: 
-	watchexec --exts gleam make check
+	@watchexec --quiet --exts gleam make check --no-print-directory
+
+.PHONY: check
+check: check-frontend
+	@gleam check
+
+.PHONY: check-frontend
+check-frontend:
+	@cd pkgs/frontend && gleam check
 
 .PHONY: run
 run: build-frontend
@@ -50,10 +54,6 @@ build-frontend: assets/Inter assets/Iosevka
 
 	tailwindcss --minify --input priv/static/app.css --output priv/static/build.css
 	mv priv/static/build.css priv/static/app.css
-
-.PHONY: check-frontend
-check-frontend:
-	cd pkgs/frontend && gleam check
 
 assets/Iosevka:
 	mkdir assets/Iosevka
