@@ -1,9 +1,5 @@
 # sb
 
-## TODO
-
-- dot parsing
-
 ## File
 
 ### tasks
