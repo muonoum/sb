@@ -1,3 +1,5 @@
+import gleam/list
+
 pub opaque type Report(issue) {
   Report(issue: issue, context: List(issue))
 }
@@ -50,4 +52,20 @@ pub fn replace_error(
     Ok(value) -> Ok(value)
     Error(_) -> error(issue)
   }
+}
+
+pub fn find(
+  report: Report(issue),
+  check: fn(issue) -> Bool,
+) -> Result(issue, Nil) {
+  let Report(issue, context) = report
+  list.find([issue, ..context], check)
+}
+
+pub fn find_map(
+  report: Report(issue),
+  map: fn(issue) -> Result(a, Nil),
+) -> Result(a, Nil) {
+  let Report(issue, context) = report
+  list.find_map([issue, ..context], map)
 }

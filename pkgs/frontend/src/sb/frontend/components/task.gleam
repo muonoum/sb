@@ -542,10 +542,15 @@ fn results_layout(
   }
 
   case field {
-    // TODO: Vise id på vanlig sted hvis FieldContext(id) ligger i report
-    Error(report) ->
-      html.div([core.classes(field_row_style)], [field_error(report)])
-      |> reader.return
+    Error(report) -> {
+      use <- return(reader.return)
+
+      html.div([core.classes(field_row_style)], [
+        field_error(report),
+        field_context(report),
+        field_padding(),
+      ])
+    }
 
     Ok(#(id, field)) ->
       case condition.is_true(reset.unwrap(field.hidden)), debug {
@@ -557,8 +562,17 @@ fn results_layout(
 }
 
 fn field_error(report: Report(Error)) -> Element(message) {
-  html.div([attr.class("flex flex-col gap-2 shrink-0 w-full h-min p-4 pb-6")], [
+  html.div([core.classes(field_content_style)], [
     core.inspect([attr.class("text-red-800")], report),
+  ])
+}
+
+fn field_context(report: Report(Error)) -> Element(message) {
+  use <- return(result.lazy_unwrap(_, element.none))
+  use id <- result.map(report.find_map(report, error.field_context))
+
+  html.div([core.classes(field_meta_style)], [
+    html.div([attr.class("font-semibold px-4")], [html.text(id)]),
   ])
 }
 

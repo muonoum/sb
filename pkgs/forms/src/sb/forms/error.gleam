@@ -51,6 +51,13 @@ pub type Error {
   YamlError(Exception)
 }
 
+pub fn field_context(error: Error) -> Result(String, Nil) {
+  case error {
+    FieldContext(id) -> Ok(id)
+    _error -> Error(Nil)
+  }
+}
+
 pub fn bad_format(data: any) -> Error {
   BadFormat(dynamic_extra.from(data))
 }
