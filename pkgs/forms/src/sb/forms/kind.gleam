@@ -7,7 +7,7 @@ import gleam/set.{type Set}
 import sb/extra/function.{return}
 import sb/extra/report.{type Report}
 import sb/extra/reset.{type Reset}
-import sb/extra/state_eval as state
+import sb/extra/try_state as state
 import sb/forms/choice.{type Choice}
 import sb/forms/custom
 import sb/forms/decoder

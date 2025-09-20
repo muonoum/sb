@@ -21,16 +21,14 @@ pub fn do(writer, then) {
   bind(writer, fn(_) { then() })
 }
 
-pub fn tell(ctx: ctx) -> Writer(Nil, ctx) {
+pub fn put(ctx: ctx) -> Writer(Nil, ctx) {
   Writer(Nil, set.from_list([ctx]))
 }
 
 pub fn main() {
-  let x = {
-    use <- do(tell("a"))
-    use <- do(tell("b"))
+  echo {
+    use <- do(put("a"))
+    use <- do(put("b"))
     return(10)
   }
-
-  echo x
 }

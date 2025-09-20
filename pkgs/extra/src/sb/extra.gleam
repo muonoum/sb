@@ -5,6 +5,15 @@ import gleam/result
 import gleam/string
 import gleam/uri.{type Uri}
 
+pub opaque type Never {
+  JustOneMore(Never)
+}
+
+pub fn never(v: Never) -> v {
+  let JustOneMore(x) = v
+  never(x)
+}
+
 pub type Visibility {
   Visible
   Hidden

@@ -1,6 +1,6 @@
 import gleam/dynamic/decode.{type Decoder}
 import sb/extra/function.{return}
-import sb/extra/state_eval as state
+import sb/extra/try_state as state
 import sb/forms/decoder
 import sb/forms/props
 import sb/forms/zero.{type Zero}
