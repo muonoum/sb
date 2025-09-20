@@ -13,6 +13,7 @@ import gleam/string
 import gleam/uri
 import sb/extra/function.{return}
 import sb/extra/report.{type Report}
+import sb/extra/reset.{type Reset}
 import sb/extra/state
 import sb/forms/custom
 import sb/forms/decoder
@@ -214,6 +215,13 @@ fn send_request(
 fn parse_json(bits: BitArray, decoder: Decoder(v)) -> Result(v, Report(Error)) {
   json.parse_bits(bits, decoder)
   |> report.map_error(error.JsonError)
+}
+
+pub fn reset_decoder(
+  sources: custom.Sources,
+) -> props.Try(Reset(Result(Source, Report(Error)))) {
+  use result <- state.bind(decoder(sources:))
+  state.ok(reset.try_new(result, refs))
 }
 
 pub fn decoder(sources sources: custom.Sources) -> props.Try(Source) {

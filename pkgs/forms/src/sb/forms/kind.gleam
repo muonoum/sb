@@ -280,16 +280,11 @@ pub fn decoder(
 }
 
 fn data_decoder(sources sources: custom.Sources) -> props.Try(Kind) {
-  use source <- props.get("source", props.decode(_, source_decoder(sources)))
-  state.ok(Data(source:))
-}
+  use source <- props.get("source", {
+    props.decode(_, source.reset_decoder(sources))
+  })
 
-// TODO: options.source_decoder
-fn source_decoder(
-  sources: custom.Sources,
-) -> props.Try(Reset(Result(Source, Report(Error)))) {
-  use result <- state.bind(source.decoder(sources:))
-  state.ok(reset.try_new(result, source.refs))
+  state.ok(Data(source:))
 }
 
 fn text_decoder() -> props.Try(Kind) {
@@ -315,10 +310,7 @@ fn radio_decoder(sources sources: custom.Sources) -> props.Try(Kind) {
     zero.new(Row, decoder.from(layout_decoder()))
   })
 
-  use options <- props.get("source", {
-    props.decode(_, options.decoder(sources:))
-  })
-
+  use options <- props.get("source", props.decode(_, options.decoder(sources:)))
   state.ok(Radio(choice: None, layout:, options:))
 }
 
@@ -337,10 +329,7 @@ fn checkbox_decoder(sources sources: custom.Sources) -> props.Try(Kind) {
     zero.new(Row, decoder.from(layout_decoder()))
   })
 
-  use options <- props.get("source", {
-    props.decode(_, options.decoder(sources:))
-  })
-
+  use options <- props.get("source", props.decode(_, options.decoder(sources:)))
   state.ok(Checkbox([], layout:, options:))
 }
 
