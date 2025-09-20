@@ -90,13 +90,13 @@ fn deregister(state: State(message)) -> Nil {
   |> lustre.send(to: state.component)
 }
 
-fn decode_error(path, text, error) {
+fn decode_error(path: String, text: String, error: any) -> Nil {
   ["Decode runtime message", path, text, string.inspect(error)]
   |> string.join(": ")
   |> wisp.log_error
 }
 
-fn send_error(path, error) {
+fn send_error(path: String, error: any) -> Nil {
   ["Send client message", path, string.inspect(error)]
   |> string.join(": ")
   |> wisp.log_error
