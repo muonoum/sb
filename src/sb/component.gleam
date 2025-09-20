@@ -3,6 +3,7 @@ import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
 import gleam/json
 import gleam/option.{type Option, Some}
+import gleam/result
 import gleam/string
 import lustre
 import lustre/server_component as server
@@ -13,12 +14,8 @@ pub fn service(
   component: lustre.Runtime(message),
   request: Request(mist.Connection),
 ) -> Response(mist.ResponseData) {
-  mist.websocket(
-    request:,
-    on_init: on_init(_, request, component),
-    handler:,
-    on_close:,
-  )
+  let on_init = on_init(_, request, component)
+  mist.websocket(request:, on_init:, on_close:, handler:)
 }
 
 type State(message) {
@@ -41,65 +38,63 @@ fn on_init(
   #(State(request:, component:, subject:), Some(selector))
 }
 
+fn on_close(state: State(message)) -> Nil {
+  wisp.log_info("Leave " <> state.request.path)
+  deregister(state)
+}
+
 fn handler(
   state: State(message),
   message: mist.WebsocketMessage(server.ClientMessage(message)),
   connection: mist.WebsocketConnection,
 ) -> mist.Next(State(message), server.ClientMessage(message)) {
   case message {
-    mist.Closed | mist.Shutdown -> {
-      server.deregister_subject(state.subject)
-      |> lustre.send(to: state.component)
-
-      mist.stop()
-    }
-
+    mist.Closed | mist.Shutdown -> stop(state)
     mist.Binary(_) -> mist.continue(state)
-
-    mist.Text(text) -> {
-      case json.parse(text, server.runtime_message_decoder()) {
-        Ok(message) -> lustre.send(state.component, message)
-
-        Error(error) -> {
-          let message = [
-            "Decode runtime message",
-            state.request.path,
-            text,
-            string.inspect(error),
-          ]
-
-          wisp.log_error(string.join(message, ": "))
-        }
-      }
-
-      mist.continue(state)
-    }
-
-    mist.Custom(message) -> {
-      let json = server.client_message_to_json(message)
-
-      case mist.send_text_frame(connection, json.to_string(json)) {
-        Ok(_) -> Nil
-
-        Error(error) -> {
-          let message = [
-            "Send client message",
-            state.request.path,
-            string.inspect(error),
-          ]
-
-          wisp.log_error(string.join(message, ": "))
-        }
-      }
-
-      mist.continue(state)
-    }
+    mist.Text(text) -> runtime_message(text, state)
+    mist.Custom(message) -> client_message(connection, message, state)
   }
 }
 
-fn on_close(state: State(message)) -> Nil {
-  wisp.log_info("Leave " <> state.request.path)
+fn runtime_message(
+  text: String,
+  state: State(message),
+) -> mist.Next(State(message), server.ClientMessage(message)) {
+  json.parse(text, server.runtime_message_decoder())
+  |> result.map_error(decode_error(state.request.path, text, _))
+  |> result.map(lustre.send(state.component, _))
+  |> result.unwrap(Nil)
 
+  mist.continue(state)
+}
+
+fn client_message(connection, message, state: State(message)) {
+  json.to_string(server.client_message_to_json(message))
+  |> mist.send_text_frame(connection, _)
+  |> result.map_error(send_error(state.request.path, _))
+  |> result.unwrap(Nil)
+
+  mist.continue(state)
+}
+
+fn stop(
+  state: State(message),
+) -> mist.Next(State(message), server.ClientMessage(message)) {
+  deregister(state)
+  mist.stop()
+}
+
+fn deregister(state: State(message)) -> Nil {
   server.deregister_subject(state.subject)
   |> lustre.send(to: state.component)
+}
+
+fn decode_error(path, text, error) {
+  let message = ["Decode runtime message", path, text, string.inspect(error)]
+  wisp.log_error(string.join(message, ": "))
+}
+
+fn send_error(path, error) {
+  let message = ["Send client message", path, string.inspect(error)]
+  wisp.log_error(string.join(message, ": "))
 }
