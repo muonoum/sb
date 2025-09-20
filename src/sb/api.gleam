@@ -6,8 +6,8 @@ import wisp
 // GET /api/job
 // GET /api/job/follow
 
-pub fn service(request: wisp.Request) -> wisp.Response {
-  case request.method, wisp.path_segments(request) {
+pub fn service(request: wisp.Request, segments: List(String)) -> wisp.Response {
+  case request.method, segments {
     // http.Get, ["form", _id] -> todo
     // http.Post, ["form", _id] -> todo
     // http.Put, ["form"] -> todo

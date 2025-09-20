@@ -32,7 +32,7 @@ pub fn service(
 
   case request.method, wisp.path_segments(request) {
     _method, ["mock", ..segments] -> mock.service(request, segments)
-    _method, ["api", ..] -> api.service(request)
+    _method, ["api", ..segments] -> api.service(request, segments)
     http.Get, [] -> wisp.redirect("/oppgaver")
     _method, _segments ->
       wisp.html_body(wisp.ok(), element.to_document_string(frontend.page()))
@@ -107,7 +107,7 @@ fn component_service(
     Ok(component) -> component.service(component, request)
 
     Error(error) -> {
-      let message = ["Serve component", request.path, string.inspect(error)]
+      let message = ["Server component", request.path, string.inspect(error)]
       wisp.log_error(string.join(message, ": "))
 
       response.new(500)
