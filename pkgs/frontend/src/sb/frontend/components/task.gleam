@@ -579,9 +579,9 @@ fn field_context(report: Report(Error)) -> Element(message) {
   ])
 }
 
-fn hidden_field(_content: Element(message)) -> Element(message) {
+fn hidden_field(content: Element(message)) -> Element(message) {
   // TODO
-  element.none()
+  content
 }
 
 fn field_container(
