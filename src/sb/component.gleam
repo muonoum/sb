@@ -3,7 +3,6 @@ import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
 import gleam/json
 import gleam/option.{type Option, Some}
-import gleam/result
 import gleam/string
 import lustre
 import lustre/server_component as server
@@ -60,19 +59,21 @@ fn runtime_message(
   text: String,
   state: State(message),
 ) -> mist.Next(State(message), server.ClientMessage(message)) {
-  json.parse(text, server.runtime_message_decoder())
-  |> result.map_error(decode_error(state.request.path, text, _))
-  |> result.map(lustre.send(state.component, _))
-  |> result.unwrap(Nil)
+  case json.parse(text, server.runtime_message_decoder()) {
+    Error(error) -> decode_error(state.request.path, text, error)
+    Ok(message) -> lustre.send(state.component, message)
+  }
 
   mist.continue(state)
 }
 
 fn client_message(connection, message, state: State(message)) {
-  json.to_string(server.client_message_to_json(message))
-  |> mist.send_text_frame(connection, _)
-  |> result.map_error(send_error(state.request.path, _))
-  |> result.unwrap(Nil)
+  let json = json.to_string(server.client_message_to_json(message))
+
+  case mist.send_text_frame(connection, json) {
+    Error(error) -> send_error(state.request.path, error)
+    Ok(_) -> Nil
+  }
 
   mist.continue(state)
 }
