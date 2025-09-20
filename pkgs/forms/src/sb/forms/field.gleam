@@ -119,17 +119,10 @@ pub fn decoder(
     use dynamic <- zero.list
     use list <- result.try(decoder.run(dynamic, decode.list(decode.dynamic)))
     use dynamic <- list.try_map(list)
-
-    props.decode(dynamic, {
-      use _seen, name <- custom.kind_decoder(
-        set.new(),
-        filters,
-        custom.get_filter,
-      )
-
-      use kind_keys <- filter.decoder(name)
-      props.check_keys(list.append(filter_keys, kind_keys))
-    })
+    use <- return(props.decode(dynamic, _))
+    use _, name <- custom.kind_decoder(set.new(), filters, custom.get_filter)
+    use kind_keys <- filter.decoder(name)
+    props.check_keys(list.append(filter_keys, kind_keys))
   })
 
   let field =
