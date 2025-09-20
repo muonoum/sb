@@ -296,6 +296,8 @@ source:
 
 #### template
 
+> [`Text`](#text)
+
 ```yaml
 source.template: Text
 ```
@@ -307,6 +309,8 @@ source:
 ```
 
 #### command
+
+> [`Text`](#text)
 
 ```yaml
 source.command: Text
@@ -320,11 +324,11 @@ source:
 
 #### fetch
 
+> [`Source`](#source) [`Text`](#text)
+
 ```yaml
 source.fetch: Text
 ```
-
-> [`Source`](#source) [`Text`](#text)
 
 ```yaml
 source.fetch:
@@ -333,8 +337,6 @@ source.fetch:
   headers: Dict(String, String)
   body: Source
 ```
-
-> [`Source`](#source) [`Text`](#text)
 
 ```yaml
 source:
