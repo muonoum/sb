@@ -37,13 +37,3 @@ pub fn map(writer: Writer(a, ctx), mapper: fn(a) -> b) -> Writer(b, ctx) {
 pub fn put(ctx: List(ctx)) -> Writer(Nil, ctx) {
   Writer(Nil, diff.from_list(ctx))
 }
-
-pub fn main() {
-  let x = {
-    use <- do(put(["a"]))
-    use <- do(put(["b"]))
-    return(10)
-  }
-
-  echo run(x)
-}

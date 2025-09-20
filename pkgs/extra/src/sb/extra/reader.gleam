@@ -30,6 +30,17 @@ pub fn do(
   bind(reader, fn(_) { then() })
 }
 
+pub fn try(
+  reader: Reader(Result(a, err), ctx),
+  then: fn(a) -> Reader(Result(b, err), ctx),
+) -> Reader(Result(b, err), ctx) {
+  use ctx <- Reader
+  case reader.run(ctx) {
+    Error(error) -> Error(error)
+    Ok(value) -> then(value).run(ctx)
+  }
+}
+
 pub fn map(reader: Reader(a, ctx), mapper: fn(a) -> b) -> Reader(b, ctx) {
   use ctx <- Reader
   mapper(reader.run(ctx))
@@ -48,17 +59,4 @@ pub fn sequence(readers: List(Reader(v, ctx))) -> Reader(List(v), ctx) {
   use <- function.return(map(_, list.reverse))
   use list, reader <- list.fold(readers, return([]))
   map2(list, reader, list.prepend)
-}
-
-// Result
-
-pub fn try(
-  reader: Reader(Result(a, err), ctx),
-  then: fn(a) -> Reader(Result(b, err), ctx),
-) -> Reader(Result(b, err), ctx) {
-  use ctx <- Reader
-  case reader.run(ctx) {
-    Error(error) -> Error(error)
-    Ok(value) -> then(value).run(ctx)
-  }
 }

@@ -81,5 +81,6 @@ lustre = { version = ">= 5.3.5 and < 6.0.0" }
 lustre_portal = { version = ">= 1.0.0 and < 2.0.0" }
 mist = { version = ">= 5.0.3 and < 6.0.0" }
 mock = { path = "pkgs/mock" }
+pocket_watch = { version = ">= 1.0.0 and < 2.0.0" }
 pprint = { version = ">= 1.0.6 and < 2.0.0" }
 wisp = { version = ">= 2.0.0 and < 3.0.0" }
