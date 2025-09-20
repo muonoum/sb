@@ -117,7 +117,6 @@ pub fn select(
   let is_selected = fn(key) { Some(key) == selected }
   let select = fn(key) { config.change(Some(key)) }
   let deselect = fn(_) { config.change(None) }
-
   let context = Context(config:, is_selected:, select:, deselect:)
 
   use <- return(reader.run(_, context:))
