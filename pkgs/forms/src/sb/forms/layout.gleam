@@ -3,10 +3,10 @@ import gleam/dynamic/decode
 import gleam/result
 import sb/extra/function.{return}
 import sb/extra/report.{type Report}
-import sb/extra/state_try as state
+import sb/extra/state
 import sb/forms/decoder
 import sb/forms/error.{type Error}
-import sb/forms/props.{type Props}
+import sb/forms/props
 import sb/forms/zero.{type Zero}
 
 pub type Results =
@@ -36,17 +36,17 @@ pub fn decoder(results: Results) -> Zero(Layout) {
       props.decode(dynamic, grid_decoder(results))
       |> state.from_result
 
-    [#(unknown, _)] -> props.fail(report.new(error.UnknownKind(unknown)))
-    bad -> props.fail(report.new(error.bad_format(bad)))
+    [#(unknown, _)] -> state.error(report.new(error.UnknownKind(unknown)))
+    bad -> state.error(report.new(error.bad_format(bad)))
   }
 }
 
-fn grid_decoder(results: Results) -> Props(Layout) {
+fn grid_decoder(results: Results) -> props.Try(Layout) {
   use areas <- props.get("areas", decoder.from(decode.list(decode.string)))
 
   use style <- props.try("style", {
     zero.lazy(dict.new, decoder.from(decode.dict(decode.string, decode.string)))
   })
 
-  props.succeed(Grid(results, areas:, style:))
+  state.ok(Grid(results, areas:, style:))
 }

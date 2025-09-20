@@ -7,7 +7,7 @@ import gleam/set.{type Set}
 import sb/extra/function.{return}
 import sb/extra/report.{type Report}
 import sb/extra/reset.{type Reset}
-import sb/extra/state_try as state
+import sb/extra/state
 import sb/forms/choice.{type Choice}
 import sb/forms/custom
 import sb/forms/decoder
@@ -248,7 +248,7 @@ pub fn decoder(
   name: String,
   sources sources: custom.Sources,
   then check_keys: fn(List(String)) -> Props(Nil),
-) -> Props(Kind) {
+) -> props.Try(Kind) {
   use <- return(props.error_context(error.BadKind(name)))
 
   case name {
@@ -275,42 +275,42 @@ pub fn decoder(
       select_decoder(sources:)
     }
 
-    unknown -> props.fail(report.new(error.UnknownKind(unknown)))
+    unknown -> state.error(report.new(error.UnknownKind(unknown)))
   }
 }
 
-fn data_decoder(sources sources: custom.Sources) -> Props(Kind) {
-  use source <- props.get("source", {
-    props.decode(_, {
-      // TODO: options.source_decoder
-      state.map(source.decoder(sources:), Ok)
-      |> state.attempt(state.catch_error)
-      |> state.map(reset.try_new(_, source.refs))
-    })
-  })
-
-  props.succeed(Data(source:))
+fn data_decoder(sources sources: custom.Sources) -> props.Try(Kind) {
+  use source <- props.get("source", props.decode(_, source_decoder(sources)))
+  state.ok(Data(source:))
 }
 
-fn text_decoder() -> Props(Kind) {
+// TODO: options.source_decoder
+fn source_decoder(
+  sources: custom.Sources,
+) -> props.Try(Reset(Result(Source, Report(Error)))) {
+  use result <- state.bind(source.decoder(sources:))
+  state.ok(reset.try_new(result, source.refs))
+}
+
+fn text_decoder() -> props.Try(Kind) {
   use placeholder <- props.try("placeholder", {
     zero.option(decoder.from(decode.string))
   })
 
   use string <- props.try("default", zero.string(decoder.from(decode.string)))
-  props.succeed(Text(string:, placeholder:))
+  state.ok(Text(string:, placeholder:))
 }
 
-fn textarea_decoder() -> Props(Kind) {
+fn textarea_decoder() -> props.Try(Kind) {
   use placeholder <- props.try("placeholder", {
     zero.option(decoder.from(decode.string))
   })
 
   use string <- props.try("default", zero.string(decoder.from(decode.string)))
-  props.succeed(Textarea(string:, placeholder:))
+  state.ok(Textarea(string:, placeholder:))
 }
 
-fn radio_decoder(sources sources: custom.Sources) -> Props(Kind) {
+fn radio_decoder(sources sources: custom.Sources) -> props.Try(Kind) {
   use layout <- props.try("layout", {
     zero.new(Row, decoder.from(layout_decoder()))
   })
@@ -319,7 +319,7 @@ fn radio_decoder(sources sources: custom.Sources) -> Props(Kind) {
     props.decode(_, options.decoder(sources:))
   })
 
-  props.succeed(Radio(choice: None, layout:, options:))
+  state.ok(Radio(choice: None, layout:, options:))
 }
 
 fn layout_decoder() -> decode.Decoder(Layout) {
@@ -332,7 +332,7 @@ fn layout_decoder() -> decode.Decoder(Layout) {
   }
 }
 
-fn checkbox_decoder(sources sources: custom.Sources) -> Props(Kind) {
+fn checkbox_decoder(sources sources: custom.Sources) -> props.Try(Kind) {
   use layout <- props.try("layout", {
     zero.new(Row, decoder.from(layout_decoder()))
   })
@@ -341,23 +341,16 @@ fn checkbox_decoder(sources sources: custom.Sources) -> Props(Kind) {
     props.decode(_, options.decoder(sources:))
   })
 
-  props.succeed(Checkbox([], layout:, options:))
+  state.ok(Checkbox([], layout:, options:))
 }
 
-fn select_decoder(sources sources: custom.Sources) -> Props(Kind) {
+fn select_decoder(sources sources: custom.Sources) -> props.Try(Kind) {
   use placeholder <- props.try("placeholder", {
     zero.option(decoder.from(decode.string))
   })
 
   use multiple <- props.try("multiple", zero.bool(decoder.from(decode.bool)))
-
-  use options <- props.get("source", {
-    props.decode(_, options.decoder(sources:))
-  })
-
-  use <- bool.guard(multiple, {
-    props.succeed(MultiSelect([], placeholder:, options:))
-  })
-
-  props.succeed(Select(choice: None, placeholder:, options:))
+  use options <- props.get("source", props.decode(_, options.decoder(sources:)))
+  use <- bool.guard(multiple, state.ok(MultiSelect([], placeholder:, options:)))
+  state.ok(Select(choice: None, placeholder:, options:))
 }

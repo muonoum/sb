@@ -6,7 +6,7 @@ import gleam/set.{type Set}
 import sb/extra/function.{return}
 import sb/extra/report.{type Report}
 import sb/extra/reset.{type Reset}
-import sb/extra/state_try as state
+import sb/extra/state
 import sb/forms/condition.{type Condition}
 import sb/forms/custom
 import sb/forms/decoder
@@ -14,7 +14,7 @@ import sb/forms/error.{type Error}
 import sb/forms/filter.{type Filter}
 import sb/forms/handlers.{type Handlers}
 import sb/forms/kind.{type Kind}
-import sb/forms/props.{type Props}
+import sb/forms/props
 import sb/forms/scope.{type Scope}
 import sb/forms/text
 import sb/forms/value.{type Value}
@@ -94,11 +94,11 @@ pub fn decoder(
   sources sources: custom.Sources,
   fields fields: custom.Fields,
   filters filters: custom.Filters,
-) -> Props(#(String, Field)) {
+) -> props.Try(#(String, Field)) {
   use id <- props.get("id", text.id_decoder)
   use <- return(props.error_context(error.FieldContext(id)))
 
-  use kind <- state.bind({
+  use kind <- state.try({
     use _seen, name <- custom.kind_decoder(set.new(), fields, custom.get_field)
     use kind_keys <- kind.decoder(name, sources:)
     props.check_keys(list.append(field_keys, kind_keys))
@@ -144,5 +144,5 @@ pub fn decoder(
       filters:,
     )
 
-  props.succeed(#(id, field))
+  state.ok(#(id, field))
 }

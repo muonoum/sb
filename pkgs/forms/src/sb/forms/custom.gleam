@@ -5,10 +5,10 @@ import gleam/dynamic/decode.{type Decoder}
 import gleam/result
 import gleam/set.{type Set}
 import sb/extra/report.{type Report}
-import sb/extra/state_try as state
+import sb/extra/state
 import sb/forms/decoder
 import sb/forms/error.{type Error}
-import sb/forms/props.{type Props}
+import sb/forms/props
 
 pub type Custom =
   Dict(String, Dynamic)
@@ -58,23 +58,23 @@ fn custom_decoder() -> Decoder(Dict(String, Dynamic)) {
   decode.dict(decode.string, decode.dynamic)
 }
 
-pub fn decoder() {
+pub fn decoder() -> props.Try(#(String, Custom)) {
   use id <- props.get("id", decoder.from(decode.string))
   use dict <- props.get_dict()
-  props.succeed(#(id, dict.drop(dict, ["id"])))
+  state.ok(#(id, dict.drop(dict, ["id"])))
 }
 
 pub fn kind_decoder(
   seen: Set(String),
   custom: custom,
   get_custom: fn(custom, String) -> Result(Dict(String, Dynamic), _),
-  then: fn(Set(String), String) -> Props(v),
-) -> Props(v) {
+  then: fn(Set(String), String) -> props.Try(v),
+) -> props.Try(v) {
   use name <- props.get("kind", decoder.from(decode.string))
 
   use <- bool.guard(
     set.contains(seen, name),
-    props.fail(report.new(error.Recursive(name))),
+    state.error(report.new(error.Recursive(name))),
   )
 
   use <- result.lazy_unwrap({

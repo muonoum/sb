@@ -9,7 +9,7 @@ import gleam/set.{type Set}
 import gleam/string
 import sb/extra/function.{identity, return}
 import sb/extra/report.{type Report}
-import sb/extra/state_try as state
+import sb/extra/state
 import sb/forms/access.{type Access}
 import sb/forms/custom
 import sb/forms/decoder
@@ -17,7 +17,7 @@ import sb/forms/error.{type Error}
 import sb/forms/field.{type Field}
 import sb/forms/handlers.{type Handlers}
 import sb/forms/layout.{type Layout}
-import sb/forms/props.{type Props}
+import sb/forms/props
 import sb/forms/scope.{type Scope}
 import sb/forms/value.{type Value}
 import sb/forms/zero
@@ -114,19 +114,14 @@ pub fn decoder(
   filters filters: custom.Filters,
   fields fields: custom.Fields,
   sources sources: custom.Sources,
-) -> Props(Task) {
+) -> props.Try(Task) {
   use <- state.do(props.check_keys(task_keys))
 
   use name <- props.get("name", decoder.from(decode.string))
 
-  use category <- state.bind({
-    use <- bool.guard(defaults.category != [], props.succeed(defaults.category))
-
-    props.get(
-      "category",
-      decoder.from(decode.list(decode.string)),
-      props.succeed,
-    )
+  use category <- state.try({
+    use <- bool.guard(defaults.category != [], state.ok(defaults.category))
+    props.get("category", decoder.from(decode.list(decode.string)), state.ok)
   })
 
   use id <- props.try("id", {
@@ -161,7 +156,7 @@ pub fn decoder(
   let results = list.map(fields, result.map(_, pair.first))
   use layout <- props.try("layout", layout.decoder(results))
 
-  props.succeed(Task(
+  state.ok(Task(
     id:,
     name:,
     category:,

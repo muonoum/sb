@@ -1,11 +1,11 @@
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import sb/extra/report
-import sb/extra/state_try as state
+import sb/extra/state
 import sb/forms/access
 import sb/forms/decoder
 import sb/forms/error
-import sb/forms/props.{type Props}
+import sb/forms/props
 import sb/forms/task
 import sb/forms/zero
 
@@ -83,17 +83,17 @@ pub fn decoder() {
   use kind <- props.get("kind", decoder.from(decode.string))
 
   case kind {
-    "commands/v1" -> props.succeed(CommandsV1)
-    "fields/v1" -> props.succeed(FieldsV1)
-    "filters/v1" -> props.succeed(FiltersV1)
-    "notifiers/v1" -> props.succeed(NotifiersV1)
-    "sources/v1" -> props.succeed(SourcesV1)
+    "commands/v1" -> state.ok(CommandsV1)
+    "fields/v1" -> state.ok(FieldsV1)
+    "filters/v1" -> state.ok(FiltersV1)
+    "notifiers/v1" -> state.ok(NotifiersV1)
+    "sources/v1" -> state.ok(SourcesV1)
     "tasks/v1" -> tasks_v1_decoder()
-    bad -> props.fail(report.new(error.bad_format(bad)))
+    bad -> state.error(report.new(error.bad_format(bad)))
   }
 }
 
-fn tasks_v1_decoder() -> Props(Kind) {
+fn tasks_v1_decoder() -> props.Try(Kind) {
   use <- state.do(props.check_keys(task_v1_keys))
 
   use category <- props.try("category", {
@@ -103,5 +103,5 @@ fn tasks_v1_decoder() -> Props(Kind) {
   use runners <- props.try("runners", access.decoder(access.none()))
   use approvers <- props.try("approvers", access.decoder(access.none()))
   let defaults = task.Defaults(category:, runners:, approvers:)
-  props.succeed(TasksV1(defaults))
+  state.ok(TasksV1(defaults))
 }

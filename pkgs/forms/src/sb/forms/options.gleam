@@ -8,13 +8,13 @@ import gleam/set.{type Set}
 import sb/extra/function.{return}
 import sb/extra/report.{type Report}
 import sb/extra/reset.{type Reset}
-import sb/extra/state_try as state
+import sb/extra/state
 import sb/forms/choice.{type Choice}
 import sb/forms/custom
 import sb/forms/decoder
 import sb/forms/error.{type Error}
 import sb/forms/handlers.{type Handlers}
-import sb/forms/props.{type Props}
+import sb/forms/props
 import sb/forms/scope.{type Scope}
 import sb/forms/source.{type Source}
 import sb/forms/value.{type Value}
@@ -141,7 +141,7 @@ fn select_object(
   Ok(choice.new(value.String(have), value))
 }
 
-pub fn decoder(sources sources: custom.Sources) -> Props(Options) {
+pub fn decoder(sources sources: custom.Sources) -> props.Try(Options) {
   use dict <- props.get_dict
 
   case dict.to_list(dict) {
@@ -154,20 +154,20 @@ pub fn decoder(sources sources: custom.Sources) -> Props(Options) {
 
     _else ->
       source_decoder(sources)
-      |> state.map(SingleSource)
+      |> state.map_ok(SingleSource)
   }
 }
 
-fn group_decoder(sources sources: custom.Sources) -> Props(Group) {
+fn group_decoder(sources sources: custom.Sources) -> props.Try(Group) {
   use label <- props.get("label", decoder.from(decode.string))
   use source <- props.get("source", props.decode(_, source_decoder(sources)))
-  props.succeed(Group(label:, source:))
+  state.ok(Group(label:, source:))
 }
 
+// TODO: kind.source_decoder
 fn source_decoder(
   sources: custom.Sources,
-) -> Props(Reset(Result(Source, Report(Error)))) {
-  state.map(source.decoder(sources:), Ok)
-  |> state.attempt(state.catch_error)
-  |> state.map(reset.try_new(_, source.refs))
+) -> props.Try(Reset(Result(Source, Report(Error)))) {
+  use result <- state.bind(source.decoder(sources:))
+  state.ok(reset.try_new(result, source.refs))
 }

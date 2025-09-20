@@ -24,8 +24,12 @@ pub fn fix(f: fn(fn(a) -> b, a) -> b) -> fn(a) -> b {
   fn(v) { f(fix(f), v) }
 }
 
-pub fn return(a: fn(a) -> b, body: fn() -> a) -> b {
-  a(body())
+pub fn return(wrap: fn(a) -> b, body: fn() -> a) -> b {
+  wrap(body())
+}
+
+pub fn replace(wrap: fn(fn(_) -> a) -> b, body: fn() -> a) -> b {
+  wrap(fn(_) { body() })
 }
 
 pub fn unwrap(value: v, body: fn() -> Result(v, _)) -> v {

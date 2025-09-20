@@ -6,7 +6,7 @@ import gleam/option.{type Option, None, Some}
 import gleam/regexp.{type Regexp}
 import gleam/result
 import sb/extra/report.{type Report}
-import sb/extra/state_try as state
+import sb/extra/state
 import sb/forms/decoder
 import sb/forms/error.{type Error}
 import sb/forms/props.{type Props}
@@ -118,7 +118,7 @@ pub fn evaluate(value: Value, filter: Filter) -> Result(Value, Report(Error)) {
 pub fn decoder(
   name: String,
   check_keys: fn(List(String)) -> Props(Nil),
-) -> Props(Filter) {
+) -> props.Try(Filter) {
   case name {
     "succeed" ->
       state.do(check_keys(succeed_keys), succeed_decoder)
@@ -148,30 +148,30 @@ pub fn decoder(
       state.do(check_keys(parse_float_keys), parse_float_decoder)
       |> props.error_context(error.BadKind(name))
 
-    unknown -> props.fail(report.new(error.UnknownKind(unknown)))
+    unknown -> state.error(report.new(error.UnknownKind(unknown)))
   }
 }
 
-fn succeed_decoder() -> Props(Filter) {
-  props.succeed(Succeed)
+fn succeed_decoder() -> props.Try(Filter) {
+  state.ok(Succeed)
 }
 
-fn fail_decoder() -> Props(Filter) {
+fn fail_decoder() -> props.Try(Filter) {
   use error_message <- props.get("error-message", decoder.from(decode.string))
-  props.succeed(Fail(error_message:))
+  state.ok(Fail(error_message:))
 }
 
-fn expect_decoder() -> Props(Filter) {
+fn expect_decoder() -> props.Try(Filter) {
   use value <- props.get("value", decoder.from(value.decoder()))
 
   use error_message <- props.try("error-message", {
     zero.option(decoder.from(decode.string))
   })
 
-  props.succeed(Expect(value:, error_message:))
+  state.ok(Expect(value:, error_message:))
 }
 
-fn regex_match_decoder() -> Props(Filter) {
+fn regex_match_decoder() -> props.Try(Filter) {
   use case_insensitive <- props.try("case-insensitive", {
     zero.bool(decoder.from(decode.bool))
   })
@@ -182,10 +182,10 @@ fn regex_match_decoder() -> Props(Filter) {
     zero.option(decoder.from(decode.string))
   })
 
-  props.succeed(RegexMatch(pattern:, error_message:))
+  state.ok(RegexMatch(pattern:, error_message:))
 }
 
-fn regex_replace_decoder() -> Props(Filter) {
+fn regex_replace_decoder() -> props.Try(Filter) {
   use case_insensitive <- props.try("case-insensitive", {
     zero.bool(decoder.from(decode.bool))
   })
@@ -200,15 +200,15 @@ fn regex_replace_decoder() -> Props(Filter) {
     zero.option(decoder.from(decode.string))
   })
 
-  props.succeed(RegexReplace(pattern:, replacements:, error_message:))
+  state.ok(RegexReplace(pattern:, replacements:, error_message:))
 }
 
-fn parse_integer_decoder() -> Props(Filter) {
-  props.succeed(ParseInteger)
+fn parse_integer_decoder() -> props.Try(Filter) {
+  state.ok(ParseInteger)
 }
 
-fn parse_float_decoder() -> Props(Filter) {
-  props.succeed(ParseFloat)
+fn parse_float_decoder() -> props.Try(Filter) {
+  state.ok(ParseFloat)
 }
 
 fn regex_decoder(

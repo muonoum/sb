@@ -2,77 +2,68 @@ import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
-import gleam/list
 import gleam/set
 import sb/extra/function.{identity}
 import sb/extra/report.{type Report}
-import sb/extra/state_try.{type State} as state
+import sb/extra/state.{type State}
 import sb/forms/decoder.{type Decoder}
 import sb/forms/error.{type Error}
 import sb/forms/zero.{type Zero}
 
-pub type Context {
-  Context(dict: Dict(String, Dynamic), reports: List(Report(Error)))
-}
-
 pub type Props(v) =
-  State(v, Report(Error), Context)
+  State(v, Context)
 
-pub fn succeed(value: v) -> Props(v) {
-  state.succeed(value)
+pub type Context {
+  Context(dict: Dict(String, Dynamic))
 }
 
-pub fn fail(error: Report(Error)) -> Props(v) {
-  state.fail(error)
-}
+pub type Try(v) =
+  Props(Result(v, Report(Error)))
 
-pub fn error_context(error: Error) -> fn(Props(v)) -> Props(v) {
-  use result <- identity
-  use report <- state.map_error(result)
+pub fn error_context(error: Error) -> fn(Try(v)) -> Try(v) {
+  use state <- identity
+  use report <- state.map_error(state)
   report.context(report, error)
 }
 
 pub fn get_dict(then: fn(Dict(String, Dynamic)) -> Props(v)) -> Props(v) {
-  use Context(dict:, ..) <- state.bind(state.get())
+  use Context(dict:) <- state.bind(state.get())
   then(dict)
 }
 
 pub fn drop(keys: List(String)) -> Props(Nil) {
-  use Context(dict:, reports:) <- state.update
-  Context(dict: dict.drop(dict, keys), reports:)
+  use Context(dict:) <- state.update
+  Context(dict: dict.drop(dict, keys))
 }
 
 pub fn merge(other: Dict(String, Dynamic)) -> Props(Nil) {
-  use Context(dict:, reports:) <- state.update
-  Context(dict: dict.merge(dict, other), reports:)
-}
-
-pub fn get_reports(then: fn(List(Report(Error))) -> Props(v)) -> Props(v) {
-  use Context(reports:, ..) <- state.bind(state.get())
-  then(list.reverse(reports))
-}
-
-pub fn add_report(report: Report(Error)) -> Props(Nil) {
-  use Context(dict:, reports:) <- state.update
-  Context(dict:, reports: [report, ..reports])
+  use Context(dict:) <- state.update
+  Context(dict: dict.merge(dict, other))
 }
 
 pub fn replace(dict: Dict(String, Dynamic)) -> Props(Nil) {
-  use context <- state.update
-  Context(..context, dict:)
+  use _context <- state.update
+  Context(dict:)
 }
 
-pub fn decode(dynamic: Dynamic, decoder: Props(v)) -> Result(v, Report(Error)) {
-  let context = Context(dict: dict.new(), reports: [])
+pub fn decode(dynamic: Dynamic, decoder: Try(v)) -> Result(v, Report(Error)) {
+  let context = Context(dict: dict.new())
+  state.run(context:, state: load(dynamic, fn() { decoder }))
+}
 
-  state.run(context:, state: {
-    use <- load(dynamic)
-    decoder
-  })
+pub fn load(dynamic: Dynamic, then: fn() -> Try(v)) -> Try(v) {
+  let result =
+    decode.run(dynamic, decode.dict(decode.string, decode.dynamic))
+    |> report.map_error(error.DecodeError)
+
+  case result {
+    Error(report) -> state.error(report)
+    Ok(dict) -> state.do(state.put(Context(dict:)), then)
+  }
 }
 
 pub fn check_keys(keys: List(String)) -> Props(Nil) {
-  use Context(dict:, ..) <- state.bind(state.get())
+  use Context(dict:) <- state.bind(state.get())
 
   state.from_result(known_keys(dict, keys))
   |> state.replace(Nil)
@@ -89,26 +80,7 @@ fn known_keys(
   report.error(error.UnknownKeys(unknown_keys))
 }
 
-pub fn load(dynamic: Dynamic, next: fn() -> Props(v)) -> Props(v) {
-  let result =
-    decode.run(dynamic, decode.dict(decode.string, decode.dynamic))
-    |> report.map_error(error.DecodeError)
-
-  case result {
-    Error(report) -> state.fail(report)
-
-    Ok(dict) -> {
-      use context <- state.bind(state.get())
-      state.do(state.put(Context(..context, dict:)), next)
-    }
-  }
-}
-
-pub fn get(
-  name: String,
-  decoder: Decoder(a),
-  then: fn(a) -> Props(b),
-) -> Props(b) {
+pub fn get(name: String, decoder: Decoder(a), then: fn(a) -> Try(b)) -> Try(b) {
   use dict <- get_dict
 
   let result = case dict.get(dict, name) {
@@ -120,12 +92,12 @@ pub fn get(
   }
 
   case result {
-    Error(report) -> state.fail(report)
+    Error(report) -> state.error(report)
     Ok(value) -> then(value)
   }
 }
 
-pub fn try(name: String, zero: Zero(a), then: fn(a) -> Props(b)) -> Props(b) {
+pub fn try(name: String, zero: Zero(a), then: fn(a) -> Try(b)) -> Try(b) {
   use dict <- get_dict
 
   let result = case dict.get(dict, name) {
@@ -137,7 +109,7 @@ pub fn try(name: String, zero: Zero(a), then: fn(a) -> Props(b)) -> Props(b) {
   }
 
   case result {
-    Error(report) -> state.fail(report)
+    Error(report) -> state.error(report)
     Ok(value) -> then(value)
   }
 }

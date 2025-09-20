@@ -5,10 +5,10 @@ import gleam/option.{None, Some}
 import gleam/result
 import sb/extra/function.{return}
 import sb/extra/report
-import sb/extra/state_try as state
+import sb/extra/state
 import sb/forms/decoder
 import sb/forms/error
-import sb/forms/props.{type Props}
+import sb/forms/props
 import sb/forms/scope.{type Scope}
 import sb/forms/value.{type Value}
 import sb/forms/zero.{type Zero}
@@ -77,7 +77,7 @@ pub fn decoder() -> Zero(Condition) {
   }
 }
 
-fn kind_decoder() -> Props(Condition) {
+fn kind_decoder() -> props.Try(Condition) {
   use dict <- props.get_dict
 
   case dict.to_list(dict) {
@@ -91,8 +91,8 @@ fn kind_decoder() -> Props(Condition) {
       condition_decoder(dynamic, NotDefined, NotEqual)
     }
 
-    [#(unknown, _)] -> props.fail(report.new(error.UnknownKind(unknown)))
-    bad -> props.fail(report.new(error.bad_format(bad)))
+    [#(unknown, _)] -> state.error(report.new(error.UnknownKind(unknown)))
+    bad -> state.error(report.new(error.bad_format(bad)))
   }
 }
 
@@ -100,7 +100,7 @@ fn condition_decoder(
   dynamic: Dynamic,
   defined: fn(String) -> Condition,
   equal: fn(String, Value) -> Condition,
-) -> Props(Condition) {
+) -> props.Try(Condition) {
   use <- return(state.from_result)
 
   use <- result.lazy_or(
@@ -114,10 +114,10 @@ fn condition_decoder(
   case dict.to_list(dict) {
     [#(id, dynamic)] ->
       case decoder.run(dynamic, value.decoder()) {
-        Error(error) -> props.fail(error)
-        Ok(value) -> props.succeed(equal(id, value))
+        Error(report) -> state.error(report)
+        Ok(value) -> state.ok(equal(id, value))
       }
 
-    bad -> props.fail(report.new(error.bad_format(bad)))
+    bad -> state.error(report.new(error.bad_format(bad)))
   }
 }

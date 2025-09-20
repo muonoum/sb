@@ -20,6 +20,13 @@ fields:
     kind: data
     source.template: >-
       {{_10}}
+
+---
+name: Bad field
+fields:
+  -
+    id: a
+    kind: kake
 ---
 name: References
 layout:

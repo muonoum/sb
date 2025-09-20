@@ -13,12 +13,12 @@ import gleam/string
 import gleam/uri
 import sb/extra/function.{return}
 import sb/extra/report.{type Report}
-import sb/extra/state_try as state
+import sb/extra/state
 import sb/forms/custom
 import sb/forms/decoder
 import sb/forms/error.{type Error}
 import sb/forms/handlers.{type Handlers}
-import sb/forms/props.{type Props}
+import sb/forms/props
 import sb/forms/scope.{type Scope}
 import sb/forms/text.{type Text}
 import sb/forms/value.{type Value}
@@ -216,14 +216,14 @@ fn parse_json(bits: BitArray, decoder: Decoder(v)) -> Result(v, Report(Error)) {
   |> report.map_error(error.JsonError)
 }
 
-pub fn decoder(sources sources: custom.Sources) -> Props(Source) {
+pub fn decoder(sources sources: custom.Sources) -> props.Try(Source) {
   seen_decoder(set.new(), sources:)
 }
 
 fn seen_decoder(
   seen: Set(String),
   sources sources: custom.Sources,
-) -> Props(Source) {
+) -> props.Try(Source) {
   use dict <- props.get_dict
 
   case dict.to_list(dict) {
@@ -268,7 +268,7 @@ fn seen_decoder(
 
     // TODO
     [#("kind", _dynamic)] -> kind_decoder(seen, sources:)
-    [#(name, _)] -> props.fail(report.new(error.UnknownKind(name)))
+    [#(name, _)] -> state.error(report.new(error.UnknownKind(name)))
     _else -> kind_decoder(seen, sources:)
   }
 }
@@ -276,7 +276,7 @@ fn seen_decoder(
 fn kind_decoder(
   seen: Set(String),
   sources sources: custom.Sources,
-) -> Props(Source) {
+) -> props.Try(Source) {
   use seen, name <- custom.kind_decoder(seen, sources, custom.get_source)
   use <- return(props.error_context(error.BadKind(name)))
   use <- state.do(props.drop(["kind"]))
@@ -285,25 +285,25 @@ fn kind_decoder(
     "literal" -> {
       use <- state.do(props.check_keys(literal_keys))
       use value <- props.get("literal", decoder.from(value.decoder()))
-      props.succeed(Literal(value))
+      state.ok(Literal(value))
     }
 
     "reference" -> {
       use <- state.do(props.check_keys(reference_keys))
       use id <- props.get("reference", text.id_decoder)
-      props.succeed(Reference(id))
+      state.ok(Reference(id))
     }
 
     "template" -> {
       use <- state.do(props.check_keys(template_keys))
       use text <- props.get("template", text.decoder)
-      props.succeed(Template(text))
+      state.ok(Template(text))
     }
 
     "command" -> {
       use <- state.do(props.check_keys(command_keys))
       use command <- props.get("command", text.decoder)
-      props.succeed(Command(command))
+      state.ok(Command(command))
     }
 
     "fetch" -> {
@@ -311,14 +311,14 @@ fn kind_decoder(
       fetch_decoder(seen, sources:)
     }
 
-    unknown -> props.fail(report.new(error.UnknownKind(unknown)))
+    unknown -> state.error(report.new(error.UnknownKind(unknown)))
   }
 }
 
 fn fetch_decoder(
   seen: Set(String),
   sources sources: custom.Sources,
-) -> Props(Source) {
+) -> props.Try(Source) {
   use method <- props.try("method", {
     use dynamic <- zero.new(http.Get)
     use string <- result.try(decoder.run(dynamic, decode.string))
@@ -339,5 +339,5 @@ fn fetch_decoder(
     zero.option(props.decode(_, seen_decoder(seen, sources:)))
   })
 
-  props.succeed(Fetch(method:, uri:, headers:, body:))
+  state.ok(Fetch(method:, uri:, headers:, body:))
 }

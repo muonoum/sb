@@ -541,6 +541,7 @@ fn results_layout(
   }
 
   case field {
+    // TODO: Vise id på vanlig sted hvis FieldContext(id) ligger i report
     Error(report) ->
       html.div([core.classes(field_row_style)], [field_error(report)])
       |> reader.return
