@@ -67,10 +67,10 @@ const select_selected_choice_style = [
 ]
 
 // search?
-// - "search member & .."
-// - "search > member & .."
+// - "search member .."
+// - "search > member .."
 
-// TODO: For generisk for denne modulen?
+// TODO: Finn bedre plassering
 fn has_placeholder(source: Reset(Result(Source, Report(Error)))) -> Bool {
   case reset.unwrap(reset.initial(source)) {
     Error(_report) -> False

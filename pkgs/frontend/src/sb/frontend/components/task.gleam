@@ -571,6 +571,8 @@ fn field_context(report: Report(Error)) -> Element(message) {
   use <- return(result.lazy_unwrap(_, element.none))
   use id <- result.map(report.find_map(report, error.field_context))
 
+  // TODO: Ser rart ut hvis vi har et gyldig felt med samme id.
+  // FieldContext(id) blir ikke plukket opp av duplikatsjekken.
   html.div([core.classes(field_meta_style)], [
     html.div([attr.class("font-semibold px-4")], [html.text(id)]),
   ])
