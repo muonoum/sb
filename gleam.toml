@@ -9,6 +9,7 @@ forms = { path = "pkgs/forms" }
 extra = { path = "pkgs/extra" }
 frontend = { path = "pkgs/frontend" }
 extra_server = { path = "pkgs/extra_server" }
+mock = { path = "pkgs/mock" }
 wisp = ">= 2.0.0 and < 3.0.0"
 gleam_erlang = ">= 1.3.0 and < 2.0.0"
 filepath = ">= 1.1.2 and < 2.0.0"

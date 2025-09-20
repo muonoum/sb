@@ -296,6 +296,7 @@ fn source_is_loading(
 ) -> Bool {
   use <- bool.guard(when: source.is_loading(source), return: True)
   use ref <- list.any(source.refs(source))
+  // unngå sirkulære referanser
   use <- bool.guard(when: field_id == ref, return: False)
   let check = source_is_loading(_, field_id, fields)
 

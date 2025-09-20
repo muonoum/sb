@@ -18,6 +18,7 @@ import sb/frontend
 import sb/frontend/components/errors as errors_component
 import sb/frontend/components/task as task_component
 import sb/frontend/components/tasks as tasks_component
+import sb/mock
 import sb/store
 import wisp
 
@@ -30,6 +31,7 @@ pub fn service(
   use <- wisp.log_request(request)
 
   case request.method, wisp.path_segments(request) {
+    _method, ["mock", ..segments] -> mock.service(request, segments)
     _method, ["api", ..] -> api.service(request)
     http.Get, [] -> wisp.redirect("/oppgaver")
     _method, _segments ->
