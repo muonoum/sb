@@ -48,12 +48,9 @@ pub fn delayed_response(
 pub fn lorem_sentences(min: Int, max: Int) -> Response(_) {
   int.random(max)
   |> int.clamp(min, max)
-  |> sentences
+  |> list.range(1, _)
+  |> list.map(fn(_) { lorem.sentence() })
   |> json.array(json.string)
   |> json.to_string
   |> wisp.json_response(200)
-}
-
-fn sentences(count: Int) -> List(String) {
-  list.map(list.range(1, count), fn(_) { lorem.sentence() })
 }
