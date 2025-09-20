@@ -282,6 +282,7 @@ pub fn decoder(
 fn data_decoder(sources sources: custom.Sources) -> Props(Kind) {
   use source <- props.get("source", {
     props.decode(_, {
+      // TODO: options.source_decoder
       state.map(source.decoder(sources:), Ok)
       |> state.attempt(state.catch_error)
       |> state.map(reset.try_new(_, source.refs))

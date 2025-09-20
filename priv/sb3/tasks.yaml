@@ -13,6 +13,14 @@ category: [Tests]
 #       - Voluptate nulla deserunt qui pariatur laboris velit quis cupidatat proident dolor pariatur.
 #       - Ut qui sint ex eiusmod officia cillum.
 ---
+name: Bad data
+fields:
+  -
+    id: a
+    kind: data
+    source.template: >-
+      {{_10}}
+---
 name: References
 layout:
   - b
