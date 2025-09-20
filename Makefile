@@ -13,7 +13,7 @@ watch: .restart
 	touch .restart
 
 .PHONY: check-watch
-watch-check: 
+check-watch:
 	@watchexec --quiet --exts gleam make check --no-print-directory
 
 .PHONY: check
