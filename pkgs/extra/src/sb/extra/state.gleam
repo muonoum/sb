@@ -11,7 +11,8 @@ pub fn run(state state: State(v, ctx), context ctx: ctx) -> v {
 }
 
 pub fn return(v: v) -> State(v, ctx) {
-  State(fn(ctx) { #(v, ctx) })
+  use ctx <- State
+  #(v, ctx)
 }
 
 pub fn from_result(r: Result(v, err)) -> State(Result(v, err), ctx) {
@@ -46,19 +47,23 @@ pub fn try(
 }
 
 pub fn do(state: State(a, ctx), then: fn() -> State(b, ctx)) -> State(b, ctx) {
-  bind(state, fn(_) { then() })
+  use _ <- bind(state)
+  then()
 }
 
 pub fn get() -> State(ctx, ctx) {
-  State(fn(ctx) { #(ctx, ctx) })
+  use ctx <- State
+  #(ctx, ctx)
 }
 
 pub fn put(ctx: ctx) -> State(Nil, ctx) {
-  State(fn(_ctx) { #(Nil, ctx) })
+  use _ctx <- State
+  #(Nil, ctx)
 }
 
 pub fn update(mapper: fn(ctx) -> ctx) -> State(Nil, ctx) {
-  bind(get(), fn(ctx) { put(mapper(ctx)) })
+  use ctx <- bind(get())
+  put(mapper(ctx))
 }
 
 pub fn replace(state: State(_, ctx), v: v) -> State(v, ctx) {

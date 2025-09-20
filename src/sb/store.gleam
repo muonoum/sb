@@ -227,27 +227,24 @@ fn load(model: Model, config: Config) -> Model {
 
 fn load_model(model: Model, config: Config) -> Writer(Model, Report(Error)) {
   use files <- writer.bind(load_files(config.prefix, config.pattern))
+
   let #(tasks, files) = load_task_documents(files)
-
   let #(sources, files) = load_documents(files, file.is_sources)
-  use sources <- writer.bind(load_custom(sources, custom.Sources))
-
   let #(fields, files) = load_documents(files, file.is_fields)
-  use fields <- writer.bind(load_custom(fields, custom.Fields))
-
   let #(filters, files) = load_documents(files, file.is_filters)
+  let #(commands, files) = load_documents(files, file.is_commands)
+  let #(notifiers, _files) = load_documents(files, file.is_notifiers)
+
+  use sources <- writer.bind(load_custom(sources, custom.Sources))
+  use fields <- writer.bind(load_custom(fields, custom.Fields))
   use filters <- writer.bind(load_custom(filters, custom.Filters))
+  use commands <- writer.bind(load_commands(commands))
+  use notifiers <- writer.bind(load_notifiers(notifiers))
 
   use tasks <- writer.bind(
     load_tasks(tasks, sources:, fields:, filters:)
     |> writer.map(dict.from_list),
   )
-
-  let #(commands, files) = load_documents(files, file.is_commands)
-  use commands <- writer.bind(load_commands(commands))
-
-  let #(notifiers, _files) = load_documents(files, file.is_notifiers)
-  use notifiers <- writer.bind(load_notifiers(notifiers))
 
   let model = Model(..model, tasks:, commands:, notifiers:)
   writer.return(model)

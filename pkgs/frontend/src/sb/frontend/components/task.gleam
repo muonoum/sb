@@ -406,7 +406,7 @@ fn page(model: Model) -> Element(Message) {
         reader.run(context:, reader: {
           use header <- reader.bind(task_header())
           let description = core.maybe(task.description, task_description)
-          use fields <- reader.bind(reader.map(task_fields(), element.fragment))
+          use fields <- reader.bind(task_fields())
 
           reader.return(
             sheet.view([], header:, padding: [], body: [description, fields]),
@@ -496,7 +496,8 @@ fn task_description(description: String) -> Element(message) {
   ])
 }
 
-fn task_fields() -> Reader(List(Element(Message)), Context) {
+fn task_fields() -> Reader(Element(Message), Context) {
+  use <- return(reader.map(_, element.fragment))
   use task <- reader.bind(get_task())
   use layout <- reader.bind(get_layout())
 

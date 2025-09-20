@@ -12,7 +12,8 @@ pub fn run(reader reader: Reader(v, ctx), context ctx: ctx) -> v {
 pub const ask = Reader(identity)
 
 pub fn return(value: v) -> Reader(v, ctx) {
-  Reader(fn(_) { value })
+  use _ <- Reader
+  value
 }
 
 pub fn bind(
@@ -27,7 +28,8 @@ pub fn do(
   with reader: Reader(a, ctx),
   then then: fn() -> Reader(b, ctx),
 ) -> Reader(b, ctx) {
-  bind(reader, fn(_) { then() })
+  use _ <- bind(reader)
+  then()
 }
 
 pub fn try(

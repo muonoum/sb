@@ -26,7 +26,8 @@ pub fn do(
   writer: Writer(a, ctx),
   then: fn() -> Writer(b, ctx),
 ) -> Writer(b, ctx) {
-  bind(writer, fn(_) { then() })
+  use _ <- bind(writer)
+  then()
 }
 
 pub fn map(writer: Writer(a, ctx), mapper: fn(a) -> b) -> Writer(b, ctx) {
