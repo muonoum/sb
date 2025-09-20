@@ -153,23 +153,21 @@ pub fn decoder(sources sources: custom.Sources) -> Props(Options) {
     }
 
     _else ->
-      state.map(source.decoder(sources:), Ok)
-      |> state.attempt(state.catch_error)
-      |> state.map(reset.try_new(_, source.refs))
+      source_decoder(sources)
       |> state.map(SingleSource)
   }
 }
 
 fn group_decoder(sources sources: custom.Sources) -> Props(Group) {
   use label <- props.get("label", decoder.from(decode.string))
-
-  use source <- props.get("source", {
-    props.decode(_, {
-      state.map(source.decoder(sources:), Ok)
-      |> state.attempt(state.catch_error)
-      |> state.map(reset.try_new(_, source.refs))
-    })
-  })
-
+  use source <- props.get("source", props.decode(_, source_decoder(sources)))
   props.succeed(Group(label:, source:))
+}
+
+fn source_decoder(
+  sources: custom.Sources,
+) -> Props(Reset(Result(Source, Report(Error)))) {
+  state.map(source.decoder(sources:), Ok)
+  |> state.attempt(state.catch_error)
+  |> state.map(reset.try_new(_, source.refs))
 }

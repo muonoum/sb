@@ -4,6 +4,7 @@ import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/list
 import gleam/set
+import sb/extra/function.{identity}
 import sb/extra/report.{type Report}
 import sb/extra/state_try.{type State} as state
 import sb/forms/decoder.{type Decoder}
@@ -26,10 +27,9 @@ pub fn fail(error: Report(Error)) -> Props(v) {
 }
 
 pub fn error_context(error: Error) -> fn(Props(v)) -> Props(v) {
-  fn(result) {
-    use report <- state.map_error(result)
-    report.context(report, error)
-  }
+  use result <- identity
+  use report <- state.map_error(result)
+  report.context(report, error)
 }
 
 pub fn get_dict(then: fn(Dict(String, Dynamic)) -> Props(v)) -> Props(v) {
