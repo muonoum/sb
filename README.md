@@ -328,7 +328,7 @@ source:
 source.fetch: Text
 ```
 
-> [`Source`](#source)
+> [`Source`](#source) [`Text`](#text)
 
 ```yaml
 source.fetch:
@@ -338,7 +338,7 @@ source.fetch:
   body: Source
 ```
 
-> [`Source`](#source)
+> [`Source`](#source) [`Text`](#text)
 
 ```yaml
 source:
