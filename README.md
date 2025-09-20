@@ -8,6 +8,8 @@
 
 ### tasks
 
+> [`Task`](#task) [`Access`](#access)
+
 ```yaml
 kind: tasks/v1
 category: List(String) # optional
@@ -17,9 +19,9 @@ approvers: Access # optional
 Task
 ```
 
-[`Access`](#access), [`Task`](#task)
-
 ### custom field
+
+> [`Field`](#field)
 
 ```yaml
 kind: fields/v1
@@ -28,9 +30,9 @@ id: String
 Field
 ```
 
-[`Field`](#field)
-
 ### custom filter
+
+> [`Filter`](#filter)
 
 ```yaml
 kind: filters/v1
@@ -39,9 +41,9 @@ id: String
 Filter
 ```
 
-[`Filter`](#filter)
-
 ### custom source
+
+> [`Source`](#source)
 
 ```yaml
 kind: sources/v1
@@ -49,8 +51,6 @@ kind: sources/v1
 id: String
 Source
 ```
-
-[`Source`](#source)
 
 ## Text
 
@@ -66,6 +66,9 @@ groups: List(String)
 
 ## Condition
 
+> [`Value`](#value)
+
+
 ```yaml
 when.defined: Id
 when.equal:
@@ -77,6 +80,8 @@ unless.equal:
 ```
 
 ## Task
+
+> [`Access`](#access) [`Layout`](#layout)
 
 ```yaml
 id: String # optional
@@ -90,9 +95,6 @@ command: List(String) # optional
 layout: List(String) | Layout # optional
 fields: List(Field) # optional
 ```
-
-[`Access`](#access)
-[`Layout`](#layout)
 
 ## Layout
 
@@ -113,6 +115,8 @@ layout:
 
 ## Field
 
+> [`Kind`](#kind) [`Condition`](#condition) [`Filter`](#filter)
+
 ```yaml
 id: String
 kind: Kind | Custom
@@ -124,10 +128,6 @@ ignored: Condition # default: false
 optional: Condition # default: false
 filters: List(Filter) # optional
 ```
-
-[`Kind`](#kind)
-[`Condition`](#condition)
-[`Filter`](#filter)
 
 ### Kind
 
@@ -149,14 +149,16 @@ default: String # optional
 
 #### data
 
+> [`Source`](#source)
+
 ```yaml
 kind: data
 source: Source
 ```
 
-[`Source`](#source)
-
 #### radio
+
+> [`Source`](#source)
 
 ```yaml
 kind: radio
@@ -165,9 +167,9 @@ default: String # optional
 source: Source
 ```
 
-[`Source`](#source)
-
 #### checkbox
+
+> [`Source`](#source)
 
 ```yaml
 kind: checkbox
@@ -176,9 +178,9 @@ default: List(String) # optional
 source: Source
 ```
 
-[`Source`](#source)
-
 #### select
+
+> [`Source`](#source)
 
 ```yaml
 kind: select
@@ -188,18 +190,16 @@ default: String | List(String) # optional
 source: Source
 ```
 
-[`Source`](#source)
-
 ## filter
 
 ### custom
+
+> [`Filter`](#filter)
 
 ```yaml
 id: String
 Filter
 ```
-
-[`Filter`](#filter)
 
 ### kind
 
@@ -328,6 +328,8 @@ source:
 source.fetch: Text
 ```
 
+> [`Source`](#source)
+
 ```yaml
 source.fetch:
   url: Text
@@ -336,7 +338,7 @@ source.fetch:
   body: Source
 ```
 
-[`Source`](#source)
+> [`Source`](#source)
 
 ```yaml
 source:
@@ -346,5 +348,3 @@ source:
   headers: Dict(String, String)
   body: Source
 ```
-
-[`Source`](#source)
