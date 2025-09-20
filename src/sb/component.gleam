@@ -90,11 +90,13 @@ fn deregister(state: State(message)) -> Nil {
 }
 
 fn decode_error(path, text, error) {
-  let message = ["Decode runtime message", path, text, string.inspect(error)]
-  wisp.log_error(string.join(message, ": "))
+  ["Decode runtime message", path, text, string.inspect(error)]
+  |> string.join(": ")
+  |> wisp.log_error
 }
 
 fn send_error(path, error) {
-  let message = ["Send client message", path, string.inspect(error)]
-  wisp.log_error(string.join(message, ": "))
+  ["Send client message", path, string.inspect(error)]
+  |> string.join(": ")
+  |> wisp.log_error
 }
