@@ -12,12 +12,16 @@ watch: .restart
 .restart:
 	touch .restart
 
+.PHONY: test
+test:
+	@gleam test
+
 .PHONY: check-watch
 check-watch:
 	@watchexec --exts gleam make check --no-print-directory
 
 .PHONY: check
-check: check-frontend
+check: test check-frontend
 	@gleam check
 
 .PHONY: check-frontend
