@@ -14,7 +14,7 @@ watch: .restart
 
 .PHONY: check-watch
 check-watch:
-	@watchexec --quiet --exts gleam make check --no-print-directory
+	@watchexec --exts gleam make check --no-print-directory
 
 .PHONY: check
 check: check-frontend
