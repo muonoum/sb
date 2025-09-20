@@ -60,8 +60,10 @@ fn runtime_message(
   state: State(message),
 ) -> mist.Next(State(message), server.ClientMessage(message)) {
   case json.parse(text, server.runtime_message_decoder()) {
-    Error(error) -> decode_error(state.request.path, text, error)
     Ok(message) -> lustre.send(state.component, message)
+
+    Error(error) ->
+      log_error(["Runtime message", state.request.path, string.inspect(error)])
   }
 
   mist.continue(state)
@@ -71,8 +73,10 @@ fn client_message(connection, message, state: State(message)) {
   let json = json.to_string(server.client_message_to_json(message))
 
   case mist.send_text_frame(connection, json) {
-    Error(error) -> send_error(state.request.path, error)
-    Ok(_) -> Nil
+    Ok(Nil) -> Nil
+
+    Error(error) ->
+      log_error(["Client message", state.request.path, string.inspect(error)])
   }
 
   mist.continue(state)
@@ -90,14 +94,6 @@ fn deregister(state: State(message)) -> Nil {
   |> lustre.send(to: state.component)
 }
 
-fn decode_error(path: String, text: String, error: any) -> Nil {
-  ["Decode runtime message", path, text, string.inspect(error)]
-  |> string.join(": ")
-  |> wisp.log_error
-}
-
-fn send_error(path: String, error: any) -> Nil {
-  ["Send client message", path, string.inspect(error)]
-  |> string.join(": ")
-  |> wisp.log_error
+fn log_error(parts: List(String)) -> Nil {
+  wisp.log_error(string.join(parts, ": "))
 }
