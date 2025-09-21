@@ -1,10 +1,11 @@
 import gleam/bool
+import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/set.{type Set}
-import sb/extra/function.{return}
+import sb/extra/function.{identity, return}
 import sb/extra/report.{type Report}
 import sb/extra/reset.{type Reset}
 import sb/extra/state
@@ -311,7 +312,8 @@ fn radio_decoder(sources sources: custom.Sources) -> props.Try(Kind) {
   })
 
   use options <- props.get("source", props.decode(_, options.decoder(sources:)))
-  state.ok(Radio(choice: None, layout:, options:))
+  use choice <- props.try("default", zero.option(select_default(options)))
+  state.ok(Radio(choice:, layout:, options:))
 }
 
 fn layout_decoder() -> decode.Decoder(Layout) {
@@ -330,7 +332,8 @@ fn checkbox_decoder(sources sources: custom.Sources) -> props.Try(Kind) {
   })
 
   use options <- props.get("source", props.decode(_, options.decoder(sources:)))
-  state.ok(Checkbox([], layout:, options:))
+  use choices <- props.try("default", zero.list(multi_select_default(options)))
+  state.ok(Checkbox(choices, layout:, options:))
 }
 
 fn select_decoder(sources sources: custom.Sources) -> props.Try(Kind) {
@@ -340,6 +343,34 @@ fn select_decoder(sources sources: custom.Sources) -> props.Try(Kind) {
 
   use multiple <- props.try("multiple", zero.bool(decoder.from(decode.bool)))
   use options <- props.get("source", props.decode(_, options.decoder(sources:)))
-  use <- bool.guard(multiple, state.ok(MultiSelect([], placeholder:, options:)))
-  state.ok(Select(choice: None, placeholder:, options:))
+  use <- bool.lazy_guard(multiple, multi_select_decoder(placeholder, options))
+
+  use choice <- props.try("default", zero.option(select_default(options)))
+  state.ok(Select(choice:, placeholder:, options:))
+}
+
+fn multi_select_decoder(
+  placeholder: Option(String),
+  options: Options,
+) -> fn() -> props.Try(Kind) {
+  use <- identity
+  use choices <- props.try("default", zero.list(multi_select_default(options)))
+  state.ok(MultiSelect(choices:, placeholder:, options:))
+}
+
+fn select_default(
+  options: Options,
+) -> fn(Dynamic) -> Result(Choice, Report(Error)) {
+  use dynamic <- identity
+  use value <- result.try(decoder.run(dynamic, value.decoder()))
+  options.select(options, value)
+}
+
+fn multi_select_default(
+  options: Options,
+) -> fn(Dynamic) -> Result(List(Choice), Report(Error)) {
+  use dynamic <- identity
+  use values <- result.try(decoder.run(dynamic, decode.list(value.decoder())))
+  use value <- list.try_map(values)
+  options.select(options, value)
 }
