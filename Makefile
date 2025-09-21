@@ -5,12 +5,20 @@ inter = https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip
 build: build-frontend
 	gleam build
 
+.PHONY: run
+run: build-frontend
+	gleam run
+
 .PHONY: watch
 watch: .restart
 	watchexec --clear --quiet --restart --stop-signal INT --stop-timeout 150ms --watch .restart make run
 
 .restart:
 	touch .restart
+
+.PHONY: check
+check: test
+	@gleam check
 
 .PHONY: test
 test:
@@ -19,18 +27,6 @@ test:
 .PHONY: check-watch
 check-watch:
 	@watchexec --exts gleam make check --no-print-directory
-
-.PHONY: check
-check: test check-frontend
-	@gleam check
-
-.PHONY: check-frontend
-check-frontend:
-	@cd pkgs/frontend && gleam check
-
-.PHONY: run
-run: build-frontend
-	gleam run
 
 .PHONY: clean
 clean: clean-pkgs

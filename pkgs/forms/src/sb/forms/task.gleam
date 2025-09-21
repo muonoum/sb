@@ -149,8 +149,7 @@ pub fn decoder(
     use <- return(pair.second)
     use seen, dynamic <- list.map_fold(list, set.new())
     let decoder = field.decoder(sources:, fields:, filters:)
-    props.decode(dynamic, decoder)
-    |> try_unique_id(seen)
+    props.decode(dynamic, decoder) |> try_unique_id(seen)
   })
 
   let results = list.map(fields, result.map(_, pair.first))
