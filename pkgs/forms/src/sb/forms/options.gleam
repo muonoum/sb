@@ -127,18 +127,31 @@ pub fn select(options: Options, value: Value) -> Result(Choice, Report(Error)) {
 
 fn select_list(want: Value, choices: List(Value)) -> Result(Choice, Nil) {
   use have <- list.find_map(choices)
-  use <- bool.guard(have != want, Error(Nil))
-  Ok(choice.new(have, have))
+  try_select(want, have)
 }
 
 fn select_object(
   want: Value,
-  choices: List(#(String, Value)),
+  choices: List(#(Value, Value)),
 ) -> Result(Choice, Nil) {
-  use want <- result.try(value.to_string(want))
-  use #(have, value) <- list.find_map(choices)
-  use <- bool.guard(have != want, Error(Nil))
-  Ok(choice.new(value.String(have), value))
+  use #(key, value) <- list.find_map(choices)
+  try_select(want, value.Pair(key, value))
+}
+
+fn try_select(want: Value, have: Value) -> Result(Choice, Nil) {
+  case have {
+    value.Pair(key, value) if key == want -> Ok(choice.new(key, value))
+    value.List(list) -> list.find_map(list, try_select(want, _))
+
+    value.Object(pairs) -> {
+      use #(key, value) <- list.find_map(pairs)
+      use <- bool.guard(key != want, Error(Nil))
+      Ok(choice.new(key, value))
+    }
+
+    have if want == have -> Ok(choice.new(want, have))
+    _have -> Error(Nil)
+  }
 }
 
 pub fn decoder(sources sources: custom.Sources) -> props.Try(Options) {

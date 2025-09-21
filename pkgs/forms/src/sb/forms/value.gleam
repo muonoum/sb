@@ -16,13 +16,15 @@ pub type Value {
   Int(Int)
   String(String)
   List(List(Value))
-  Object(List(#(String, Value)))
+  Pair(Value, Value)
+  Object(List(#(Value, Value)))
 }
 
-pub fn to_string(value: Value) -> Result(String, Nil) {
+pub fn to_string(value: Value) -> String {
   case value {
-    String(string) -> Ok(string)
-    _value -> Error(Nil)
+    String(string) -> string
+    Null | Int(..) | Float(..) | Bool(..) -> json.to_string(to_json(value))
+    List(..) | Pair(..) | Object(..) -> json.to_string(to_json(value))
   }
 }
 
@@ -35,10 +37,13 @@ pub fn to_json(value: Value) -> Json {
     String(string) -> json.string(string)
     List(values) -> json.array(values, to_json)
 
+    Pair(key, value) ->
+      json.object([#(to_json(key) |> json.to_string, to_json(value))])
+
     Object(pairs) ->
       json.object({
         use #(key, value) <- list.map(pairs)
-        #(key, to_json(value))
+        #(to_json(key) |> json.to_string, to_json(value))
       })
   }
 }
@@ -46,8 +51,9 @@ pub fn to_json(value: Value) -> Json {
 pub fn keys(value: Value) -> Result(List(Value), Nil) {
   case value {
     List(list) -> Ok(list)
-    Object(pairs) -> Ok(list.map(pairs, pair.first) |> list.map(String))
-    _value -> Error(Nil)
+    Object(pairs) -> Ok(list.map(pairs, pair.first))
+    Pair(key, _value) -> Ok([key])
+    Bool(..) | Float(..) | Int(..) | Null | String(..) -> Error(Nil)
   }
 }
 
@@ -64,9 +70,13 @@ pub fn match(value: Value, term: String) -> Bool {
 
     List(list) -> list.any(list, match(_, term))
 
+    Pair(key, _value) ->
+      String(to_string(key))
+      |> match(term)
+
     Object(list) -> {
       use #(key, value) <- list.any(list)
-      let key = string.lowercase(key)
+      let key = string.lowercase(to_string(key))
       string.contains(key, term) || match(value, term)
     }
 
@@ -85,6 +95,7 @@ pub fn decoder() -> Decoder(Value) {
     decode.map(decode.string, String),
     decode.map(decode.list(key_value_decoder()), Object),
     decode.map(decode.list(decode.recursive(decoder)), List),
+    pair_decoder(),
     decode.map(dict_decoder(), Object),
   ])
 }
@@ -98,17 +109,22 @@ fn null_decoder() -> Decoder(Value) {
   }
 }
 
-fn key_value_decoder() -> Decoder(#(String, Value)) {
+fn pair_decoder() -> decode.Decoder(Value) {
+  use #(key, value) <- decode.then(key_value_decoder())
+  decode.success(Pair(key, value))
+}
+
+fn key_value_decoder() -> Decoder(#(Value, Value)) {
   use pairs <- decode.then(dict_decoder())
 
   case pairs {
-    [] -> decode.failure(#("", Null), "key and value")
+    [] -> decode.failure(#(Null, Null), "key and value")
     [#(key, value)] -> decode.success(#(key, value))
-    _multiple -> decode.failure(#("", Null), "key and value")
+    _multiple -> decode.failure(#(Null, Null), "key and value")
   }
 }
 
-fn dict_decoder() -> Decoder(List(#(String, Value))) {
-  decode.dict(decode.string, decode.recursive(decoder))
+fn dict_decoder() -> Decoder(List(#(Value, Value))) {
+  decode.dict(decode.recursive(decoder), decode.recursive(decoder))
   |> decode.map(dict.to_list)
 }

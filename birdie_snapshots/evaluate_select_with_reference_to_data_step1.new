@@ -1,0 +1,13 @@
+---
+version: 1.4.0
+title: evaluate--select-with-reference-to-data--step1
+---
+[32mdata[39m data
+source: [90m[[39m[36ma[39m [36mb[39m [36mc[39m[90m][39m
+value: [90m[[39m[36ma[39m [36mb[39m [36mc[39m[90m][39m
+[90m[39m
+[32mselect[39m select
+options: @data
+selected: [33m*[39m
+value: [33m*[39m
+data[90m=[39m[90m[[39m[36ma[39m [36mb[39m [36mc[39m[90m][39m select[90m=[39m[31mRequired[39m

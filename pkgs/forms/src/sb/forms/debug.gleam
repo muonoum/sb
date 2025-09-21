@@ -225,7 +225,7 @@ fn format_value(value: Value) -> String {
     value.Int(int) -> int.to_string(int)
     value.Float(float) -> float.to_string(float)
     value.List(list) -> format_list(list)
-    value.Pair(key, value) -> key_value(key, format_value(value))
+    value.Pair(key, value) -> key_value(format_value(key), format_value(value))
     value.Object(object) -> format_object(object)
   }
 }
@@ -234,11 +234,11 @@ fn format_list(list: List(Value)) -> String {
   square_bracketed(spaced(list.map(list, format_value)))
 }
 
-fn format_object(pairs: List(#(String, Value))) -> String {
+fn format_object(pairs: List(#(Value, Value))) -> String {
   curly_bracketed(
     spaced({
       use #(key, value) <- list.map(pairs)
-      key_value(key, format_value(value))
+      key_value(format_value(key), format_value(value))
     }),
   )
 }

@@ -19,6 +19,13 @@ fields:
 ---
 name: Options
 fields:
+  - id: value-keys
+    kind: checkbox
+    source.literal:
+      - 10: integer
+      - true: boolean
+      - [1, 2, 3]: list
+
   - id: checkbox-list-options
     kind: checkbox
     source.literal:
@@ -43,6 +50,6 @@ fields:
   - id: checkbox-mixed-options
     kind: checkbox
     source.literal:
-      - ichi: en
+      - 10: en
       - ni
       - san
