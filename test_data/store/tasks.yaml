@@ -39,3 +39,10 @@ fields:
       ichi: en
       ni: to
       san: tre
+
+  - id: checkbox-mixed-options
+    kind: checkbox
+    source.literal:
+      - ichi: en
+      - ni
+      - san

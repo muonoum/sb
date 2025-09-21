@@ -5,9 +5,10 @@ import gleam/http
 import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/result
 import gleam/string
 import gleam_community/ansi
-import sb/extra/function
+import sb/extra/function.{identity}
 import sb/extra/report.{type Report}
 import sb/extra/reset.{type Reset}
 import sb/forms/choice.{type Choice}
@@ -27,338 +28,321 @@ import sb/forms/value.{type Value}
 // literal object: {k=v, ..}
 // fetch: body --> method url
 
-pub fn format_task(task: Task) {
-  string.join(format_fields(task.fields), "\n")
+// id: checkbox-mixed-options
+//   kind: checkbox
+//   options: [ichi=en ni san]
+//   selected: [ichi=en ichi=en ni san]
+//   value: [en en ni san]
+
+const field_separator = ""
+
+pub fn task(task: Task) {
+  format_fields(task.fields)
+  |> list.intersperse(theme_diminished(field_separator))
+  |> lined
 }
 
-pub fn format_fields(fields: Dict(String, Field)) -> List(String) {
+pub fn scope(scope: Scope) -> String {
+  let values = {
+    use #(id, value) <- list.map(scope.to_list(scope))
+
+    key_value(id, case value {
+      Error(report) -> format_report(report)
+      Ok(value) -> format_value(value)
+    })
+  }
+
+  use <- bool.guard(values == [], format_empty())
+  spaced(values)
+}
+
+// FORMATTERS
+
+fn format_fields(fields: Dict(String, Field)) -> List(String) {
   use #(id, field) <- list.map(dict.to_list(fields))
+  let id = theme_id(id)
+  let name = spaced([label("kind"), format_kind_name(field.kind)])
+  let kind = format_kind(field.kind)
 
-  id
-  <> format_kind(field.kind)
-  <> " ==> "
-  <> case kind.value(field.kind) {
-    None -> "*"
-    Some(Error(report)) -> format_report(report)
-    Some(Ok(value)) -> format_value(value)
-  }
+  let value =
+    spaced([
+      label("value"),
+      case kind.value(field.kind) {
+        None -> format_empty()
+        Some(Error(report)) -> format_report(report)
+        Some(Ok(value)) -> format_value(value)
+      },
+    ])
+
+  lined(
+    [[id], [name], kind, [value]]
+    |> list.flatten,
+  )
 }
 
-fn format_kind(kind: Kind) -> String {
+fn format_kind_name(kind: Kind) -> String {
   case kind {
-    kind.Data(source:) ->
-      "=data" <> " " <> format_source_result(reset.unwrap(source))
-    _else -> "todo-kind"
+    kind.Checkbox(..) -> "checkbox"
+    kind.Data(..) -> "data"
+    kind.MultiSelect(..) -> "select (multiple)"
+    kind.Radio(..) -> "radio"
+    kind.Select(..) -> "select"
+    kind.Text(..) -> "text"
+    kind.Textarea(..) -> "textarea"
   }
 }
 
-fn format_source_result(result: Result(Source, Report(Error))) -> String {
-  case result {
+fn format_empty() -> String {
+  theme_empty("*")
+}
+
+fn format_report(report: Report(Error)) -> String {
+  theme_error(string.inspect(report.issue(report)))
+}
+
+fn format_text(text: Text) -> String {
+  quoted(joined(list.map(text.parts, format_text_part)))
+}
+
+fn format_text_part(part: text.Part) -> String {
+  case part {
+    text.Placeholder -> interpolated("_")
+    text.Reference(id) -> interpolated(id)
+    text.Static(string) -> string
+  }
+}
+
+// KINDS
+
+fn format_kind(kind: Kind) -> List(String) {
+  case kind {
+    kind.Data(source:) -> format_data_kind(source)
+    kind.Text(string:, ..) -> format_text_kind(string)
+    kind.Textarea(string:, ..) -> format_textarea_kind(string)
+    kind.Checkbox(choices:, options:, ..) ->
+      format_multiple_choice(choices, options)
+    kind.Radio(choice:, options:, ..) -> format_single_choice(choice, options)
+    kind.MultiSelect(choices:, options:, ..) ->
+      format_multiple_choice(choices, options)
+    kind.Select(choice:, options:, ..) -> format_single_choice(choice, options)
+  }
+}
+
+fn format_data_kind(
+  source: Reset(Result(Source, Report(Error))),
+) -> List(String) {
+  [spaced([label("source"), format_reset_source(source)])]
+}
+
+fn format_text_kind(string: String) -> List(String) {
+  [spaced([label("string"), string])]
+}
+
+fn format_textarea_kind(string: String) -> List(String) {
+  [spaced([label("string"), string])]
+}
+
+fn format_multiple_choice(
+  choices: List(Choice),
+  options: Options,
+) -> List(String) {
+  let options = spaced([label("options"), format_options(options)])
+  let selected = spaced([label("selected"), format_multiple_selected(choices)])
+  [options, selected]
+}
+
+fn format_single_choice(
+  choice: Option(Choice),
+  options: Options,
+) -> List(String) {
+  let options = spaced([label("options"), format_options(options)])
+  let selected = spaced([label("selected"), format_single_selected(choice)])
+  [options, selected]
+}
+
+// SOURCE
+
+fn format_reset_source(source: Reset(Result(Source, Report(Error)))) -> String {
+  case reset.unwrap(source) {
     Error(report) -> format_report(report)
     Ok(source) -> format_source(source)
   }
 }
 
+// fn format_source_result(result: Result(Source, Report(Error))) -> String {
+//   case result {
+//     Error(report) -> format_report(report)
+//     Ok(source) -> format_source(source)
+//   }
+// }
+
 fn format_source(source: Source) -> String {
   case source {
     source.Literal(value) -> format_value(value)
     source.Fetch(method:, uri:, headers: _, body:) ->
-      format_fetch(method, uri, body)
-    source.Loading(..) -> format_loading()
-    source.Reference(id) -> format_reference(id)
+      format_fetch_source(method, uri, body)
+    source.Loading(..) -> format_loading_source()
+    source.Reference(id) -> format_reference_source(id)
     source.Template(text) -> format_text(text)
-    source.Command(_) -> "todo-command"
+    source.Command(_) -> "command!"
   }
 }
 
-fn format_report(_report: Report(Error)) -> String {
-  "todo-report"
+// SOURCE KINDS
+
+fn format_loading_source() -> String {
+  "loading!"
 }
 
-fn format_loading() -> String {
-  "todo-loading"
-}
-
-fn format_reference(id: String) -> String {
+fn format_reference_source(id: String) -> String {
   "@" <> id
 }
 
-fn format_fetch(method: http.Method, uri: Text, body: Option(Source)) -> String {
-  [
-    case body {
-      None -> Error(Nil)
-      Some(source) -> Ok(format_source(source) <> " -->")
-    },
+fn format_fetch_source(
+  method: http.Method,
+  uri: Text,
+  body: Option(Source),
+) -> String {
+  let body = {
+    use source <- result.map(option.to_result(body, Nil))
+    format_source(source) <> " -->"
+  }
 
-    Ok(http.method_to_string(method)),
-    Ok(format_text(uri)),
-  ]
-  |> list.filter_map(function.identity)
-  |> string.join(" ")
+  spaced(
+    [body, Ok(http.method_to_string(method)), Ok(format_text(uri))]
+    |> list.filter_map(identity),
+  )
 }
+
+// VALUES
 
 fn format_value(value: Value) -> String {
   case value {
-    value.Bool(True) -> "true"
-    value.Bool(False) -> "false"
-    value.Float(float) -> float.to_string(float)
-    value.Int(int) -> int.to_string(int)
     value.Null -> "null"
-    value.String(string) -> string
-    value.Object(object) -> format_object(object)
+    value.Bool(True) -> theme_bool("true")
+    value.Bool(False) -> theme_bool("false")
+    value.String(string) -> theme_string(string)
+    value.Int(int) -> int.to_string(int)
+    value.Float(float) -> float.to_string(float)
     value.List(list) -> format_list(list)
+    value.Pair(key, value) -> key_value(key, format_value(value))
+    value.Object(object) -> format_object(object)
   }
 }
 
 fn format_list(list: List(Value)) -> String {
-  "[" <> list.map(list, format_value) |> string.join(" ") <> "]"
+  square_bracketed(spaced(list.map(list, format_value)))
 }
 
 fn format_object(pairs: List(#(String, Value))) -> String {
-  let pairs = {
-    use #(key, value) <- list.map(pairs)
-    key <> "=" <> format_value(value)
-  }
-
-  "{" <> string.join(pairs, " ") <> "}"
+  curly_bracketed(
+    spaced({
+      use #(key, value) <- list.map(pairs)
+      key_value(key, format_value(value))
+    }),
+  )
 }
 
-fn format_text(text: Text) -> String {
-  let parts = list.map(text.parts, format_text_part)
-  "\"" <> string.join(parts, "") <> "\""
-}
+// OPTIONS
 
-fn format_text_part(part: text.Part) -> String {
-  case part {
-    text.Placeholder -> format_interpolation("_")
-    text.Reference(id) -> format_interpolation(id)
-    text.Static(string) -> string
-  }
-}
-
-fn format_interpolation(string: String) -> String {
-  "{{" <> string <> "}}"
-}
-
-fn inspect_transition(value: String) -> String {
-  ansi.grey(value)
-}
-
-pub fn inspect_scope(scope: Scope) -> String {
-  let values = {
-    use #(id, value) <- list.map(scope.to_list(scope))
-
-    id
-    <> ansi.grey("=")
-    <> case value {
-      Error(report) -> inspect_report(report)
-      Ok(value) -> inspect_value(value)
-    }
-  }
-
-  use <- bool.guard(values == [], inspect_empty())
-  string.join(values, " ")
-}
-
-pub fn inspect_empty() -> String {
-  ansi.yellow("*")
-}
-
-pub fn inspect_task(task: Task) {
-  string.join(inspect_fields(task.fields), "\n")
-}
-
-pub fn inspect_fields(fields: Dict(String, Field)) -> List(String) {
-  use #(id, field) <- list.map(dict.to_list(fields))
-  inspect_id(id) <> " " <> inspect_kind(field.kind)
-}
-
-pub fn inspect_id(id: String) -> String {
-  ansi.green(id)
-}
-
-fn inspect_kind_name(name: String) -> String {
-  ansi.underline(ansi.grey(name))
-}
-
-fn inspect_kind(kind: Kind) -> String {
-  case kind {
-    kind.Data(source:) ->
-      inspect_kind_name("data")
-      <> " "
-      <> inspect_reset_source(source)
-      <> inspect_transition(" ==> ")
-      <> case kind.value(kind) {
-        None -> inspect_empty()
-        Some(Error(report)) -> inspect_report(report)
-        Some(Ok(value)) -> inspect_value(value)
-      }
-
-    kind.Text(string, ..) | kind.Textarea(string, ..) ->
-      inspect_kind_name("text") <> " " <> string
-
-    kind.Radio(choice:, options:, ..) ->
-      inspect_kind_name("radio")
-      <> " "
-      <> inspect_options(options)
-      <> inspect_transition(" ==> ")
-      <> single_selected(choice)
-
-    kind.Select(choice:, options:, ..) ->
-      inspect_kind_name("select")
-      <> " "
-      <> inspect_options(options)
-      <> inspect_transition(" ==> ")
-      <> single_selected(choice)
-
-    kind.Checkbox(selected, options:, ..) ->
-      inspect_kind_name("checkbox")
-      <> " "
-      <> inspect_options(options)
-      <> inspect_transition(" ==> ")
-      <> multiple_selected(selected)
-
-    kind.MultiSelect(selected, options:, ..) ->
-      inspect_kind_name("multi select")
-      <> " "
-      <> inspect_options(options)
-      <> inspect_transition(" ==> ")
-      <> multiple_selected(selected)
-  }
-}
-
-fn inspect_reset_source(source: Reset(Result(Source, Report(Error)))) -> String {
-  case reset.unwrap(source) {
-    Error(report) -> inspect_report(report)
-    Ok(source) -> inspect_source(source)
-  }
-}
-
-fn inspect_source(source: Source) -> String {
-  case source {
-    source.Literal(value) -> inspect_value(value)
-    source.Loading(..) -> ansi.yellow("Loading")
-    source.Reference(id) -> inspect_id("@" <> id)
-    source.Template(text) -> inspect_text(text)
-    source.Command(_text) -> inspect_todo("command")
-    source.Fetch(method:, uri:, headers:, body:) ->
-      inspect_fetch(method, uri, headers, body)
-  }
-}
-
-fn inspect_fetch(
-  method: http.Method,
-  uri: Text,
-  _headers: List(#(String, String)),
-  body: Option(Source),
-) -> String {
-  [
-    case body {
-      None -> Error(Nil)
-
-      Some(source) ->
-        Ok([
-          inspect_source(source),
-          inspect_transition("-->"),
-        ])
-    },
-    Ok([
-      ansi.cyan(http.method_to_string(method)),
-      inspect_text(uri),
-    ]),
-  ]
-  |> list.filter_map(function.identity)
-  |> list.flatten
-  |> string.join(" ")
-}
-
-pub fn inspect_text(text: Text) -> String {
-  let parts = {
-    use part <- list.map(text.parts)
-
-    case part {
-      text.Placeholder -> inspect_interpolation("_")
-      text.Reference(id) -> inspect_interpolation(id)
-      text.Static(string) -> string
-    }
-  }
-
-  "\"" <> string.join(parts, "") <> "\""
-}
-
-fn inspect_interpolation(string: String) -> String {
-  ansi.grey("{{") <> ansi.white(string) <> ansi.grey("}}")
-}
-
-fn inspect_options(options: Options) -> String {
+fn format_options(options: Options) -> String {
   case options.sources(options) {
-    [source] -> inspect_reset_source(source)
-
-    sources -> {
-      list.map(sources, inspect_reset_source)
-      |> string.join("|")
-    }
+    [source] -> format_reset_source(source)
+    sources -> piped(list.map(sources, format_reset_source))
   }
 }
 
-fn single_selected(selected: Option(Choice)) -> String {
+fn format_single_selected(selected: Option(Choice)) -> String {
   case selected {
-    Some(choice) -> inspect_choice(choice)
-    None -> inspect_empty()
+    Some(choice) -> format_choice(choice)
+    None -> format_empty()
   }
 }
 
-fn multiple_selected(selected: List(Choice)) -> String {
+fn format_multiple_selected(selected: List(Choice)) -> String {
   case selected {
-    [] -> inspect_empty()
-    list ->
-      "["
-      <> list.map(list, inspect_choice)
-      |> string.join(" ")
-      <> "]"
+    [] -> format_empty()
+    list -> square_bracketed(spaced(list.map(list, format_choice)))
   }
 }
 
-fn inspect_choice(choice: Choice) -> String {
-  inspect_value(choice.key(choice))
-  <> "="
-  <> inspect_value(choice.value(choice))
+fn format_choice(choice: Choice) -> String {
+  let key = choice.key(choice)
+  let value = choice.value(choice)
+  use <- bool.guard(key == value, format_value(value))
+  key_value(format_value(key), format_value(value))
 }
 
-fn inspect_report(report: Report(Error)) -> String {
-  ansi.red(string.inspect(report.issue(report)))
+// AUXILLARY
+
+fn theme_diminished(string: String) -> String {
+  ansi.gray(string)
 }
 
-pub fn inspect_option_value(value: Option(Value)) -> String {
-  case value {
-    None -> inspect_empty()
-    Some(value) -> inspect_value(value)
-  }
+fn theme_id(string: String) -> String {
+  ansi.green(string)
 }
 
-pub fn inspect_value(value: Value) -> String {
-  case value {
-    value.Null -> ansi.grey("∅")
-    value.Bool(_bool) -> inspect_todo("bool")
-    value.Float(float) -> ansi.magenta(float.to_string(float))
-    value.Int(int) -> ansi.magenta(int.to_string(int))
-
-    value.List(list) ->
-      "[" <> list.map(list, inspect_value) |> string.join(" ") <> "]"
-
-    value.Object(pairs) -> {
-      let pairs = {
-        use #(key, value) <- list.map(pairs)
-        key <> "=" <> inspect_value(value)
-      }
-
-      "{" <> string.join(pairs, " ") <> "}"
-    }
-
-    value.String(string) -> ansi.cyan(string)
-  }
+fn theme_error(string: String) -> String {
+  ansi.red(string)
 }
 
-fn inspect_todo(text: String) -> String {
-  ansi.black(ansi.bg_red("TODO(" <> text <> ")"))
+fn theme_empty(string: String) -> String {
+  ansi.yellow(string)
+}
+
+fn theme_bool(string: String) -> String {
+  ansi.magenta(string)
+}
+
+fn theme_string(string: String) -> String {
+  ansi.cyan(string)
+}
+
+fn label(string: String) -> String {
+  string <> ":"
+}
+
+fn surrounded(string: String, before: String, after: String) -> String {
+  theme_diminished(before) <> string <> theme_diminished(after)
+}
+
+fn square_bracketed(string: String) -> String {
+  surrounded(string, "[", "]")
+}
+
+// fn parened(string: String) -> String {
+//   surrounded(string, "(", ")")
+// }
+
+fn curly_bracketed(string: String) -> String {
+  surrounded(string, "{", "}")
+}
+
+fn quoted(string: String) -> String {
+  surrounded(string, "\"", "\"")
+}
+
+fn interpolated(string: String) -> String {
+  surrounded(string, "{{", "}}")
+}
+
+fn key_value(key: String, value: String) -> String {
+  key <> theme_diminished("=") <> value
+}
+
+fn spaced(list: List(String)) -> String {
+  string.join(list, " ")
+}
+
+fn joined(list: List(String)) -> String {
+  string.join(list, "")
+}
+
+fn piped(list: List(String)) -> String {
+  string.join(list, "|")
+}
+
+fn lined(list: List(String)) -> String {
+  string.join(list, "\n")
 }

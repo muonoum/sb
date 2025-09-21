@@ -4,7 +4,6 @@ import gleam/dynamic/decode
 import gleam/io
 import gleam/option.{Some}
 import gleam/result
-import gleam_community/ansi
 import sb/extra/dots
 import sb/extra/dynamic as dynamic_extra
 import sb/extra/report
@@ -57,8 +56,8 @@ pub fn main() {
 }
 
 pub fn inspect(task, scope) {
-  debug.inspect_task(task) |> io.println
-  debug.inspect_scope(scope) |> io.println
+  debug.task(task) |> io.println
+  debug.scope(scope) |> io.println
   io.println("")
 }
 
@@ -73,22 +72,22 @@ pub fn evaluate_run(task1, scope1, search, handlers) {
 
 pub fn evaluate_step(task1, scope1, search, handlers) {
   let #(task2, scope2) = task.step(task1, scope1, search, handlers)
-  debug.inspect_task(task2) |> io.println
-  debug.inspect_scope(scope2) |> io.println
+  debug.task(task2) |> io.println
+  debug.scope(scope2) |> io.println
   io.println("")
   #(task2, scope2)
 }
 
 pub fn update(task, id, value) {
-  io.println(
-    ansi.grey("update ")
-    <> debug.inspect_id(id)
-    <> ansi.grey(" --> ")
-    <> debug.inspect_option_value(value),
-  )
+  // io.println(
+  //   ansi.grey("update ")
+  //   <> debug.inspect_id(id)
+  //   <> ansi.grey(" --> ")
+  //   <> debug.inspect_option_value(value),
+  // )
 
   let assert Ok(task) = task.update(task, id, value)
-  debug.inspect_task(task) |> io.println
+  debug.task(task) |> io.println
   io.println("")
   task
 }

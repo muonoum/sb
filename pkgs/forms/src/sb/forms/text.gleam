@@ -166,7 +166,13 @@ pub fn id_decoder(dynamic: Dynamic) -> Result(String, Report(Error)) {
     |> report.map_error(error.DecodeError),
   )
 
-  parser.parse_string(string, id_parser())
+  let parser = {
+    use id <- keep(id_parser())
+    use <- drop(end())
+    succeed(id)
+  }
+
+  parser.parse_string(string, parser)
   |> report.map_error(error.TextError)
 }
 

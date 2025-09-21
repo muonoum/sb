@@ -1,4 +1,5 @@
 import exception.{type Exception}
+import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
@@ -12,8 +13,12 @@ import sb/extra/state
 import sb/forms/custom
 import sb/forms/error.{type Error}
 import sb/forms/field.{type Field}
+import sb/forms/handlers.{type Handlers}
+import sb/forms/layout
 import sb/forms/props
+import sb/forms/scope.{type Scope}
 import sb/forms/source.{type Source}
+import sb/forms/task.{type Task}
 import sb/store
 
 pub fn start_store() {
@@ -28,6 +33,33 @@ pub fn start_store_with_no_errors() {
   let store = start_store()
   store.get_errors(store) |> should.equal([])
   store
+}
+
+pub fn field_errors(task: Task) {
+  let results = case task.layout {
+    layout.Grid(results:, ..) -> results
+    layout.Ids(results:, ..) -> results
+    layout.Results(results:) -> results
+  }
+
+  use result <- list.filter_map(results)
+  case result {
+    Error(report) -> Ok(report)
+    Ok(..) -> Error(Nil)
+  }
+}
+
+pub fn run_evaluate(
+  task1: Task,
+  scope1: Scope,
+  search: Dict(String, String),
+  handlers: Handlers,
+) -> #(Task, Scope) {
+  let #(task2, scope2) = task.step(task1, scope1, search, handlers)
+  use <- bool.lazy_guard(scope1 != scope2 || task1 != task2, fn() {
+    run_evaluate(task2, scope2, search, handlers)
+  })
+  #(task2, scope2)
 }
 
 pub fn load_documents(

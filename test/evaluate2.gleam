@@ -27,6 +27,6 @@ pub fn main() {
     ))
   }
 
-  debug.format_task(task)
+  debug.task(task)
   |> io.println
 }
