@@ -26,7 +26,7 @@ test:
 
 .PHONY: check-watch
 check-watch:
-	@watchexec --exts gleam make check --no-print-directory
+	@watchexec --exts gleam,yaml make check --no-print-directory
 
 .PHONY: clean
 clean: clean-pkgs

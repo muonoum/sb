@@ -115,7 +115,7 @@ pub fn decoder(
   fields fields: custom.Fields,
   sources sources: custom.Sources,
 ) -> props.Try(Task) {
-  use <- state.do(props.check_keys(task_keys))
+  use <- state.try_do(props.check_keys(task_keys))
 
   use name <- props.get("name", decoder.from(decode.string))
 

@@ -11,6 +11,9 @@ kind: tasks/v1
 category: List(String) # optional
 runners: Access # optional
 approvers: Access # optional
+sources: .. # optional (todo)
+fields: .. # optional (todo)
+filters: .. # optional (todo)
 ---
 Task
 ```

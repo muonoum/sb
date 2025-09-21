@@ -2,6 +2,7 @@ import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
+import gleam/result
 import gleam/set
 import sb/extra/function.{identity}
 import sb/extra/report.{type Report}
@@ -62,11 +63,12 @@ pub fn load(dynamic: Dynamic, then: fn() -> Try(v)) -> Try(v) {
   }
 }
 
-pub fn check_keys(keys: List(String)) -> Props(Nil) {
+pub fn check_keys(keys: List(String)) -> Try(Nil) {
   use Context(dict:) <- state.bind(state.get())
 
-  state.from_result(known_keys(dict, keys))
-  |> state.replace(Nil)
+  known_keys(dict, keys)
+  |> result.replace(Nil)
+  |> state.from_result
 }
 
 fn known_keys(

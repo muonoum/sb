@@ -16,4 +16,26 @@ fields:
   - id: select
     kind: select
     source.reference: data
+---
+name: Options
+fields:
+  - id: checkbox-list-options
+    kind: checkbox
+    source.literal:
+      - ichi
+      - ni
+      - san
 
+  - id: checkbox-pairs-options
+    kind: checkbox
+    source.literal:
+      - ichi: en
+      - ni: to
+      - san: tre
+
+  - id: checkbox-object-options
+    kind: checkbox
+    source.literal:
+      ichi: en
+      ni: to
+      san: tre

@@ -20,9 +20,14 @@ pub fn start_store() {
   let name = process.new_name("store")
   let config =
     store.Config(prefix: "test_data/store", interval: 0, pattern: "**/*.yaml")
-  store.start(name, config)
-  |> should.be_ok
+  store.start(name, config) |> should.be_ok
   process.named_subject(name)
+}
+
+pub fn start_store_with_no_errors() {
+  let store = start_store()
+  store.get_errors(store) |> should.equal([])
+  store
 }
 
 pub fn load_documents(

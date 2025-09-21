@@ -33,6 +33,11 @@ pub fn bind(state: State(a, ctx), then: fn(a) -> State(b, ctx)) -> State(b, ctx)
   then(v).run(ctx)
 }
 
+pub fn do(state: State(a, ctx), then: fn() -> State(b, ctx)) -> State(b, ctx) {
+  use _ <- bind(state)
+  then()
+}
+
 pub fn try(
   with state: State(Result(a, err), ctx),
   then then: fn(a) -> State(Result(b, err), ctx),
@@ -46,8 +51,11 @@ pub fn try(
   }
 }
 
-pub fn do(state: State(a, ctx), then: fn() -> State(b, ctx)) -> State(b, ctx) {
-  use _ <- bind(state)
+pub fn try_do(
+  state: State(Result(a, err), ctx),
+  then: fn() -> State(Result(b, err), ctx),
+) -> State(Result(b, err), ctx) {
+  use _ <- try(state)
   then()
 }
 

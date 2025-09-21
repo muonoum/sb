@@ -15,7 +15,7 @@ import sb/forms/decoder
 import sb/forms/error.{type Error}
 import sb/forms/handlers.{type Handlers}
 import sb/forms/options.{type Options}
-import sb/forms/props.{type Props}
+import sb/forms/props
 import sb/forms/scope.{type Scope}
 import sb/forms/source.{type Source}
 import sb/forms/value.{type Value}
@@ -248,7 +248,7 @@ pub fn value(kind: Kind) -> Option(Result(Value, Report(Error))) {
 pub fn decoder(
   name: String,
   sources sources: custom.Sources,
-  then check_keys: fn(List(String)) -> Props(Nil),
+  then check_keys: fn(List(String)) -> props.Try(Nil),
 ) -> props.Try(Kind) {
   use <- return(props.error_context(error.BadKind(name)))
 
