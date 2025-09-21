@@ -222,8 +222,8 @@ fn format_value(value: Value) -> String {
     value.Bool(True) -> theme_bool("true")
     value.Bool(False) -> theme_bool("false")
     value.String(string) -> theme_string(string)
-    value.Int(int) -> int.to_string(int)
-    value.Float(float) -> float.to_string(float)
+    value.Int(int) -> theme_int(int.to_string(int))
+    value.Float(float) -> theme_float(float.to_string(float))
     value.List(list) -> format_list(list)
     value.Pair(key, value) -> key_value(format_value(key), format_value(value))
     value.Object(object) -> format_object(object)
@@ -296,6 +296,14 @@ fn theme_bool(string: String) -> String {
 }
 
 fn theme_string(string: String) -> String {
+  ansi.green(string)
+}
+
+fn theme_float(string: String) -> String {
+  ansi.pink(string)
+}
+
+fn theme_int(string: String) -> String {
   ansi.cyan(string)
 }
 

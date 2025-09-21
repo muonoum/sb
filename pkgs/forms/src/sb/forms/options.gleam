@@ -112,45 +112,42 @@ pub fn select(options: Options, value: Value) -> Result(Choice, Report(Error)) {
 
     SingleSource(source) ->
       case reset.unwrap(source) {
-        Ok(source.Literal(value.List(choices))) ->
-          select_list(value, choices)
-          |> report.replace_error(error.BadValue(value))
+        Ok(source.Literal(value.List(choices))) -> {
+          use <- return(report.replace_error(_, error.BadValue(value)))
+          use choice <- list.find_map(choices)
+          select_value(value, in: choice)
+        }
 
-        Ok(source.Literal(value.Object(choices))) ->
-          select_object(value, choices)
-          |> report.replace_error(error.BadValue(value))
+        Ok(source.Literal(value.Object(choices))) -> {
+          use <- return(report.replace_error(_, error.BadValue(value)))
+          use choice <- list.find_map(choices)
+          select_value(value, in: value.Pair(choice.0, choice.1))
+        }
 
         _source -> report.error(error.BadSource)
       }
   }
 }
 
-fn select_list(want: Value, choices: List(Value)) -> Result(Choice, Nil) {
-  use have <- list.find_map(choices)
-  try_select(want, have)
-}
-
-fn select_object(
-  want: Value,
-  choices: List(#(Value, Value)),
-) -> Result(Choice, Nil) {
-  use #(key, value) <- list.find_map(choices)
-  try_select(want, value.Pair(key, value))
-}
-
-fn try_select(want: Value, have: Value) -> Result(Choice, Nil) {
-  case have {
-    value.Pair(key, value) if key == want -> Ok(choice.new(key, value))
-    value.List(list) -> list.find_map(list, try_select(want, _))
+fn select_value(target: Value, in value: Value) -> Result(Choice, Nil) {
+  case value {
+    value.Pair(key, value) if key == target -> Ok(choice.new(key, value))
+    value.List(list) -> list.find_map(list, select_value(target, _))
 
     value.Object(pairs) -> {
       use #(key, value) <- list.find_map(pairs)
-      use <- bool.guard(key != want, Error(Nil))
+      use <- bool.guard(key != target, Error(Nil))
       Ok(choice.new(key, value))
     }
 
-    have if want == have -> Ok(choice.new(want, have))
-    _have -> Error(Nil)
+    value if value == target -> Ok(choice.new(value, value))
+
+    value.Null
+    | value.Bool(..)
+    | value.Float(..)
+    | value.Int(..)
+    | value.Pair(..)
+    | value.String(..) -> Error(Nil)
   }
 }
 

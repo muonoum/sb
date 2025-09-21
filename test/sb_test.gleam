@@ -10,18 +10,30 @@ import sb/forms/handlers
 import sb/forms/scope
 import sb/forms/task
 import sb/forms/value.{String}
-import sb/store
 
 pub fn main() -> Nil {
   gleeunit.main()
 }
 
-pub fn evaluate_single_data_literal_test() {
-  let store = helpers.start_store()
+const single_data_literal = "
+name: single data literal
+fields:
+  - {id: data, kind: data, source.literal: value}
+"
 
+const select_with_reference_to_data = "
+name: Select with reference to data
+fields:
+  - {id: data, kind: data, source.literal: [a, b, c]}
+  - {id: select, kind: select, source.reference: data}
+"
+
+pub fn evaluate_single_data_literal_test() {
   let task =
-    store.get_task(store, "test-single-data-literal")
+    helpers.decode_task(single_data_literal, task.default_category(["Test"]))
     |> should.be_ok
+
+  helpers.field_errors(task) |> should.equal([])
 
   let handlers = handlers.empty()
   let scope = scope.error()
@@ -33,11 +45,14 @@ pub fn evaluate_single_data_literal_test() {
 }
 
 pub fn evaluate_select_with_reference_to_data_test() {
-  let store = helpers.start_store()
-
   let task =
-    store.get_task(store, "test-select-with-reference-to-data")
+    helpers.decode_task(
+      select_with_reference_to_data,
+      task.default_category(["Test"]),
+    )
     |> should.be_ok
+
+  helpers.field_errors(task) |> should.equal([])
 
   let handlers = handlers.empty()
   let scope = scope.error()

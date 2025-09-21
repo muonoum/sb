@@ -24,6 +24,10 @@ check: test
 test:
 	@gleam test
 
+.PHONY: snapshot
+snapshot:
+	gleam run -m birdie
+
 .PHONY: check-watch
 check-watch:
 	@watchexec --exts gleam,yaml make check --no-print-directory

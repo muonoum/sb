@@ -10,6 +10,7 @@ import gleeunit/should
 import sb/extra/dots
 import sb/extra/report.{type Report}
 import sb/extra/state
+import sb/extra_server/yaml
 import sb/forms/custom
 import sb/forms/error.{type Error}
 import sb/forms/field.{type Field}
@@ -33,6 +34,27 @@ pub fn start_store_with_no_errors() {
   let store = start_store()
   store.get_errors(store) |> should.equal([])
   store
+}
+
+pub fn decode_task(
+  data: String,
+  defaults: task.Defaults,
+) -> Result(Task, Report(Error)) {
+  let dynamic =
+    yaml.decode_string(data)
+    |> should.be_ok
+
+  let assert [doc, ..] =
+    decode.run(dynamic, decode.list(decode.dynamic))
+    |> should.be_ok
+
+  dots.split(doc)
+  |> props.decode(task.decoder(
+    filters: custom.Filters(dict.new()),
+    fields: custom.Fields(dict.new()),
+    sources: custom.Sources(dict.new()),
+    defaults:,
+  ))
 }
 
 pub fn field_errors(task: Task) {

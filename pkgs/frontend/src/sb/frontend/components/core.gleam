@@ -1,5 +1,4 @@
 import gleam/bool
-import gleam/json
 import gleam/list
 import gleam/option.{type Option}
 import gleam/string
@@ -43,12 +42,13 @@ pub fn inline_value(value: Value) -> Element(message) {
 
   case value {
     value.String(string) -> html.text(string)
+    value.Pair(key, _value) -> html.text(value.to_string(key))
     value.Int(..) | value.Float(..) | value.Bool(..) | value.Null ->
-      html.text(json.to_string(value.to_json(value)))
+      html.text(value.to_string(value))
 
     value ->
       html.span([attr.class("font-semibold font-mono")], [
-        html.text(json.to_string(value.to_json(value))),
+        html.text(value.to_string(value)),
       ])
   }
 }

@@ -6,12 +6,12 @@ test_name: evaluate_select_with_reference_to_data_test
 ---
 [32mdata[39m
 kind: data
-source: [90m[[39m[36ma[39m [36mb[39m [36mc[39m[90m][39m
-value: [90m[[39m[36ma[39m [36mb[39m [36mc[39m[90m][39m
+source: [90m[[39m[32ma[39m [32mb[39m [32mc[39m[90m][39m
+value: [90m[[39m[32ma[39m [32mb[39m [32mc[39m[90m][39m
 [90m[39m
 [32mselect[39m
 kind: select
-options: [90m[[39m[36ma[39m [36mb[39m [36mc[39m[90m][39m
-selected: [36ma[39m
-value: [36ma[39m
-data[90m=[39m[90m[[39m[36ma[39m [36mb[39m [36mc[39m[90m][39m select[90m=[39m[36ma[39m
+options: [90m[[39m[32ma[39m [32mb[39m [32mc[39m[90m][39m
+selected: [32ma[39m
+value: [32ma[39m
+data[90m=[39m[90m[[39m[32ma[39m [32mb[39m [32mc[39m[90m][39m select[90m=[39m[32ma[39m

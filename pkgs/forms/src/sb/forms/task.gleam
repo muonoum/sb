@@ -31,6 +31,14 @@ pub type Defaults {
   Defaults(category: List(String), runners: Access, approvers: Access)
 }
 
+pub fn empty_defaults() -> Defaults {
+  Defaults(category: [], runners: access.none(), approvers: access.none())
+}
+
+pub fn default_category(category: List(String)) -> Defaults {
+  Defaults(category:, runners: access.none(), approvers: access.none())
+}
+
 pub type Task {
   Task(
     id: String,
@@ -119,6 +127,7 @@ pub fn decoder(
 
   use name <- props.get("name", decoder.from(decode.string))
 
+  // TODO: default overstyrer ikke?
   use category <- state.try({
     use <- bool.guard(defaults.category != [], state.ok(defaults.category))
     props.get("category", decoder.from(decode.list(decode.string)), state.ok)
@@ -141,7 +150,7 @@ pub fn decoder(
   })
 
   use runners <- props.try("runners", access.decoder(defaults.runners))
-  use approvers <- props.try("approvers", { access.decoder(defaults.approvers) })
+  use approvers <- props.try("approvers", access.decoder(defaults.approvers))
 
   use fields <- props.try("fields", {
     use dynamic <- zero.list

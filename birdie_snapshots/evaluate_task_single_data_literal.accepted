@@ -6,6 +6,6 @@ test_name: evaluate_single_data_literal_test
 ---
 [32mdata[39m
 kind: data
-source: [36mvalue[39m
-value: [36mvalue[39m
+source: [32mvalue[39m
+value: [32mvalue[39m
 [33m*[39m
