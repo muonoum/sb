@@ -3,7 +3,6 @@ import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/pair
 import gleam/result
 import gleam/set.{type Set}
 import sb/extra/function.{identity, return}

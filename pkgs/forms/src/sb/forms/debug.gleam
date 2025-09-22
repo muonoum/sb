@@ -8,7 +8,6 @@ import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
 import gleam_community/ansi
-import gleam_community/colour
 import sb/extra/function.{identity}
 import sb/extra/report.{type Report}
 import sb/extra/reset.{type Reset}
