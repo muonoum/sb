@@ -4,6 +4,7 @@ import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/erlang/process
+import gleam/io
 import gleam/list
 import gleam/result
 import gleeunit/should
@@ -12,6 +13,7 @@ import sb/extra/report.{type Report}
 import sb/extra/state
 import sb/extra_server/yaml
 import sb/forms/custom
+import sb/forms/debug
 import sb/forms/error.{type Error}
 import sb/forms/field.{type Field}
 import sb/forms/handlers.{type Handlers}
@@ -20,7 +22,18 @@ import sb/forms/props
 import sb/forms/scope.{type Scope}
 import sb/forms/source.{type Source}
 import sb/forms/task.{type Task}
+import sb/forms/value.{type Value}
 import sb/store
+
+pub fn strings(list: List(String)) -> Value {
+  value.List(list.map(list, value.String))
+}
+
+pub fn debug_task(task: Task, enabled: Bool) -> Nil {
+  use <- bool.guard(!enabled, Nil)
+  io.println("")
+  io.println(debug.task(task))
+}
 
 pub fn start_store() {
   let name = process.new_name("store")

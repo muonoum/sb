@@ -18,7 +18,6 @@ import sb/extra/loadable.{type Loadable}
 import sb/extra/reader.{type Reader}
 import sb/extra/report.{type Report}
 import sb/extra/reset
-import sb/forms/choice
 import sb/forms/condition
 import sb/forms/error.{type Error}
 import sb/forms/field.{type Field}
@@ -784,26 +783,18 @@ fn field_kind(id: String, field: Field) -> Reader(Element(Message), Context) {
       text_input.textarea(string, text_input_config(placeholder))
 
     kind.Radio(selected, layout:, options:) ->
-      input.radio(config: input_config(layout, options), selected: {
-        option.map(selected, choice.key)
-      })
+      input.radio(config: input_config(layout, options), selected:)
 
     kind.Checkbox(selected, layout:, options:) ->
-      input.checkbox(
-        config: input_config(layout, options),
-        selected: list.map(selected, choice.key),
-      )
+      input.checkbox(config: input_config(layout, options), selected:)
 
     kind.Select(selected, placeholder:, options:) ->
-      select.select(
-        config: select_config(placeholder, options),
-        selected: option.map(selected, choice.key),
-      )
+      select.select(config: select_config(placeholder, options), selected:)
 
     kind.MultiSelect(selected, placeholder:, options:) ->
       select.multi_select(
         config: select_config(placeholder, options),
-        selected: list.map(selected, choice.key),
+        selected:,
       )
   }
 }

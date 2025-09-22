@@ -11,7 +11,6 @@ import gleam_community/ansi
 import sb/extra/function.{identity}
 import sb/extra/report.{type Report}
 import sb/extra/reset.{type Reset}
-import sb/forms/choice.{type Choice}
 import sb/forms/error.{type Error}
 import sb/forms/field.{type Field}
 import sb/forms/kind.{type Kind}
@@ -60,13 +59,13 @@ pub fn scope(scope: Scope) -> String {
 
 fn format_fields(fields: Dict(String, Field)) -> List(String) {
   use #(id, field) <- list.map(dict.to_list(fields))
+
   let id =
     spaced([
-      // ansi.underline(ansi.bold(format_kind_name(field.kind))),
       label(format_kind_name(field.kind)),
       theme_id(id),
     ])
-  // let name = spaced([label("kind"), format_kind_name(field.kind)])
+
   let kind = format_kind(field.kind)
 
   let value =
@@ -150,7 +149,7 @@ fn format_textarea_kind(string: String) -> List(String) {
 }
 
 fn format_multiple_choice(
-  choices: List(Choice),
+  choices: List(Value),
   options: Options,
 ) -> List(String) {
   let options = spaced([label("options"), format_options(options)])
@@ -158,12 +157,9 @@ fn format_multiple_choice(
   [options, selected]
 }
 
-fn format_single_choice(
-  choice: Option(Choice),
-  options: Options,
-) -> List(String) {
+fn format_single_choice(value: Option(Value), options: Options) -> List(String) {
   let options = spaced([label("options"), format_options(options)])
-  let selected = spaced([label("selected"), format_single_selected(choice)])
+  let selected = spaced([label("selected"), format_single_selected(value)])
   [options, selected]
 }
 
@@ -259,26 +255,26 @@ fn format_options(options: Options) -> String {
   }
 }
 
-fn format_single_selected(selected: Option(Choice)) -> String {
+fn format_single_selected(selected: Option(Value)) -> String {
   case selected {
-    Some(choice) -> format_choice(choice)
+    Some(value) -> format_value(value)
     None -> format_empty()
   }
 }
 
-fn format_multiple_selected(selected: List(Choice)) -> String {
+fn format_multiple_selected(selected: List(Value)) -> String {
   case selected {
     [] -> format_empty()
-    list -> square_bracketed(spaced(list.map(list, format_choice)))
+    list -> square_bracketed(spaced(list.map(list, format_value)))
   }
 }
 
-fn format_choice(choice: Choice) -> String {
-  let key = choice.key(choice)
-  let value = choice.value(choice)
-  use <- bool.guard(key == value, format_value(value))
-  key_value(format_value(key), format_value(value))
-}
+// fn format_choice(choice: Choice) -> String {
+//   let key = choice.key(choice)
+//   let value = choice.value(choice)
+//   use <- bool.guard(key == value, format_value(value))
+//   key_value(format_value(key), format_value(value))
+// }
 
 // AUXILLARY
 

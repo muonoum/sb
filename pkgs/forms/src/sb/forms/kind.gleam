@@ -41,18 +41,13 @@ pub type Kind {
   Text(string: String, placeholder: Option(String))
   Textarea(string: String, placeholder: Option(String))
   Data(source: Reset(Result(Source, Report(Error))))
-  Radio(selected: Option(Choice), options: Options, layout: Layout)
 
-  Select(
-    selected: Option(Choice),
-    options: Options,
-    placeholder: Option(String),
-  )
-
-  Checkbox(selected: List(Choice), options: Options, layout: Layout)
+  Radio(selected: Option(Value), options: Options, layout: Layout)
+  Select(selected: Option(Value), options: Options, placeholder: Option(String))
+  Checkbox(selected: List(Value), options: Options, layout: Layout)
 
   MultiSelect(
-    selected: List(Choice),
+    selected: List(Value),
     placeholder: Option(String),
     options: Options,
   )
@@ -98,48 +93,56 @@ pub fn reset(kind: Kind, refs: Set(String)) -> Kind {
 
     Radio(selected:, options:, ..) -> {
       let options = options.reset(options, refs)
-      let selected = select_one(selected, options)
+      let selected =
+        select_one(selected, options)
+        |> option.map(choice.key)
       Radio(..kind, selected:, options:)
     }
 
     Select(selected:, options:, ..) -> {
       let options = options.reset(options, refs)
-      let selected = select_one(selected, options)
+      let selected =
+        select_one(selected, options)
+        |> option.map(choice.key)
       Select(..kind, selected:, options:)
     }
 
     Checkbox(selected:, options:, ..) -> {
       let options = options.reset(options, refs)
-      let selected = select_multiple(selected, options)
+      let selected =
+        select_multiple(selected, options)
+        |> list.map(choice.key)
       Checkbox(..kind, selected:, options:)
     }
 
     MultiSelect(selected:, options:, ..) -> {
       let options = options.reset(options, refs)
-      let selected = select_multiple(selected, options)
+      let selected =
+        select_multiple(selected, options)
+        |> list.map(choice.key)
       MultiSelect(..kind, selected:, options:)
     }
   }
 }
 
 // TODO
-fn select_one(selected: Option(Choice), options: Options) -> Option(Choice) {
-  let selected = {
-    use choice <- option.map(selected)
-    options.select(options, choice.key(choice))
+fn select_one(selected: Option(Value), options: Options) -> Option(Choice) {
+  let choice = {
+    use key <- option.map(selected)
+    options.select(options, key)
   }
 
-  case selected {
+  case choice {
     None | Some(Error(..)) -> None
-    Some(Ok(selected)) -> Some(selected)
+    Some(Ok(choice)) -> Some(choice)
   }
 }
 
 // TODO
-fn select_multiple(selected: List(Choice), options: Options) -> List(Choice) {
+fn select_multiple(selected: List(Value), options: Options) -> List(Choice) {
   let selected = {
-    use choice <- list.try_map(selected)
-    options.select(options, choice.key(choice))
+    use key <- list.try_map(selected)
+    options.select(options, key)
   }
 
   case selected {
@@ -201,29 +204,46 @@ pub fn update(kind: Kind, value: Option(Value)) -> Result(Kind, Report(Error)) {
     MultiSelect(..), None -> Ok(MultiSelect(..kind, selected: []))
 
     Radio(options:, ..), Some(key) -> {
-      use selected <- result.try(options.select(options, key))
+      use selected <- result.try(
+        options.select(options, key)
+        |> result.map(choice.key),
+      )
+
       Ok(Radio(..kind, selected: Some(selected), options:))
     }
 
     Select(options:, ..), Some(key) -> {
-      use selected <- result.try(options.select(options, key))
+      use selected <- result.try(
+        options.select(options, key)
+        |> result.map(choice.key),
+      )
+
       Ok(Select(..kind, selected: Some(selected), options:))
     }
 
-    // TODO: Unique keys
+    // TODO
     Checkbox(options:, ..), Some(value.List(keys)) -> {
-      use selected <- result.try(list.try_map(keys, options.select(options, _)))
+      use selected <- result.try(
+        list.try_map(keys, options.select(options, _))
+        |> result.map(list.map(_, choice.key)),
+      )
+
       Ok(Checkbox(..kind, selected:, options:))
     }
 
     Checkbox(..), Some(value) -> report.error(error.BadValue(value))
 
     // TODO
-    MultiSelect(options:, ..), Some(value) -> {
-      use keys <- result.try(error.unique_keys(value))
-      use selected <- result.try(list.try_map(keys, options.select(options, _)))
+    MultiSelect(options:, ..), Some(value.List(keys)) -> {
+      use selected <- result.try(
+        list.try_map(keys, options.select(options, _))
+        |> result.map(list.map(_, choice.key)),
+      )
+
       Ok(MultiSelect(..kind, selected:, options:))
     }
+
+    MultiSelect(..), Some(value) -> report.error(error.BadValue(value))
   }
 }
 
@@ -245,13 +265,17 @@ pub fn value(kind: Kind) -> Option(Result(Value, Report(Error))) {
         Ok(..) -> None
       }
 
-    // TODO: Kanskje lagre keys i stedet for choices i selected og 
-    // gjøre en select mot options her.
-    Radio(Some(selected), ..) | Select(Some(selected), ..) ->
-      Some(Ok(choice.value(selected)))
+    // TODO
+    Radio(Some(selected), options:, ..) | Select(Some(selected), options:, ..) ->
+      options.select(options, selected)
+      |> result.map(choice.value)
+      |> Some
 
-    Checkbox(selected:, ..) | MultiSelect(selected:, ..) ->
-      Some(Ok(value.List(list.map(selected, choice.value))))
+    Checkbox(selected:, options:, ..) | MultiSelect(selected:, options:, ..) ->
+      list.try_map(selected, options.select(options, _))
+      |> result.map(list.map(_, choice.value))
+      |> result.map(value.List)
+      |> Some
   }
 }
 
@@ -342,8 +366,8 @@ fn checkbox_decoder(sources sources: custom.Sources) -> props.Try(Kind) {
   })
 
   use options <- props.get("source", props.decode(_, options.decoder(sources:)))
-  use choices <- props.try("default", zero.list(multi_select_default(options)))
-  state.ok(Checkbox(choices, layout:, options:))
+  use selected <- props.try("default", zero.list(multi_select_default(options)))
+  state.ok(Checkbox(selected:, layout:, options:))
 }
 
 fn select_decoder(sources sources: custom.Sources) -> props.Try(Kind) {
@@ -369,17 +393,19 @@ fn multi_select_decoder(
 
 fn select_default(
   options: Options,
-) -> fn(Dynamic) -> Result(Choice, Report(Error)) {
+) -> fn(Dynamic) -> Result(Value, Report(Error)) {
   use dynamic <- identity
   use value <- result.try(decoder.run(dynamic, value.decoder()))
   options.select(options, value)
+  |> result.map(choice.key)
 }
 
 fn multi_select_default(
   options: Options,
-) -> fn(Dynamic) -> Result(List(Choice), Report(Error)) {
+) -> fn(Dynamic) -> Result(List(Value), Report(Error)) {
   use dynamic <- identity
   use values <- result.try(decoder.run(dynamic, decode.list(value.decoder())))
   use value <- list.try_map(values)
   options.select(options, value)
+  |> result.map(choice.key)
 }
