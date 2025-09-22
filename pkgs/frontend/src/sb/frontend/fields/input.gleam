@@ -21,6 +21,9 @@ import sb/forms/source.{type Source}
 import sb/forms/value.{type Value}
 import sb/frontend/components/core
 
+// TODO: Kanskje vi bare sender key inn til change herfra og lar
+// kind.update handtere toggle i selected for input/select-felter.
+
 pub type Config(message) {
   Config(
     id: String,
@@ -65,15 +68,8 @@ pub fn radio(
   selected selected: Option(Value),
   config config: Config(message),
 ) -> Element(message) {
-  let is_selected = fn(key) {
-    let key = value.key(key)
-    Some(key) == selected
-  }
-
-  let change = fn(key) {
-    let key = value.key(key)
-    decode.success(config.change(Some(key)))
-  }
+  let is_selected = fn(key) { Some(key) == selected }
+  let change = fn(key) { decode.success(config.change(Some(key))) }
 
   let context =
     Context(kind: "radio", group_index: 0, is_selected:, change:, config:)
@@ -85,10 +81,7 @@ pub fn checkbox(
   selected selected: List(Value),
   config config: Config(message),
 ) -> Element(message) {
-  let is_selected = fn(key) {
-    let key = value.key(key)
-    set.contains(set.from_list(selected), key)
-  }
+  let is_selected = set.contains(set.from_list(selected), _)
 
   let select = fn(key) {
     use <- identity
@@ -101,7 +94,6 @@ pub fn checkbox(
     use checked <- decode.then(checked_decoder())
     use <- return(compose(config.change, decode.success))
     use <- return(compose(value.List, Some))
-    let key = value.key(key)
     use <- bool.lazy_guard(checked, select(key))
     use have <- list.filter(selected)
     key != have
@@ -170,6 +162,7 @@ fn group_members(value: Value) -> State(Element(message), Context(message)) {
   use Context(group_index:, ..) <- state.bind(get_context())
   use config <- state.bind(get_config())
 
+  // TODO
   case error.unique_keys(value) {
     Error(report) ->
       state.return(core.inspect([attr.class("text-red-800")], report))
@@ -177,9 +170,11 @@ fn group_members(value: Value) -> State(Element(message), Context(message)) {
     Ok(keys) -> {
       use choices <- state.bind({
         use <- return(state.sequence)
-        use choice, item_index <- list.index_map(keys)
+        use key, item_index <- list.index_map(keys)
+        // TODO
+        let key = value.key(key)
 
-        group_choice(choice, {
+        group_choice(key, {
           [int.to_string(group_index), int.to_string(item_index), config.id]
           |> string.join("-")
         })

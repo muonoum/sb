@@ -114,16 +114,8 @@ pub fn select(
   selected selected: Option(Value),
   config config: Config(message),
 ) -> Element(message) {
-  let is_selected = fn(key) {
-    let key = value.key(key)
-    Some(key) == selected
-  }
-
-  let select = fn(key) {
-    let key = value.key(key)
-    config.change(Some(key))
-  }
-
+  let is_selected = fn(key) { Some(key) == selected }
+  let select = fn(key) { config.change(Some(key)) }
   let deselect = fn(_) { config.change(None) }
   let context = Context(config:, is_selected:, select:, deselect:)
 
@@ -153,17 +145,12 @@ pub fn multi_select(
   selected selected: List(Value),
   config config: Config(message),
 ) -> Element(message) {
-  let is_selected = fn(key) -> Bool {
-    let key = value.key(key)
-    set.from_list(selected)
-    |> set.contains(key)
-  }
+  let is_selected = fn(key) { set.contains(set.from_list(selected), key) }
 
   let select = fn(key) {
     use <- return(config.change)
     use <- return(compose(value.List, Some))
     let set = set.from_list(selected)
-    let key = value.key(key)
     use <- bool.guard(set.contains(set, key), selected)
     list.append(selected, [key])
   }
@@ -171,7 +158,6 @@ pub fn multi_select(
   let deselect = fn(key) {
     use <- return(config.change)
     use <- return(compose(value.List, Some))
-    let key = value.key(key)
     use have <- list.filter(selected)
     key != have
   }
@@ -305,6 +291,7 @@ fn group_value(
   value: Value,
   has_placeholder: Bool,
 ) -> Reader(Element(message), Context(message)) {
+  // TODO
   case error.unique_keys(value), has_placeholder {
     Ok(keys), False -> {
       use keys <- reader.bind(find(label, keys))
@@ -357,6 +344,8 @@ fn group_members(
     group_label(label),
     element.fragment({
       use key <- list.map(keys)
+      // TODO
+      let key = value.key(key)
 
       let attr = case context.is_selected(key) {
         True -> [core.classes(select_selected_choice_style)]

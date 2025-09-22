@@ -124,12 +124,14 @@ fn format_kind(kind: Kind) -> List(String) {
     kind.Data(source:) -> format_data_kind(source)
     kind.Text(string:, ..) -> format_text_kind(string)
     kind.Textarea(string:, ..) -> format_textarea_kind(string)
-    kind.Checkbox(choices:, options:, ..) ->
-      format_multiple_choice(choices, options)
-    kind.Radio(choice:, options:, ..) -> format_single_choice(choice, options)
-    kind.MultiSelect(choices:, options:, ..) ->
-      format_multiple_choice(choices, options)
-    kind.Select(choice:, options:, ..) -> format_single_choice(choice, options)
+    kind.Checkbox(selected:, options:, ..) ->
+      format_multiple_choice(selected, options)
+    kind.Radio(selected:, options:, ..) ->
+      format_single_choice(selected, options)
+    kind.MultiSelect(selected:, options:, ..) ->
+      format_multiple_choice(selected, options)
+    kind.Select(selected:, options:, ..) ->
+      format_single_choice(selected, options)
   }
 }
 

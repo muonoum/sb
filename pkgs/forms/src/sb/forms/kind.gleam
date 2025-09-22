@@ -41,12 +41,16 @@ pub type Kind {
   Text(string: String, placeholder: Option(String))
   Textarea(string: String, placeholder: Option(String))
   Data(source: Reset(Result(Source, Report(Error))))
-  Radio(choice: Option(Choice), options: Options, layout: Layout)
-  Select(choice: Option(Choice), options: Options, placeholder: Option(String))
-  Checkbox(choices: List(Choice), options: Options, layout: Layout)
+  Radio(selected: Option(Choice), options: Options, layout: Layout)
+  Select(
+    selected: Option(Choice),
+    options: Options,
+    placeholder: Option(String),
+  )
+  Checkbox(selected: List(Choice), options: Options, layout: Layout)
 
   MultiSelect(
-    choices: List(Choice),
+    selected: List(Choice),
     placeholder: Option(String),
     options: Options,
   )
@@ -90,28 +94,28 @@ pub fn reset(kind: Kind, refs: Set(String)) -> Kind {
     Text(..) | Textarea(..) -> kind
     Data(source:) -> Data(reset.maybe(source, refs))
 
-    Radio(choice:, options:, ..) -> {
+    Radio(selected:, options:, ..) -> {
       let options = options.reset(options, refs)
-      let choice = select_one(choice, options)
-      Radio(..kind, choice:, options:)
+      let selected = select_one(selected, options)
+      Radio(..kind, selected:, options:)
     }
 
-    Select(choice:, options:, ..) -> {
+    Select(selected:, options:, ..) -> {
       let options = options.reset(options, refs)
-      let choice = select_one(choice, options)
-      Select(..kind, choice:, options:)
+      let selected = select_one(selected, options)
+      Select(..kind, selected:, options:)
     }
 
-    Checkbox(choices:, options:, ..) -> {
+    Checkbox(selected:, options:, ..) -> {
       let options = options.reset(options, refs)
-      let choices = select_multiple(choices, options)
-      Checkbox(..kind, choices:, options:)
+      let selected = select_multiple(selected, options)
+      Checkbox(..kind, selected:, options:)
     }
 
-    MultiSelect(choices:, options:, ..) -> {
+    MultiSelect(selected:, options:, ..) -> {
       let options = options.reset(options, refs)
-      let choices = select_multiple(choices, options)
-      MultiSelect(..kind, choices:, options:)
+      let selected = select_multiple(selected, options)
+      MultiSelect(..kind, selected:, options:)
     }
   }
 }
@@ -158,21 +162,21 @@ pub fn evaluate(
         source.evaluate(source, scope, search:, handlers:)
       })
 
-    Radio(choice:, options:, layout:) ->
+    Radio(selected:, options:, layout:) ->
       options.evaluate(options, scope, search:, handlers:)
-      |> Radio(choice:, options: _, layout:)
+      |> Radio(selected:, options: _, layout:)
 
-    Select(choice:, options:, placeholder:) ->
+    Select(selected:, options:, placeholder:) ->
       options.evaluate(options, scope, search:, handlers:)
-      |> Select(choice:, options: _, placeholder:)
+      |> Select(selected:, options: _, placeholder:)
 
-    Checkbox(choices:, layout:, options:) ->
+    Checkbox(selected:, layout:, options:) ->
       options.evaluate(options, scope, search:, handlers:)
-      |> Checkbox(choices:, options: _, layout:)
+      |> Checkbox(selected:, options: _, layout:)
 
-    MultiSelect(choices:, placeholder:, options:) ->
+    MultiSelect(selected:, placeholder:, options:) ->
       options.evaluate(options, scope, search:, handlers:)
-      |> MultiSelect(choices:, options: _, placeholder:)
+      |> MultiSelect(selected:, options: _, placeholder:)
   }
 }
 
@@ -189,33 +193,34 @@ pub fn update(kind: Kind, value: Option(Value)) -> Result(Kind, Report(Error)) {
     Text(..), Some(value) | Textarea(..), Some(value) ->
       report.error(error.BadValue(value))
 
-    Radio(..), None -> Ok(Radio(..kind, choice: None))
-    Select(..), None -> Ok(Select(..kind, choice: None))
-    Checkbox(..), None -> Ok(Checkbox(..kind, choices: []))
-    MultiSelect(..), None -> Ok(MultiSelect(..kind, choices: []))
+    Radio(..), None -> Ok(Radio(..kind, selected: None))
+    Select(..), None -> Ok(Select(..kind, selected: None))
+    Checkbox(..), None -> Ok(Checkbox(..kind, selected: []))
+    MultiSelect(..), None -> Ok(MultiSelect(..kind, selected: []))
 
     Radio(options:, ..), Some(key) -> {
-      use choice <- result.try(options.select(options, key))
-      Ok(Radio(..kind, choice: Some(choice), options:))
+      use selected <- result.try(options.select(options, key))
+      Ok(Radio(..kind, selected: Some(selected), options:))
     }
 
     Select(options:, ..), Some(key) -> {
-      use choice <- result.try(options.select(options, key))
-      Ok(Select(..kind, choice: Some(choice), options:))
+      use selected <- result.try(options.select(options, key))
+      Ok(Select(..kind, selected: Some(selected), options:))
     }
 
     // TODO: Unique keys
     Checkbox(options:, ..), Some(value.List(keys)) -> {
-      use choices <- result.try(list.try_map(keys, options.select(options, _)))
-      Ok(Checkbox(..kind, choices:, options:))
+      use selected <- result.try(list.try_map(keys, options.select(options, _)))
+      Ok(Checkbox(..kind, selected:, options:))
     }
 
     Checkbox(..), Some(value) -> report.error(error.BadValue(value))
 
+    // TODO
     MultiSelect(options:, ..), Some(value) -> {
       use keys <- result.try(error.unique_keys(value))
-      use choices <- result.try(list.try_map(keys, options.select(options, _)))
-      Ok(MultiSelect(..kind, choices:, options:))
+      use selected <- result.try(list.try_map(keys, options.select(options, _)))
+      Ok(MultiSelect(..kind, selected:, options:))
     }
   }
 }
@@ -241,8 +246,8 @@ pub fn value(kind: Kind) -> Option(Result(Value, Report(Error))) {
     Radio(Some(selected), ..) | Select(Some(selected), ..) ->
       Some(Ok(choice.value(selected)))
 
-    Checkbox(choices:, ..) | MultiSelect(choices:, ..) ->
-      Some(Ok(value.List(list.map(choices, choice.value))))
+    Checkbox(selected:, ..) | MultiSelect(selected:, ..) ->
+      Some(Ok(value.List(list.map(selected, choice.value))))
   }
 }
 
@@ -313,8 +318,8 @@ fn radio_decoder(sources sources: custom.Sources) -> props.Try(Kind) {
   })
 
   use options <- props.get("source", props.decode(_, options.decoder(sources:)))
-  use choice <- props.try("default", zero.option(select_default(options)))
-  state.ok(Radio(choice:, layout:, options:))
+  use selected <- props.try("default", zero.option(select_default(options)))
+  state.ok(Radio(selected:, layout:, options:))
 }
 
 fn layout_decoder() -> decode.Decoder(Layout) {
@@ -345,9 +350,8 @@ fn select_decoder(sources sources: custom.Sources) -> props.Try(Kind) {
   use multiple <- props.try("multiple", zero.bool(decoder.from(decode.bool)))
   use options <- props.get("source", props.decode(_, options.decoder(sources:)))
   use <- bool.lazy_guard(multiple, multi_select_decoder(placeholder, options))
-
-  use choice <- props.try("default", zero.option(select_default(options)))
-  state.ok(Select(choice:, placeholder:, options:))
+  use selected <- props.try("default", zero.option(select_default(options)))
+  state.ok(Select(selected:, placeholder:, options:))
 }
 
 fn multi_select_decoder(
@@ -355,8 +359,8 @@ fn multi_select_decoder(
   options: Options,
 ) -> fn() -> props.Try(Kind) {
   use <- identity
-  use choices <- props.try("default", zero.list(multi_select_default(options)))
-  state.ok(MultiSelect(choices:, placeholder:, options:))
+  use selected <- props.try("default", zero.list(multi_select_default(options)))
+  state.ok(MultiSelect(selected:, placeholder:, options:))
 }
 
 fn select_default(
