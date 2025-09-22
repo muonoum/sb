@@ -6,10 +6,10 @@ import sb/forms/value
 
 pub fn checkbox_list_test() {
   let source =
-    "
-    name: checkbox_list_source
-    fields: [{id: field, kind: checkbox, source.literal: [ichi, ni, san]}]
-    "
+    helpers.lines([
+      "name: task",
+      "fields: [{id: field, kind: checkbox, source.literal: [ichi, ni, san]}]",
+    ])
 
   let task = helpers.decode_task(source) |> should.be_ok
   helpers.field_errors(task) |> should.equal([])
@@ -25,12 +25,34 @@ pub fn checkbox_list_test() {
   helpers.debug_task(task, True)
 }
 
-pub fn checkbox_pairs_test() {
+pub fn checkbox_pair_test() {
   let source =
-    "
-    name: checkbox_list_source
-    fields: [{id: field, kind: checkbox, source.literal: [ichi: en, ni: to, san: tre]}]
-    "
+    helpers.lines([
+      "name: task",
+      "fields: [{id: field, kind: checkbox, source.literal: [ichi: en, ni, san: tre]}]",
+    ])
+
+  let task = helpers.decode_task(source) |> should.be_ok
+  helpers.field_errors(task) |> should.equal([])
+
+  task.update(task, "field", Some(value.String("ichi"))) |> should.be_error
+  task.update(task, "field", None) |> should.be_ok
+  task.update(task, "field", Some(value.List([]))) |> should.be_ok
+  task.update(task, "field", Some(strings(["en"]))) |> should.be_error
+
+  let task = task.update(task, "field", Some(strings(["ichi"]))) |> should.be_ok
+  let task =
+    task.update(task, "field", Some(strings(["ichi", "san"]))) |> should.be_ok
+
+  helpers.debug_task(task, True)
+}
+
+pub fn checkbox_object_test() {
+  let source =
+    helpers.lines([
+      "name: task",
+      "fields: [{id: field, kind: checkbox, source.literal: {ichi: en, ni: to, san: tre}}]",
+    ])
 
   let task = helpers.decode_task(source) |> should.be_ok
   helpers.field_errors(task) |> should.equal([])
@@ -49,15 +71,15 @@ pub fn checkbox_pairs_test() {
 
 pub fn options_test() {
   let source =
-    "
-    name: options
-    fields:
-      - {id: list, kind: checkbox, source.literal: [ichi, ni, san]}
-      - {id: pairs, kind: checkbox, source.literal: [ichi: en, ni: to, san: tre]}
-      - {id: object, kind: checkbox, source.literal: {ichi: en, ni: to, san: tre}}
-      - {id: values, kind: checkbox, source.literal: [10: integer, true: boolean,  [1, 2, 3]: list]}
-      - {id: mixed, kind: checkbox, source.literal: [ichi: en,  ni, san, 10: integer, 1.2: float]}
-    "
+    helpers.lines([
+      "name: task",
+      "fields:",
+      "- {id: list, kind: checkbox, source.literal: [ichi, ni, san]}",
+      "- {id: pairs, kind: checkbox, source.literal: [ichi: en, ni: to, san: tre]}",
+      "- {id: object, kind: checkbox, source.literal: {ichi: en, ni: to, san: tre}}",
+      "- {id: values, kind: checkbox, source.literal: [10: integer, true: boolean,  [1, 2, 3]: list]}",
+      "- {id: mixed, kind: checkbox, source.literal: [ichi: en,  ni, san, 10: integer, 1.2: float]}",
+    ])
 
   let task = helpers.decode_task(source) |> should.be_ok
   helpers.field_errors(task) |> should.equal([])
@@ -96,18 +118,19 @@ pub fn options_test() {
 //   |> should.be_error
 // }
 
-const defaults = "
-name: defaults
-fields:
-  - {id: ok1, kind: checkbox, default: [10], source.literal: [10, 20, 30]}
-  - {id: ok2, kind: radio, default: 10, source.literal: [10, 20, 30]}
-  - {id: ok3, kind: checkbox, default: [a], source.literal: [a: 10, 20, 30]}
-  - {id: error1, kind: checkbox, default: 10, source.literal: [10, 20, 30]}
-  - {id: error2, kind: radio, default: [10], source.literal: [10, 20, 30]}
-"
-
 pub fn defaults_test() {
-  let task = helpers.decode_task(defaults) |> should.be_ok
+  let source =
+    helpers.lines([
+      "name: task",
+      "fields:",
+      "- {id: ok1, kind: checkbox, default: [10], source.literal: [10, 20, 30]}",
+      "- {id: ok2, kind: radio, default: 10, source.literal: [10, 20, 30]}",
+      "- {id: ok3, kind: checkbox, default: [a], source.literal: [a: 10, 20, 30]}",
+      "- {id: error1, kind: checkbox, default: 10, source.literal: [10, 20, 30]}",
+      "- {id: error2, kind: radio, default: [10], source.literal: [10, 20, 30]}",
+    ])
+
+  let task = helpers.decode_task(source) |> should.be_ok
   let assert [_, _] = helpers.field_errors(task)
 
   let task =

@@ -7,6 +7,7 @@ import gleam/erlang/process
 import gleam/io
 import gleam/list
 import gleam/result
+import gleam/string
 import gleeunit/should
 import sb/extra/dots
 import sb/extra/report.{type Report}
@@ -24,6 +25,10 @@ import sb/forms/source.{type Source}
 import sb/forms/task.{type Task}
 import sb/forms/value.{type Value}
 import sb/store
+
+pub fn lines(lines: List(String)) {
+  string.join(lines, "\n")
+}
 
 pub fn strings(list: List(String)) -> Value {
   value.List(list.map(list, value.String))
