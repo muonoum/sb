@@ -6,6 +6,7 @@ import gleam/dynamic/decode
 import gleam/erlang/process
 import gleam/io
 import gleam/list
+import gleam/option.{type Option}
 import gleam/result
 import gleam/string
 import gleeunit/should
@@ -59,11 +60,25 @@ pub fn decode_task_without_field_errors(data: String) -> Task {
   task
 }
 
-pub fn get_ok_field_value(task: Task, id: String) -> Value {
+pub fn get_field_value(
+  task: Task,
+  id: String,
+) -> Option(Result(Value, Report(Error))) {
   dict.get(task.fields, id)
   |> result.map(field.value)
   |> should.be_ok
+}
+
+pub fn get_some_field_value(
+  task: Task,
+  id: String,
+) -> Result(Value, Report(Error)) {
+  get_field_value(task, id)
   |> should.be_some
+}
+
+pub fn get_ok_field_value(task: Task, id: String) -> Value {
+  get_some_field_value(task, id)
   |> should.be_ok
 }
 

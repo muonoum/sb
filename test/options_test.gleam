@@ -50,6 +50,7 @@ pub fn checkbox_list_test() {
     |> should.be_ok
 
   helpers.get_ok_field_value(task, "field")
+  |> should.equal(value.List([value.String("ichi")]))
 
   let task =
     Some(value.List([value.String("ichi"), value.String("san")]))
@@ -57,6 +58,7 @@ pub fn checkbox_list_test() {
     |> should.be_ok
 
   helpers.get_ok_field_value(task, "field")
+  |> should.equal(value.List([value.String("ichi"), value.String("san")]))
 
   task
 }
@@ -87,6 +89,7 @@ pub fn checkbox_pairs_test() {
     |> should.be_ok
 
   helpers.get_ok_field_value(task, "field")
+  |> should.equal(value.List([value.String("en")]))
 
   let task =
     Some(value.List([value.String("ichi"), value.String("san")]))
@@ -94,6 +97,7 @@ pub fn checkbox_pairs_test() {
     |> should.be_ok
 
   helpers.get_ok_field_value(task, "field")
+  |> should.equal(value.List([value.String("en"), value.String("tre")]))
 
   task
 }
@@ -123,6 +127,7 @@ pub fn checkbox_object_test() {
     |> should.be_ok
 
   helpers.get_ok_field_value(task, "field")
+  |> should.equal(value.List([value.String("en")]))
 
   let task =
     Some(value.List([value.String("ichi"), value.String("san")]))
@@ -130,6 +135,7 @@ pub fn checkbox_object_test() {
     |> should.be_ok
 
   helpers.get_ok_field_value(task, "field")
+  |> should.equal(value.List([value.String("en"), value.String("tre")]))
 
   task
 }
@@ -162,9 +168,16 @@ pub fn options_values_test() {
   let task = Some(integer_value) |> task.update(task, "d", _) |> should.be_ok
 
   helpers.get_ok_field_value(task, "a")
+  |> should.equal(value.List([value.String("boolean"), value.String("list")]))
+
   helpers.get_ok_field_value(task, "b")
+  |> should.equal(value.List([value.String("boolean"), value.String("list")]))
+
   helpers.get_ok_field_value(task, "c")
+  |> should.equal(value.String("boolean"))
+
   helpers.get_ok_field_value(task, "d")
+  |> should.equal(value.String("integer"))
 
   task
 }
