@@ -4,13 +4,14 @@ import helpers.{strings}
 import sb/forms/task
 import sb/forms/value
 
-const checkbox_list_source = "
-name: checkbox_list_source
-fields: [{id: field, kind: checkbox, source.literal: [ichi, ni, san]}]
-"
-
 pub fn checkbox_list_test() {
-  let task = helpers.decode_task(checkbox_list_source) |> should.be_ok
+  let source =
+    "
+    name: checkbox_list_source
+    fields: [{id: field, kind: checkbox, source.literal: [ichi, ni, san]}]
+    "
+
+  let task = helpers.decode_task(source) |> should.be_ok
   helpers.field_errors(task) |> should.equal([])
 
   task.update(task, "field", Some(value.String("ichi"))) |> should.be_error
@@ -24,13 +25,14 @@ pub fn checkbox_list_test() {
   helpers.debug_task(task, True)
 }
 
-const checkbox_pairs_source = "
-name: checkbox_list_source
-fields: [{id: field, kind: checkbox, source.literal: [ichi: en, ni: to, san: tre]}]
-"
-
 pub fn checkbox_pairs_test() {
-  let task = helpers.decode_task(checkbox_pairs_source) |> should.be_ok
+  let source =
+    "
+    name: checkbox_list_source
+    fields: [{id: field, kind: checkbox, source.literal: [ichi: en, ni: to, san: tre]}]
+    "
+
+  let task = helpers.decode_task(source) |> should.be_ok
   helpers.field_errors(task) |> should.equal([])
 
   task.update(task, "field", Some(value.String("ichi"))) |> should.be_error
@@ -45,18 +47,19 @@ pub fn checkbox_pairs_test() {
   helpers.debug_task(task, True)
 }
 
-const task1 = "
-name: options
-fields:
-  - {id: list, kind: checkbox, source.literal: [ichi, ni, san]}
-  - {id: pairs, kind: checkbox, source.literal: [ichi: en, ni: to, san: tre]}
-  - {id: object, kind: checkbox, source.literal: {ichi: en, ni: to, san: tre}}
-  - {id: values, kind: checkbox, source.literal: [10: integer, true: boolean,  [1, 2, 3]: list]}
-  - {id: mixed, kind: checkbox, source.literal: [ichi: en,  ni, san, 10: integer, 1.2: float]}
-"
-
 pub fn options_test() {
-  let task = helpers.decode_task(task1) |> should.be_ok
+  let source =
+    "
+    name: options
+    fields:
+      - {id: list, kind: checkbox, source.literal: [ichi, ni, san]}
+      - {id: pairs, kind: checkbox, source.literal: [ichi: en, ni: to, san: tre]}
+      - {id: object, kind: checkbox, source.literal: {ichi: en, ni: to, san: tre}}
+      - {id: values, kind: checkbox, source.literal: [10: integer, true: boolean,  [1, 2, 3]: list]}
+      - {id: mixed, kind: checkbox, source.literal: [ichi: en,  ni, san, 10: integer, 1.2: float]}
+    "
+
+  let task = helpers.decode_task(source) |> should.be_ok
   helpers.field_errors(task) |> should.equal([])
 
   let value = value.List([value.String("ichi")])
