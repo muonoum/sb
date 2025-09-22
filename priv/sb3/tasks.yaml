@@ -171,4 +171,20 @@ fields:
     kind: checkbox
     optional.unless.a: [foo]
     source.literal: [baz, biz]
+---
+name: Default pair
+fields:
+  - id: checkbox
+    kind: checkbox
+    default: [foo]
+    source.literal:
+      - foo: bar
+      - baz
+
+  - id: radio
+    kind: radio
+    default: foo
+    source.literal:
+      - foo: bar
+      - baz
 

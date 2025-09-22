@@ -3,6 +3,7 @@ import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/pair
 import gleam/result
 import gleam/set.{type Set}
 import sb/extra/function.{identity, return}
@@ -204,11 +205,13 @@ pub fn update(kind: Kind, value: Option(Value)) -> Result(Kind, Report(Error)) {
       Ok(Select(..kind, choice: Some(choice), options:))
     }
 
-    Checkbox(options:, ..), Some(value) -> {
-      use keys <- result.try(error.unique_keys(value))
+    // TODO: Unique keys
+    Checkbox(options:, ..), Some(value.List(keys)) -> {
       use choices <- result.try(list.try_map(keys, options.select(options, _)))
       Ok(Checkbox(..kind, choices:, options:))
     }
+
+    Checkbox(..), Some(value) -> report.error(error.BadValue(value))
 
     MultiSelect(options:, ..), Some(value) -> {
       use keys <- result.try(error.unique_keys(value))

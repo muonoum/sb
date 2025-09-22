@@ -65,8 +65,15 @@ pub fn radio(
   selected selected: Option(Value),
   config config: Config(message),
 ) -> Element(message) {
-  let is_selected = fn(key) { Some(key) == selected }
-  let change = fn(key) { decode.success(config.change(Some(key))) }
+  let is_selected = fn(key) {
+    let key = value.key(key)
+    Some(key) == selected
+  }
+
+  let change = fn(key) {
+    let key = value.key(key)
+    decode.success(config.change(Some(key)))
+  }
 
   let context =
     Context(kind: "radio", group_index: 0, is_selected:, change:, config:)
@@ -78,7 +85,10 @@ pub fn checkbox(
   selected selected: List(Value),
   config config: Config(message),
 ) -> Element(message) {
-  let is_selected = fn(key) { set.contains(set.from_list(selected), key) }
+  let is_selected = fn(key) {
+    let key = value.key(key)
+    set.contains(set.from_list(selected), key)
+  }
 
   let select = fn(key) {
     use <- identity
@@ -91,6 +101,7 @@ pub fn checkbox(
     use checked <- decode.then(checked_decoder())
     use <- return(compose(config.change, decode.success))
     use <- return(compose(value.List, Some))
+    let key = value.key(key)
     use <- bool.lazy_guard(checked, select(key))
     use have <- list.filter(selected)
     key != have

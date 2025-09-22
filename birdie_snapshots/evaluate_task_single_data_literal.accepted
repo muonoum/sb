@@ -4,8 +4,7 @@ title: evaluate--task-single-data-literal
 file: ./test/sb_test.gleam
 test_name: evaluate_single_data_literal_test
 ---
-[32mdata[39m
-kind: data
-source: [32mvalue[39m
-value: [32mvalue[39m
+[4m[1mdata[22m[24m [3mdata[23m
+[4m[1msource[22m[24m [32mvalue[39m
+[4m[1mvalue[22m[24m [32mvalue[39m
 [33m*[39m

@@ -36,10 +36,7 @@ pub fn start_store_with_no_errors() {
   store
 }
 
-pub fn decode_task(
-  data: String,
-  defaults: task.Defaults,
-) -> Result(Task, Report(Error)) {
+pub fn decode_task(data: String) -> Result(Task, Report(Error)) {
   let dynamic =
     yaml.decode_string(data)
     |> should.be_ok
@@ -53,7 +50,7 @@ pub fn decode_task(
     filters: custom.Filters(dict.new()),
     fields: custom.Fields(dict.new()),
     sources: custom.Sources(dict.new()),
-    defaults:,
+    defaults: task.default_category(["Test"]),
   ))
 }
 
@@ -65,6 +62,7 @@ pub fn field_errors(task: Task) {
   }
 
   use result <- list.filter_map(results)
+
   case result {
     Error(report) -> Ok(report)
     Ok(..) -> Error(Nil)

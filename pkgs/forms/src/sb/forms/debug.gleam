@@ -8,6 +8,7 @@ import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
 import gleam_community/ansi
+import gleam_community/colour
 import sb/extra/function.{identity}
 import sb/extra/report.{type Report}
 import sb/extra/reset.{type Reset}
@@ -60,8 +61,13 @@ pub fn scope(scope: Scope) -> String {
 
 fn format_fields(fields: Dict(String, Field)) -> List(String) {
   use #(id, field) <- list.map(dict.to_list(fields))
-  let id = theme_id(id)
-  let name = spaced([label("kind"), format_kind_name(field.kind)])
+  let id =
+    spaced([
+      // ansi.underline(ansi.bold(format_kind_name(field.kind))),
+      label(format_kind_name(field.kind)),
+      theme_id(id),
+    ])
+  // let name = spaced([label("kind"), format_kind_name(field.kind)])
   let kind = format_kind(field.kind)
 
   let value =
@@ -75,7 +81,7 @@ fn format_fields(fields: Dict(String, Field)) -> List(String) {
     ])
 
   lined(
-    [[id], [name], kind, [value]]
+    [[id], kind, [value]]
     |> list.flatten,
   )
 }
@@ -280,7 +286,7 @@ fn theme_diminished(string: String) -> String {
 }
 
 fn theme_id(string: String) -> String {
-  ansi.green(string)
+  ansi.italic(string)
 }
 
 fn theme_error(string: String) -> String {
@@ -308,7 +314,9 @@ fn theme_int(string: String) -> String {
 }
 
 fn label(string: String) -> String {
-  string <> ":"
+  // let assert Ok(colour) = colour.from_rgb(0.5, 0.5, 0.5)
+  // ansi.colour(ansi.underline(ansi.bold(string)), colour)
+  ansi.underline(ansi.bold(string))
 }
 
 fn surrounded(string: String, before: String, after: String) -> String {

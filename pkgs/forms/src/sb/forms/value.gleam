@@ -57,6 +57,14 @@ pub fn keys(value: Value) -> Result(List(Value), Nil) {
   }
 }
 
+pub fn key(value: Value) -> Value {
+  case value {
+    Pair(key, _value) -> key
+    List(..) | Object(..) | Bool(..) | Float(..) | Int(..) | Null | String(..) ->
+      value
+  }
+}
+
 pub fn match(value: Value, term: String) -> Bool {
   let term = string.lowercase(term)
 

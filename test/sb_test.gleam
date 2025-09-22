@@ -29,10 +29,7 @@ fields:
 "
 
 pub fn evaluate_single_data_literal_test() {
-  let task =
-    helpers.decode_task(single_data_literal, task.default_category(["Test"]))
-    |> should.be_ok
-
+  let task = helpers.decode_task(single_data_literal) |> should.be_ok
   helpers.field_errors(task) |> should.equal([])
 
   let handlers = handlers.empty()
@@ -45,15 +42,8 @@ pub fn evaluate_single_data_literal_test() {
 }
 
 pub fn evaluate_select_with_reference_to_data_test() {
-  let task =
-    helpers.decode_task(
-      select_with_reference_to_data,
-      task.default_category(["Test"]),
-    )
-    |> should.be_ok
-
+  let task = helpers.decode_task(select_with_reference_to_data) |> should.be_ok
   helpers.field_errors(task) |> should.equal([])
-
   let handlers = handlers.empty()
   let scope = scope.error()
   let search = dict.new()

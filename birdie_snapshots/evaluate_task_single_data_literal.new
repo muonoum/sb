@@ -1,9 +1,0 @@
----
-version: 1.4.0
-title: evaluate--task-single-data-literal
----
-data
-kind: data
-source: [32mvalue[39m
-value: [32mvalue[39m
-[33m*[39m

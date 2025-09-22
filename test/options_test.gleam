@@ -17,36 +17,28 @@ fields:
 "
 
 pub fn options_test() {
-  let task =
-    helpers.decode_task(task1, task.default_category(["test"])) |> should.be_ok
+  let task = helpers.decode_task(task1) |> should.be_ok
   helpers.field_errors(task) |> should.equal([])
 
-  let selection = Some(value.List([value.String("ichi")]))
-  let task = task.update(task, "list", selection) |> should.be_ok
-  let task = task.update(task, "pairs", selection) |> should.be_ok
-  let task = task.update(task, "object", selection) |> should.be_ok
-  let task = task.update(task, "mixed", selection) |> should.be_ok
+  let value = value.List([value.String("ichi")])
+  let task = task.update(task, "list", Some(value)) |> should.be_ok
+  let task = task.update(task, "pairs", Some(value)) |> should.be_ok
+  let task = task.update(task, "object", Some(value)) |> should.be_ok
+  let task = task.update(task, "mixed", Some(value)) |> should.be_ok
 
-  let task =
-    task.update(
-      task,
-      "values",
-      Some(
-        value.List([
-          value.Bool(True),
-          value.List([value.Int(1), value.Int(2), value.Int(3)]),
-        ]),
-      ),
-    )
-    |> should.be_ok
+  let value =
+    value.List([
+      value.Bool(True),
+      value.List([value.Int(1), value.Int(2), value.Int(3)]),
+    ])
+
+  let task = task.update(task, "values", Some(value)) |> should.be_ok
 
   io.println("")
-  debug.task(task)
-  |> io.println
+  debug.task(task) |> io.println
 }
 // pub fn update_duplicate_test() {
-//   let task =
-//     helpers.decode_task(task1, task.default_category(["Test"])) |> should.be_ok
+//   let task = helpers.decode_task(task1) |> should.be_ok
 //   helpers.field_errors(task) |> should.equal([])
 
 //   task.update(

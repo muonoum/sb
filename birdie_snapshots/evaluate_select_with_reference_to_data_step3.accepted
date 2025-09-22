@@ -4,14 +4,12 @@ title: evaluate--select-with-reference-to-data--step3
 file: ./test/sb_test.gleam
 test_name: evaluate_select_with_reference_to_data_test
 ---
-[32mdata[39m
-kind: data
-source: [90m[[39m[32ma[39m [32mb[39m [32mc[39m[90m][39m
-value: [90m[[39m[32ma[39m [32mb[39m [32mc[39m[90m][39m
+[4m[1mdata[22m[24m [3mdata[23m
+[4m[1msource[22m[24m [90m[[39m[32ma[39m [32mb[39m [32mc[39m[90m][39m
+[4m[1mvalue[22m[24m [90m[[39m[32ma[39m [32mb[39m [32mc[39m[90m][39m
 [90m[39m
-[32mselect[39m
-kind: select
-options: [90m[[39m[32ma[39m [32mb[39m [32mc[39m[90m][39m
-selected: [32ma[39m
-value: [32ma[39m
+[4m[1mselect[22m[24m [3mselect[23m
+[4m[1moptions[22m[24m [90m[[39m[32ma[39m [32mb[39m [32mc[39m[90m][39m
+[4m[1mselected[22m[24m [32ma[39m
+[4m[1mvalue[22m[24m [32ma[39m
 data[90m=[39m[90m[[39m[32ma[39m [32mb[39m [32mc[39m[90m][39m select[90m=[39m[32ma[39m
