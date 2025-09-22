@@ -107,7 +107,9 @@ fn field() -> State(Element(message), Context(message)) {
   use config <- state.bind(get_config())
 
   use choices <- state.bind(case config.options {
-    options.SingleSource(source) -> state.sequence([group_source(source)])
+    options.SingleSource(source) ->
+      [group_source(source)]
+      |> state.sequence
 
     options.SourceGroups(groups) -> {
       use <- return(state.sequence)
@@ -121,7 +123,8 @@ fn field() -> State(Element(message), Context(message)) {
     }
   })
 
-  state.return(html.div([], choices))
+  html.div([], choices)
+  |> state.return
 }
 
 fn group_label(text: String) -> Element(message) {
@@ -169,7 +172,8 @@ fn group_members(value: Value) -> State(Element(message), Context(message)) {
 
   case keys {
     Error(report) ->
-      state.return(core.inspect([attr.class("text-red-800")], report))
+      core.inspect([attr.class("text-red-800")], report)
+      |> state.return
 
     Ok(keys) -> {
       use choices <- state.bind({
@@ -190,7 +194,8 @@ fn group_members(value: Value) -> State(Element(message), Context(message)) {
         },
       ]
 
-      state.return(html.div(attr, choices))
+      html.div(attr, choices)
+      |> state.return
     }
   }
 }
