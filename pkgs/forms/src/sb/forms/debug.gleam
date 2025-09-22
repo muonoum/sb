@@ -88,7 +88,7 @@ fn format_kind_name(kind: Kind) -> String {
   case kind {
     kind.Checkbox(..) -> "checkbox"
     kind.Data(..) -> "data"
-    kind.MultiSelect(..) -> "select (multiple)"
+    kind.MultiSelect(..) -> "multi-select"
     kind.Radio(..) -> "radio"
     kind.Select(..) -> "select"
     kind.Text(..) -> "text"

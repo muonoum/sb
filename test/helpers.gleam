@@ -34,10 +34,9 @@ pub fn strings(list: List(String)) -> Value {
   value.List(list.map(list, value.String))
 }
 
-pub fn debug_task(task: Task, enabled: Bool) -> Nil {
-  use <- bool.guard(!enabled, Nil)
+pub fn debug_task(task: fn() -> Task) -> Nil {
   io.println("")
-  io.println(debug.task(task))
+  io.println(debug.task(task()))
 }
 
 pub fn start_store() {

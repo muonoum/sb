@@ -5,6 +5,8 @@ import sb/forms/task
 import sb/forms/value
 
 pub fn checkbox_list_test() {
+  use <- helpers.debug_task()
+
   let source =
     helpers.lines([
       "name: task",
@@ -14,26 +16,23 @@ pub fn checkbox_list_test() {
   let task = helpers.decode_task(source) |> should.be_ok
   helpers.field_errors(task) |> should.equal([])
 
-  task.update(task, "field", Some(value.String("ichi"))) |> should.be_error
-  task.update(task, "field", None) |> should.be_ok
-  task.update(task, "field", Some(value.List([]))) |> should.be_ok
+  Some(value.String("ichi")) |> task.update(task, "field", _) |> should.be_error
+  None |> task.update(task, "field", _) |> should.be_ok
+  Some(value.List([])) |> task.update(task, "field", _) |> should.be_ok
 
   let task =
-    task.update(task, "field", Some(value.List([value.String("ichi")])))
+    Some(value.List([value.String("ichi")]))
+    |> task.update(task, "field", _)
     |> should.be_ok
 
-  let task =
-    task.update(
-      task,
-      "field",
-      Some(value.List([value.String("ichi"), value.String("san")])),
-    )
-    |> should.be_ok
-
-  helpers.debug_task(task, True)
+  Some(value.List([value.String("ichi"), value.String("san")]))
+  |> task.update(task, "field", _)
+  |> should.be_ok
 }
 
 pub fn checkbox_pair_test() {
+  use <- helpers.debug_task()
+
   let source =
     helpers.lines([
       "name: task",
@@ -43,28 +42,26 @@ pub fn checkbox_pair_test() {
   let task = helpers.decode_task(source) |> should.be_ok
   helpers.field_errors(task) |> should.equal([])
 
-  task.update(task, "field", Some(value.String("ichi"))) |> should.be_error
-  task.update(task, "field", None) |> should.be_ok
-  task.update(task, "field", Some(value.List([]))) |> should.be_ok
-  task.update(task, "field", Some(value.List([value.String("en")])))
+  Some(value.String("ichi")) |> task.update(task, "field", _) |> should.be_error
+  None |> task.update(task, "field", _) |> should.be_ok
+  Some(value.List([])) |> task.update(task, "field", _) |> should.be_ok
+  Some(value.List([value.String("en")]))
+  |> task.update(task, "field", _)
   |> should.be_error
 
   let task =
-    task.update(task, "field", Some(value.List([value.String("ichi")])))
+    Some(value.List([value.String("ichi")]))
+    |> task.update(task, "field", _)
     |> should.be_ok
 
-  let task =
-    task.update(
-      task,
-      "field",
-      Some(value.List([value.String("ichi"), value.String("san")])),
-    )
-    |> should.be_ok
-
-  helpers.debug_task(task, True)
+  Some(value.List([value.String("ichi"), value.String("san")]))
+  |> task.update(task, "field", _)
+  |> should.be_ok
 }
 
 pub fn checkbox_object_test() {
+  use <- helpers.debug_task()
+
   let source =
     helpers.lines([
       "name: task",
@@ -81,39 +78,41 @@ pub fn checkbox_object_test() {
   |> should.be_error
 
   let task =
-    task.update(task, "field", Some(value.List([value.String("ichi")])))
+    Some(value.List([value.String("ichi")]))
+    |> task.update(task, "field", _)
     |> should.be_ok
 
-  let task =
-    task.update(
-      task,
-      "field",
-      Some(value.List([value.String("ichi"), value.String("san")])),
-    )
-    |> should.be_ok
-
-  helpers.debug_task(task, True)
+  Some(value.List([value.String("ichi"), value.String("san")]))
+  |> task.update(task, "field", _)
+  |> should.be_ok
 }
 
-pub fn checkbox_values_test() {
+pub fn options_values_test() {
+  use <- helpers.debug_task()
+
   let source =
     helpers.lines([
       "name: task",
-      "fields: [{id: field, kind: checkbox, source.literal: [10: integer, true: boolean, [1, 2, 3]: list]}]",
+      "fields:",
+      "- {id: a, kind: checkbox, source.literal: [10: integer, true: boolean, [1, 2, 3]: list]}",
+      "- {id: b, kind: select, multiple: true, source.literal: [10: integer, true: boolean, [1, 2, 3]: list]}",
+      "- {id: c, kind: radio, source.literal: [10: integer, true: boolean, [1, 2, 3]: list]}",
+      "- {id: d, kind: select, source.literal: [10: integer, true: boolean, [1, 2, 3]: list]}",
     ])
 
   let task = helpers.decode_task(source) |> should.be_ok
   helpers.field_errors(task) |> should.equal([])
 
-  let value =
-    value.List([
-      value.Bool(True),
-      value.List([value.Int(1), value.Int(2), value.Int(3)]),
-    ])
+  let bool_value = value.Bool(True)
+  let integer_value = value.Int(10)
+  let integer_list_value =
+    value.List([value.Int(1), value.Int(2), value.Int(3)])
+  let list_value = value.List([bool_value, integer_list_value])
 
-  let task = task.update(task, "field", Some(value)) |> should.be_ok
-
-  helpers.debug_task(task, True)
+  let task = Some(list_value) |> task.update(task, "a", _) |> should.be_ok
+  let task = Some(list_value) |> task.update(task, "b", _) |> should.be_ok
+  let task = Some(bool_value) |> task.update(task, "c", _) |> should.be_ok
+  Some(integer_value) |> task.update(task, "d", _) |> should.be_ok
 }
 
 // pub fn update_duplicate_test() {
@@ -134,6 +133,8 @@ pub fn checkbox_values_test() {
 // }
 
 pub fn defaults_test() {
+  use <- helpers.debug_task()
+
   let source =
     helpers.lines([
       "name: task",
@@ -149,12 +150,11 @@ pub fn defaults_test() {
   let assert [_, _] = helpers.field_errors(task)
 
   let task =
-    task.update(task, "ok1", Some(value.List([value.Int(10)])))
+    Some(value.List([value.Int(10)]))
+    |> task.update(task, "ok1", _)
     |> should.be_ok
 
-  let task =
-    task.update(task, "ok2", Some(value.Int(10)))
-    |> should.be_ok
-
-  helpers.debug_task(task, False)
+  Some(value.Int(10))
+  |> task.update(task, "ok2", _)
+  |> should.be_ok
 }
