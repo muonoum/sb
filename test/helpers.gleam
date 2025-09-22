@@ -59,6 +59,14 @@ pub fn decode_task_without_field_errors(data: String) -> Task {
   task
 }
 
+pub fn get_ok_field_value(task: Task, id: String) -> Value {
+  dict.get(task.fields, id)
+  |> result.map(field.value)
+  |> should.be_ok
+  |> should.be_some
+  |> should.be_ok
+}
+
 pub fn decode_task(data: String) -> Result(Task, Report(Error)) {
   let dynamic =
     yaml.decode_string(data)

@@ -93,56 +93,50 @@ pub fn reset(kind: Kind, refs: Set(String)) -> Kind {
 
     Radio(selected:, options:, ..) -> {
       let options = options.reset(options, refs)
-      let selected =
-        select_one(selected, options)
-        |> option.map(choice.key)
+      let selected = select_one(selected, options)
       Radio(..kind, selected:, options:)
     }
 
     Select(selected:, options:, ..) -> {
       let options = options.reset(options, refs)
-      let selected =
-        select_one(selected, options)
-        |> option.map(choice.key)
+      let selected = select_one(selected, options)
       Select(..kind, selected:, options:)
     }
 
     Checkbox(selected:, options:, ..) -> {
       let options = options.reset(options, refs)
-      let selected =
-        select_multiple(selected, options)
-        |> list.map(choice.key)
+      let selected = select_multiple(selected, options)
       Checkbox(..kind, selected:, options:)
     }
 
     MultiSelect(selected:, options:, ..) -> {
       let options = options.reset(options, refs)
-      let selected =
-        select_multiple(selected, options)
-        |> list.map(choice.key)
+      let selected = select_multiple(selected, options)
       MultiSelect(..kind, selected:, options:)
     }
   }
 }
 
 // TODO
-fn select_one(selected: Option(Value), options: Options) -> Option(Choice) {
-  let choice = {
+fn select_one(selected: Option(Value), options: Options) -> Option(Value) {
+  let selected = {
     use key <- option.map(selected)
     options.select(options, key)
+    |> result.map(choice.key)
   }
 
-  case choice {
+  case selected {
     None | Some(Error(..)) -> None
     Some(Ok(choice)) -> Some(choice)
   }
 }
 
 // TODO
-fn select_multiple(selected: List(Value), options: Options) -> List(Choice) {
+fn select_multiple(selected: List(Value), options: Options) -> List(Value) {
   let selected = {
     use key <- list.try_map(selected)
     options.select(options, key)
+    |> result.map(choice.key)
   }
 
   case selected {
