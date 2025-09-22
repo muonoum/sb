@@ -53,6 +53,12 @@ pub fn start_store_with_no_errors() {
   store
 }
 
+pub fn decode_task_without_field_errors(data: String) -> Task {
+  let task = decode_task(data) |> should.be_ok
+  field_errors(task) |> should.equal([])
+  task
+}
+
 pub fn decode_task(data: String) -> Result(Task, Report(Error)) {
   let dynamic =
     yaml.decode_string(data)

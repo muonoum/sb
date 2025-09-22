@@ -1,6 +1,9 @@
+import gleam/dict
 import gleam/option.{None, Some}
+import gleam/result
 import gleeunit/should
 import helpers
+import sb/forms/field
 import sb/forms/task
 import sb/forms/value
 
@@ -17,6 +20,7 @@ pub fn checkbox_list_test() {
   helpers.field_errors(task) |> should.equal([])
 
   Some(value.String("ichi")) |> task.update(task, "field", _) |> should.be_error
+
   None |> task.update(task, "field", _) |> should.be_ok
   Some(value.List([])) |> task.update(task, "field", _) |> should.be_ok
 
@@ -30,7 +34,7 @@ pub fn checkbox_list_test() {
   |> should.be_ok
 }
 
-pub fn checkbox_pair_test() {
+pub fn checkbox_pairs_test() {
   use <- helpers.debug_task()
 
   let source =
@@ -43,11 +47,12 @@ pub fn checkbox_pair_test() {
   helpers.field_errors(task) |> should.equal([])
 
   Some(value.String("ichi")) |> task.update(task, "field", _) |> should.be_error
-  None |> task.update(task, "field", _) |> should.be_ok
-  Some(value.List([])) |> task.update(task, "field", _) |> should.be_ok
   Some(value.List([value.String("en")]))
   |> task.update(task, "field", _)
   |> should.be_error
+
+  None |> task.update(task, "field", _) |> should.be_ok
+  Some(value.List([])) |> task.update(task, "field", _) |> should.be_ok
 
   let task =
     Some(value.List([value.String("ichi")]))
@@ -72,10 +77,11 @@ pub fn checkbox_object_test() {
   helpers.field_errors(task) |> should.equal([])
 
   task.update(task, "field", Some(value.String("ichi"))) |> should.be_error
-  task.update(task, "field", None) |> should.be_ok
-  task.update(task, "field", Some(value.List([]))) |> should.be_ok
   task.update(task, "field", Some(value.List([value.String("en")])))
   |> should.be_error
+
+  task.update(task, "field", None) |> should.be_ok
+  task.update(task, "field", Some(value.List([]))) |> should.be_ok
 
   let task =
     Some(value.List([value.String("ichi")]))
@@ -115,20 +121,17 @@ pub fn options_values_test() {
   Some(integer_value) |> task.update(task, "d", _) |> should.be_ok
 }
 
-// pub fn update_duplicate_test() {
-//   let task = helpers.decode_task(task1) |> should.be_ok
+// pub fn select_duplicate_test() {
+//   let source =
+//     helpers.lines([
+//       "name: task", "fields:", "- {id: a, kind: checkbox, source.literal: [10]}",
+//     ])
+
+//   let task = helpers.decode_task(source) |> should.be_ok
 //   helpers.field_errors(task) |> should.equal([])
 
-//   task.update(
-//     task,
-//     "values",
-//     Some(
-//       value.List([
-//         value.Int(10),
-//         value.Int(10),
-//       ]),
-//     ),
-//   )
+//   Some(value.List([value.Int(10), value.Int(10)]))
+//   |> task.update(task, "a", _)
 //   |> should.be_error
 // }
 
@@ -148,6 +151,21 @@ pub fn defaults_test() {
 
   let task = helpers.decode_task(source) |> should.be_ok
   let assert [_, _] = helpers.field_errors(task)
+
+  dict.get(task.fields, "ok1")
+  |> result.map(field.value)
+  |> should.be_ok
+  |> should.equal(Some(Ok(value.List([value.Int(10)]))))
+
+  dict.get(task.fields, "ok2")
+  |> result.map(field.value)
+  |> should.be_ok
+  |> should.equal(Some(Ok(value.Int(10))))
+
+  dict.get(task.fields, "ok3")
+  |> result.map(field.value)
+  |> should.be_ok
+  |> should.equal(Some(Ok(value.List([value.Int(10)]))))
 
   let task =
     Some(value.List([value.Int(10)]))
