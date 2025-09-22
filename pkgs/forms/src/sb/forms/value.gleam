@@ -54,7 +54,7 @@ pub fn keys(value: Value) -> Result(List(Value), Nil) {
     List(list) -> Ok(list)
     Object(pairs) -> Ok(list.map(pairs, pair.first))
     Pair(key, _value) -> Ok([key])
-    Bool(..) | Float(..) | Int(..) | Null | String(..) -> Error(Nil)
+    Null | Bool(..) | Float(..) | Int(..) | String(..) -> Error(Nil)
   }
 }
 
@@ -62,7 +62,7 @@ pub fn keys(value: Value) -> Result(List(Value), Nil) {
 pub fn key(value: Value) -> Value {
   case value {
     Pair(key, _value) -> key
-    List(..) | Object(..) | Bool(..) | Float(..) | Int(..) | Null | String(..) ->
+    Null | Bool(..) | Float(..) | Int(..) | String(..) | List(..) | Object(..) ->
       value
   }
 }
