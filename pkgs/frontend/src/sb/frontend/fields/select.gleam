@@ -1,6 +1,7 @@
 import gleam/bool
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/result
 import gleam/set
 import lustre/attribute as attr
 import lustre/element.{type Element}
@@ -292,7 +293,13 @@ fn group_value(
   has_placeholder: Bool,
 ) -> Reader(Element(message), Context(message)) {
   // TODO
-  case error.unique_keys(value), has_placeholder {
+  let keys = {
+    value.keys(value)
+    |> report.replace_error(error.BadValue(value))
+    |> result.map(list.map(_, value.key))
+  }
+
+  case keys, has_placeholder {
     Ok(keys), False -> {
       use keys <- reader.bind(find(label, keys))
       group_members(label, keys)
@@ -344,8 +351,6 @@ fn group_members(
     group_label(label),
     element.fragment({
       use key <- list.map(keys)
-      // TODO
-      let key = value.key(key)
 
       let attr = case context.is_selected(key) {
         True -> [core.classes(select_selected_choice_style)]

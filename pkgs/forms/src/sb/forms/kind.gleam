@@ -42,11 +42,13 @@ pub type Kind {
   Textarea(string: String, placeholder: Option(String))
   Data(source: Reset(Result(Source, Report(Error))))
   Radio(selected: Option(Choice), options: Options, layout: Layout)
+
   Select(
     selected: Option(Choice),
     options: Options,
     placeholder: Option(String),
   )
+
   Checkbox(selected: List(Choice), options: Options, layout: Layout)
 
   MultiSelect(
@@ -243,6 +245,8 @@ pub fn value(kind: Kind) -> Option(Result(Value, Report(Error))) {
         Ok(..) -> None
       }
 
+    // TODO: Kanskje lagre keys i stedet for choices i selected og 
+    // gjøre en select mot options her.
     Radio(Some(selected), ..) | Select(Some(selected), ..) ->
       Some(Ok(choice.value(selected)))
 

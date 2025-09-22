@@ -181,8 +181,23 @@ fields:
       - foo: bar
       - baz
 
+  - id: multi
+    kind: select
+    multiple: true
+    default: [foo]
+    source.literal:
+      - foo: bar
+      - baz
+
   - id: radio
     kind: radio
+    default: foo
+    source.literal:
+      - foo: bar
+      - baz
+
+  - id: select
+    kind: select
     default: foo
     source.literal:
       - foo: bar

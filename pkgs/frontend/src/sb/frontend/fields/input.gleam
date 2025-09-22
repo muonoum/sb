@@ -3,6 +3,7 @@ import gleam/dynamic/decode.{type Decoder}
 import gleam/int
 import gleam/list
 import gleam/option.{type Option, Some}
+import gleam/result
 import gleam/set
 import gleam/string
 import lustre/attribute as attr
@@ -20,9 +21,6 @@ import sb/forms/options.{type Options}
 import sb/forms/source.{type Source}
 import sb/forms/value.{type Value}
 import sb/frontend/components/core
-
-// TODO: Kanskje vi bare sender key inn til change herfra og lar
-// kind.update handtere toggle i selected for input/select-felter.
 
 pub type Config(message) {
   Config(
@@ -163,7 +161,13 @@ fn group_members(value: Value) -> State(Element(message), Context(message)) {
   use config <- state.bind(get_config())
 
   // TODO
-  case error.unique_keys(value) {
+  let keys = {
+    value.keys(value)
+    |> report.replace_error(error.BadValue(value))
+    |> result.map(list.map(_, value.key))
+  }
+
+  case keys {
     Error(report) ->
       state.return(core.inspect([attr.class("text-red-800")], report))
 
@@ -171,8 +175,6 @@ fn group_members(value: Value) -> State(Element(message), Context(message)) {
       use choices <- state.bind({
         use <- return(state.sequence)
         use key, item_index <- list.index_map(keys)
-        // TODO
-        let key = value.key(key)
 
         group_choice(key, {
           [int.to_string(group_index), int.to_string(item_index), config.id]
