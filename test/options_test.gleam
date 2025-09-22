@@ -1,6 +1,6 @@
 import gleam/option.{None, Some}
 import gleeunit/should
-import helpers.{strings}
+import helpers
 import sb/forms/task
 import sb/forms/value
 
@@ -18,9 +18,17 @@ pub fn checkbox_list_test() {
   task.update(task, "field", None) |> should.be_ok
   task.update(task, "field", Some(value.List([]))) |> should.be_ok
 
-  let task = task.update(task, "field", Some(strings(["ichi"]))) |> should.be_ok
   let task =
-    task.update(task, "field", Some(strings(["ichi", "san"]))) |> should.be_ok
+    task.update(task, "field", Some(value.List([value.String("ichi")])))
+    |> should.be_ok
+
+  let task =
+    task.update(
+      task,
+      "field",
+      Some(value.List([value.String("ichi"), value.String("san")])),
+    )
+    |> should.be_ok
 
   helpers.debug_task(task, True)
 }
@@ -38,11 +46,20 @@ pub fn checkbox_pair_test() {
   task.update(task, "field", Some(value.String("ichi"))) |> should.be_error
   task.update(task, "field", None) |> should.be_ok
   task.update(task, "field", Some(value.List([]))) |> should.be_ok
-  task.update(task, "field", Some(strings(["en"]))) |> should.be_error
+  task.update(task, "field", Some(value.List([value.String("en")])))
+  |> should.be_error
 
-  let task = task.update(task, "field", Some(strings(["ichi"]))) |> should.be_ok
   let task =
-    task.update(task, "field", Some(strings(["ichi", "san"]))) |> should.be_ok
+    task.update(task, "field", Some(value.List([value.String("ichi")])))
+    |> should.be_ok
+
+  let task =
+    task.update(
+      task,
+      "field",
+      Some(value.List([value.String("ichi"), value.String("san")])),
+    )
+    |> should.be_ok
 
   helpers.debug_task(task, True)
 }
@@ -60,35 +77,33 @@ pub fn checkbox_object_test() {
   task.update(task, "field", Some(value.String("ichi"))) |> should.be_error
   task.update(task, "field", None) |> should.be_ok
   task.update(task, "field", Some(value.List([]))) |> should.be_ok
-  task.update(task, "field", Some(strings(["en"]))) |> should.be_error
+  task.update(task, "field", Some(value.List([value.String("en")])))
+  |> should.be_error
 
-  let task = task.update(task, "field", Some(strings(["ichi"]))) |> should.be_ok
   let task =
-    task.update(task, "field", Some(strings(["ichi", "san"]))) |> should.be_ok
+    task.update(task, "field", Some(value.List([value.String("ichi")])))
+    |> should.be_ok
+
+  let task =
+    task.update(
+      task,
+      "field",
+      Some(value.List([value.String("ichi"), value.String("san")])),
+    )
+    |> should.be_ok
 
   helpers.debug_task(task, True)
 }
 
-pub fn options_test() {
+pub fn checkbox_values_test() {
   let source =
     helpers.lines([
       "name: task",
-      "fields:",
-      "- {id: list, kind: checkbox, source.literal: [ichi, ni, san]}",
-      "- {id: pairs, kind: checkbox, source.literal: [ichi: en, ni: to, san: tre]}",
-      "- {id: object, kind: checkbox, source.literal: {ichi: en, ni: to, san: tre}}",
-      "- {id: values, kind: checkbox, source.literal: [10: integer, true: boolean,  [1, 2, 3]: list]}",
-      "- {id: mixed, kind: checkbox, source.literal: [ichi: en,  ni, san, 10: integer, 1.2: float]}",
+      "fields: [{id: field, kind: checkbox, source.literal: [10: integer, true: boolean, [1, 2, 3]: list]}]",
     ])
 
   let task = helpers.decode_task(source) |> should.be_ok
   helpers.field_errors(task) |> should.equal([])
-
-  let value = value.List([value.String("ichi")])
-  let task = task.update(task, "list", Some(value)) |> should.be_ok
-  let task = task.update(task, "pairs", Some(value)) |> should.be_ok
-  let task = task.update(task, "object", Some(value)) |> should.be_ok
-  let task = task.update(task, "mixed", Some(value)) |> should.be_ok
 
   let value =
     value.List([
@@ -96,9 +111,9 @@ pub fn options_test() {
       value.List([value.Int(1), value.Int(2), value.Int(3)]),
     ])
 
-  let task = task.update(task, "values", Some(value)) |> should.be_ok
+  let task = task.update(task, "field", Some(value)) |> should.be_ok
 
-  helpers.debug_task(task, False)
+  helpers.debug_task(task, True)
 }
 
 // pub fn update_duplicate_test() {
