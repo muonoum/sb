@@ -132,7 +132,6 @@ pub fn select(options: Options, value: Value) -> Result(Choice, Report(Error)) {
 fn select_value(target: Value, in value: Value) -> Result(Choice, Nil) {
   case value {
     value.Pair(key, value) if key == target -> Ok(choice.new(key, value))
-    value.List(list) -> list.find_map(list, select_value(target, _))
 
     value.Object(pairs) -> {
       use #(key, value) <- list.find_map(pairs)
@@ -146,6 +145,7 @@ fn select_value(target: Value, in value: Value) -> Result(Choice, Nil) {
     | value.Bool(..)
     | value.Float(..)
     | value.Int(..)
+    | value.List(..)
     | value.Pair(..)
     | value.String(..) -> Error(Nil)
   }

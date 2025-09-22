@@ -7,6 +7,29 @@ import sb/forms/field
 import sb/forms/task
 import sb/forms/value
 
+pub fn select_list_value_test() {
+  use <- helpers.debug_task()
+
+  let source =
+    helpers.lines([
+      "name: task",
+      "fields: [{id: field, kind: select, source.literal: [[foo, 20, false, 3.14]]}]",
+    ])
+
+  let task = helpers.decode_task(source) |> should.be_ok
+  helpers.field_errors(task) |> should.equal([])
+
+  value.List([
+    value.String("foo"),
+    value.Int(20),
+    value.Bool(False),
+    value.Float(3.14),
+  ])
+  |> Some
+  |> task.update(task, "field", _)
+  |> should.be_ok
+}
+
 pub fn checkbox_list_test() {
   use <- helpers.debug_task()
 
