@@ -1,0 +1,54 @@
+kind: tasks/v1
+category: [Fields, Radio]
+---
+name: Radio buttons
+layout: [radio, reference]
+
+fields:
+  - id: fetch
+    kind: data
+    source.kind: fetch-lorem
+
+  - id: radio
+    kind: radio
+    source.reference: fetch
+
+  - id: reference
+    kind: data
+    source.reference: radio
+---
+name: Radio buttons with delay
+layout: [radio, reference]
+
+fields:
+  - id: fetch
+    kind: data
+    source.kind: fetch-lorem-delayed
+
+  - id: radio
+    kind: radio
+    source.reference: fetch
+
+  - id: reference
+    kind: data
+    source.reference: radio
+---
+name: Nested radio buttons
+layout: [reference, radio2, radio1]
+
+fields:
+  - id: data
+    kind: data
+    source.kind: nested-literal-lorem
+
+  - id: radio1
+    kind: radio
+    source.reference: data
+  
+  - id: radio2
+    kind: radio
+    source.reference: radio1
+
+  - id: reference
+    kind: data
+    source.reference: radio2

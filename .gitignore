@@ -1,0 +1,6 @@
+/assets/Inter
+/assets/Iosevka
+/priv/*
+!/priv/sb
+build/
+/.restart

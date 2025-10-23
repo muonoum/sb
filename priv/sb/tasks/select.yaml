@@ -1,0 +1,94 @@
+kind: tasks/v1
+category: [Fields, Select]
+---
+name: Select
+layout: [select, reference]
+
+fields:
+  - id: fetch
+    kind: data
+    source.kind: fetch-lorem
+
+  - id: select
+    kind: select
+    source.reference: fetch
+
+  - id: reference
+    kind: data
+    source.reference: select
+---
+name: Nested select
+layout: [reference, select2, select1]
+
+fields:
+  - id: data
+    kind: data
+    source.kind: nested-literal-lorem
+
+  - id: select1
+    kind: select
+    source.reference: data
+  
+  - id: select2
+    kind: select
+    source.reference: select1
+
+  - id: reference
+    kind: data
+    source.reference: select2
+---
+name: Multiselect
+layout: [select, reference]
+
+fields:
+  - id: fetch
+    kind: data
+    source.kind: fetch-lorem
+
+  - id: select
+    kind: select
+    multiple: true
+    source.reference: fetch
+
+  - id: reference
+    kind: data
+    source.reference: select
+---
+name: Nested multiselect
+layout: [reference, select2, select1]
+
+fields:
+  - id: data
+    kind: data
+    source.kind: big-literal-lorem
+
+  - id: select1
+    kind: select
+    multiple: true
+    source.reference: data
+  
+  - id: select2
+    kind: select
+    multiple: true
+    source.reference: select1
+
+  - id: reference
+    kind: data
+    source.reference: select2
+---
+name: Multiselect with delay
+layout: [select, reference]
+
+fields:
+  - id: fetch
+    kind: data
+    source.kind: fetch-lorem-delayed
+
+  - id: select
+    kind: select
+    multiple: true
+    source.reference: fetch
+
+  - id: reference
+    kind: data
+    source.reference: select2

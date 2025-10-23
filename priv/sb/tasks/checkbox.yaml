@@ -1,0 +1,55 @@
+kind: tasks/v1
+category: [Fields, Checkbox]
+---
+name: Checkbox
+layout: [checkbox, reference]
+
+fields:
+  - id: fetch
+    kind: data
+    source.kind: fetch-lorem
+
+  - id: checkbox
+    kind: checkbox
+    source.reference: fetch
+
+  - id: reference
+    kind: data
+    source.reference: checkbox
+---
+name: Checkbox with delay
+layout: [checkbox, reference]
+
+fields:
+  - id: fetch
+    kind: data
+    source.kind: fetch-lorem-delayed
+
+  - id: checkbox
+    kind: checkbox
+    source.reference: fetch
+
+  - id: reference
+    kind: data
+    source.reference: checkbox
+---
+name: Nested checkbox
+layout: [reference, checkbox2, checkbox1]
+
+fields:
+  - id: data
+    kind: data
+    source.kind: big-literal-lorem
+
+  - id: checkbox1
+    kind: checkbox
+    source.reference: data
+  
+  - id: checkbox2
+    kind: checkbox
+    source.reference: checkbox1
+
+  - id: reference
+    kind: data
+    source.reference: checkbox2
+

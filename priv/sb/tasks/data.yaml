@@ -1,0 +1,38 @@
+kind: tasks/v1
+category: [Fields, Data]
+---
+name: Literal
+
+fields:
+  - id: data1
+    kind: data
+    source.literal:
+      some.key: value
+      list: [1, 2, 3]
+      object:
+        foo: 1
+        bar: 2
+        baz: 3
+---
+name: Fetched
+
+fields:
+  - id: data1
+    kind: data
+    source.template: >-
+      {{ data2 }}, {{ data3 }}
+
+  - id: data2
+    kind: data
+    source.fetch:
+      url: /mock/echo?delay=1000
+      method: post
+      body.literal: "Hello"
+
+  - id: data3
+    kind: data
+    source.fetch:
+      url: /mock/echo?delay=1000
+      method: post
+      body.literal: "World!"
+

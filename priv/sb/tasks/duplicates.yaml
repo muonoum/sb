@@ -1,0 +1,65 @@
+kind: tasks/v1
+category: [Duplicates]
+---
+name: Select
+
+fields:
+  - id: select
+    kind: select
+    source.literal:
+      - Commodo aliqua minim eu reprehenderit veniam velit nulla in do est magna ex labore consequat aliquip.
+      - Consequat in ullamco officia nisi id ea sit consequat eiusmod.
+      - Consequat in ullamco officia nisi id ea sit consequat eiusmod.
+      - Laboris amet minim aliquip veniam pariatur nulla sint ea dolore exercitation labore in id.
+---
+name: Radio
+
+fields:
+  - id: radio
+    kind: radio
+    source.literal:
+      - Commodo aliqua minim eu reprehenderit veniam velit nulla in do est magna ex labore consequat aliquip.
+      - Consequat in ullamco officia nisi id ea sit consequat eiusmod.
+      - Consequat in ullamco officia nisi id ea sit consequat eiusmod.
+      - Laboris amet minim aliquip veniam pariatur nulla sint ea dolore exercitation labore in id.
+---
+name: Checkbox
+
+fields:
+  - id: checkbox
+    kind: checkbox
+    source.literal:
+      - Commodo aliqua minim eu reprehenderit veniam velit nulla in do est magna ex labore consequat aliquip.
+      - Consequat in ullamco officia nisi id ea sit consequat eiusmod.
+      - Consequat in ullamco officia nisi id ea sit consequat eiusmod.
+      - Laboris amet minim aliquip veniam pariatur nulla sint ea dolore exercitation labore in id.
+---
+name: Groups
+
+fields:
+
+  - id: select-groups
+    kind: select
+    source.groups:
+      - label: Group1
+        source.literal:
+          - Commodo aliqua minim eu reprehenderit veniam velit nulla in do est magna ex labore consequat aliquip.
+          - Consequat in ullamco officia nisi id ea sit consequat eiusmod.
+          - Laboris amet minim aliquip veniam pariatur nulla sint ea dolore exercitation labore in id.
+
+      - label: Group2
+        source.literal:
+          - Laboris amet minim aliquip veniam pariatur nulla sint ea dolore exercitation labore in id.
+
+  - id: radio-groups
+    kind: radio
+    source.groups:
+      - label: Group1
+        source.literal:
+          - Commodo aliqua minim eu reprehenderit veniam velit nulla in do est magna ex labore consequat aliquip.
+          - Consequat in ullamco officia nisi id ea sit consequat eiusmod.
+          - Laboris amet minim aliquip veniam pariatur nulla sint ea dolore exercitation labore in id.
+
+      - label: Group2
+        source.literal:
+          - Laboris amet minim aliquip veniam pariatur nulla sint ea dolore exercitation labore in id.

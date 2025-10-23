@@ -1,0 +1,16 @@
+kind: tasks/v1
+category: [Fields]
+---
+name: Text input
+
+fields:
+  - id: text
+    kind: text
+
+  - id: textarea
+    kind: textarea
+
+  - id: result
+    kind: data
+    source.template: >-
+      {{text}}, {{textarea}}

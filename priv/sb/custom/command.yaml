@@ -1,0 +1,17 @@
+kind: commands/v1
+---
+id: find
+command: "/usr/bin/env find"
+proxy: tcp://localhost:1234
+---
+id: echo
+command: "/usr/bin/env echo"
+proxy: tcp://localhost:1234
+---
+id: sleep
+command: "/usr/bin/env sleep"
+proxy: tcp://localhost:1234
+---
+id: jq
+command: "/usr/bin/env jq --raw-output --join-output"
+proxy: tcp://localhost:1234

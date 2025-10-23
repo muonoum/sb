@@ -1,0 +1,13 @@
+kind: tasks/v1
+category: [Descriptions]
+---
+name: Descriptions
+description: |
+  Ex aliqua consectetur et adipisicing eiusmod labore adipisicing dolor. Ad incididunt officia eu tempor nulla ad ipsum culpa occaecat ut elit sit pariatur magna. Officia duis dolor voluptate do velit. Cupidatat sit anim aliquip sint sit magna. Et ut eu labore quis labore. Magna laborum esse cillum fugiat mollit id eu. Dolore officia cillum velit occaecat deserunt duis amet reprehenderit excepteur reprehenderit id id laboris labore.
+
+fields:
+  - id: field
+    label: Elit velit nisi do reprehenderit non sint magna nisi amet id officia ullamco incididunt.
+    description: |
+      Incididunt ut excepteur do. Cupidatat fugiat enim tempor fugiat deserunt ea exercitation laborum laboris labore irure eiusmod ad. Aliquip commodo cillum reprehenderit. Id tempor amet nisi dolore minim nisi. Dolor aute fugiat mollit eiusmod aliqua esse irure deserunt mollit officia cillum consequat enim ex aute. Qui tempor velit cillum.
+    kind: text

@@ -1,0 +1,8 @@
+# TODO: Sandboxing
+
+[Service]
+DynamicUser=yes
+ExecStart=/opt/sb/command-proxy
+StandardInput=socket
+StandardOutput=socket
+StandardError=journal

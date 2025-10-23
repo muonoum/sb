@@ -1,0 +1,37 @@
+kind: sources/v1
+---
+id: big-literal-lorem
+literal:
+  - Amet est anim adipisicing velit enim est aliqua ea tempor est labore.
+  - Eiusmod enim incididunt quis proident laboris.
+  - Ut qui sint ex eiusmod officia cillum.
+  - Tempor aute dolore consectetur magna sint proident.
+  - Tempor id adipisicing voluptate nulla et incididunt cillum Lorem sit ad.
+  - Voluptate nulla deserunt qui pariatur laboris velit quis cupidatat proident dolor pariatur.
+---
+id: small-literal-lorem
+literal:
+  - Lorem ipsum dolor sit amet
+  - Curabitur pretium metus
+  - Vestibulum vitae arcu eu mauris
+---
+id: nested-literal-lorem
+literal:
+  - Nulla anim irure aute aliqua mollit velit cupidatat:
+      - Ipsum minim in laboris veniam ea est occaecat occaecat ex.
+      - Cillum tempor duis enim nulla reprehenderit in incididunt id mollit sunt magna mollit quis ullamco.
+      - Dolore incididunt amet commodo elit est aliqua sunt est id consectetur sint.
+  - Adipisicing ex adipisicing amet et magna sit velit velit nulla consectetur minim occaecat id:
+      - Officia veniam velit culpa veniam ea.
+      - Et eu consequat nisi irure.
+      - Est consectetur nulla laborum id et enim aliqua non ad sint ipsum ea.
+  - Labore aliqua nulla aliquip voluptate consequat mollit:
+      - Occaecat quis velit est amet reprehenderit magna.
+      - Labore minim nostrud non ex sint labore duis Lorem dolore nulla id consectetur id sunt tempor.
+      - Adipisicing esse aliqua et nostrud qui ad dolore pariatur nisi.
+---
+id: fetch-lorem
+fetch: /mock/lorem/sentences/3/3
+---
+id: fetch-lorem-delayed
+fetch: /mock/lorem/sentences/3/3?delay=1000

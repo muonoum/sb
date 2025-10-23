@@ -1,0 +1,44 @@
+kind: tasks/v1
+category: [Commands]
+---
+name: Commands
+
+fields:
+  - id: sleep
+    kind: data
+    source.command: sleep 0.5
+    filters:
+      - kind: succeed
+        value: Hei!
+
+  - id: echo
+    kind: data
+    source.command: echo Hello, World!
+    filters:
+      - kind: trim-space
+
+  - id: split
+    kind: data
+    source.command: find . -mindepth 1
+    filters:
+      - kind: trim-space
+      - kind: split-string
+        on: "\n"
+---
+name: Jq
+
+fields:
+  - id: source
+    kind: data
+    source.literal:
+      foo.bar: baz
+      baz: biz
+
+  - id: reference
+    kind: data
+    source.command:
+      command: jq .foo.bar
+      stdin.reference: source
+    filters:
+      - kind: trim-space
+

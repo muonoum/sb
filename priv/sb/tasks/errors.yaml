@@ -1,0 +1,21 @@
+kind: tasks/v1
+category: [Errors]
+---
+name: Self reference
+
+fields:
+  - id: a
+    kind: data
+    source.reference: a
+---
+name: Circular references
+
+fields:
+  - id: a
+    kind: data
+    source.reference: b
+
+  - id: b
+    kind: data
+    source.reference: a
+

@@ -1,0 +1,35 @@
+kind: tasks/v1
+category: [Fields]
+---
+name: Options
+fields:
+  - id: a
+    kind: radio
+    source.literal: [a, b, c]
+
+  - id: b
+    kind: radio
+    source.literal:
+      - a: 10
+      - b
+      - c
+
+  - id: c
+    kind: radio
+    source.literal:
+      - a: 10
+        b: 20
+      - b
+      - c
+
+  - id: d
+    kind: radio
+    source.literal:
+      a: 10
+      b: 20
+      c: 30
+
+  - id: e
+    kind: radio
+    source.literal: a
+

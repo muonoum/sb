@@ -1,0 +1,9 @@
+---
+version: 1.4.0
+title: source-groups
+file: ./test/decode_source_test.gleam
+test_name: radio_custom_source_test
+---
+[90m[[39m[32ma[39m, [32mb[39m, [32mc[39m[90m][39m
+[90m[[39m[32mLorem ipsum dolor sit amet[39m, [32mCurabitur pretium metus[39m, [32mVestibulum vitae arcu eu mauris[39m[90m][39m
+[90m[[39m[32mLorem ipsum dolor sit amet[39m, [32mCurabitur pretium metus[39m, [32mVestibulum vitae arcu eu mauris[39m[90m][39m

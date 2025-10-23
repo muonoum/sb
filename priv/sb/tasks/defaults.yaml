@@ -1,0 +1,97 @@
+kind: tasks/v1
+category: [Defaults]
+---
+name: Text input defaults
+
+fields:
+  - id: text
+    kind: text
+    default: Hello
+
+  - id: textarea
+    kind: textarea
+    default: World!
+
+  - id: result
+    kind: data
+    source.template: >-
+      {{text}}, {{textarea}}
+---
+name: Radio buttons default
+
+fields:
+  - id: radio
+    kind: radio
+    source.kind: small-literal-lorem
+    default: Curabitur pretium metus
+---
+name: Radio buttons bad default
+
+fields:
+  - id: radio
+    kind: radio
+    source.kind: small-literal-lorem
+    default: Nurabitur pretium metus
+---
+name: Checkbox defaults
+
+fields:
+  - id: checkbox
+    kind: checkbox
+    source.kind: small-literal-lorem
+    default:
+      - Lorem ipsum dolor sit amet
+      - Vestibulum vitae arcu eu mauris
+---
+name: Checkbox bad default
+
+fields:
+  - id: checkbox
+    kind: checkbox
+    source.kind: small-literal-lorem
+    default:
+      - Norem ipsum dolor sit amet
+      - Vestibulum vitae arcu eu mauris
+---
+name: Select default
+category: [Defaults]
+
+fields:
+  - id: select
+    kind: select
+    source.kind: small-literal-lorem
+    default: Lorem ipsum dolor sit amet
+---
+name: Multiselect defaults
+category: [Defaults]
+
+fields:
+  - id: select
+    kind: select
+    multiple: true
+    source.kind: small-literal-lorem
+    default:
+      - Lorem ipsum dolor sit amet
+      - Vestibulum vitae arcu eu mauris
+---
+name: Select bad default
+category: [Defaults]
+
+fields:
+  - id: select
+    kind: select
+    source.kind: small-literal-lorem
+    default: Norem ipsum dolor sit amet
+---
+name: Multiselect bad default
+category: [Defaults]
+
+fields:
+  - id: select
+    kind: select
+    multiple: true
+    source.kind: small-literal-lorem
+    default:
+      - Norem ipsum dolor sit amet
+      - Vestibulum vitae arcu eu mauris
+
