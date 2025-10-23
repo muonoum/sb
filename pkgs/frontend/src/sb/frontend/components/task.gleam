@@ -34,7 +34,7 @@ import sb/frontend/fields/data
 import sb/frontend/fields/input
 import sb/frontend/fields/select
 import sb/frontend/fields/text_input
-import sb/frontend/portals
+import sb/frontend/portal
 
 const search_debounce = 250
 
@@ -296,7 +296,7 @@ fn view(model: Model) -> Element(Message) {
 }
 
 fn page_header(model: Model) -> Element(Message) {
-  portals.into_actions([
+  portal.into_actions([
     html.div([attr.class("flex gap-5")], [
       reset_form(),
       start_job(scope(model)),

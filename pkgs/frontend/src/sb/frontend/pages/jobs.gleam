@@ -19,7 +19,7 @@ import sb/frontend/components/header
 import sb/frontend/components/search
 import sb/frontend/components/sheet
 import sb/frontend/components/sidebar
-import sb/frontend/portals
+import sb/frontend/portal
 
 const search_debounce = 250
 
@@ -164,12 +164,12 @@ fn set_successful_jobs(filter: Filter) -> Decoder(Message) {
 
 pub fn view(model: Model) -> Element(Message) {
   element.fragment([
-    portals.into_menu([
+    portal.into_menu([
       header.inactive_menu("Oppgaver", "/oppgaver"),
       header.active_menu("Jobber", "/jobber"),
       header.inactive_menu("Hjelp", "/hjelp"),
     ]),
-    portals.into_actions([
+    portal.into_actions([
       search.view(search: model.search, clear: Search(""), attributes: [
         attr.class("rounded-md"),
         attr.placeholder("Finn jobb"),

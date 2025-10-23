@@ -12,7 +12,7 @@ import sb/extra/uri as uri_extra
 import sb/extra_client
 import sb/frontend/components/header
 import sb/frontend/components/search
-import sb/frontend/portals
+import sb/frontend/portal
 
 const search_debounce = 250
 
@@ -66,7 +66,7 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
 
 pub fn view(model: Model, uri: Uri) -> Element(Message) {
   element.fragment([
-    portals.into_menu([
+    portal.into_menu([
       header.active_menu("Oppgaver", "/oppgaver"),
       header.inactive_menu("Jobber", "/jobber"),
       header.inactive_menu("Hjelp", "/hjelp"),
@@ -75,7 +75,7 @@ pub fn view(model: Model, uri: Uri) -> Element(Message) {
         [],
       ),
     ]),
-    portals.into_actions([
+    portal.into_actions([
       search.view(search: model.search, clear: Search(""), attributes: [
         attr.class("rounded-md"),
         attr.placeholder("Finn kategori eller oppgave"),
