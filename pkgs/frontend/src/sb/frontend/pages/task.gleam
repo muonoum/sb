@@ -6,7 +6,7 @@ import lustre/event
 import lustre/server_component as server
 import plinth/browser/window
 import sb/frontend/components/header
-import sb/frontend/portal
+import sb/frontend/portals
 
 pub opaque type Model {
   Model(task_id: String)
@@ -31,7 +31,7 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
 
 pub fn view(model: Model) -> Element(Message) {
   element.fragment([
-    portal.into_menu([
+    portals.into_menu([
       header.inactive_menu("Oppgaver", "/oppgaver"),
       header.inactive_menu("Jobber", "/jobber"),
       header.inactive_menu("Hjelp", "/hjelp"),

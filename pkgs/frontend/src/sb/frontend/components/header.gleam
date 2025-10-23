@@ -3,7 +3,7 @@ import lustre/attribute.{type Attribute} as attr
 import lustre/element.{type Element}
 import lustre/element/html
 import sb/frontend/components/core
-import sb/frontend/portal
+import sb/frontend/portals
 
 pub fn view() -> Element(message) {
   html.header(
@@ -24,9 +24,9 @@ pub fn view() -> Element(message) {
           ),
         ],
         [
-          portal.menu(),
+          portals.menu(),
           core.filler(),
-          portal.actions(),
+          portals.actions(),
         ],
       ),
     ],
