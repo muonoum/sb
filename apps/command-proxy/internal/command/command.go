@@ -3,12 +3,12 @@ package command
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
-	"os"
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/rs/zerolog/log"
 )
 
 type Spec struct {
@@ -54,17 +54,23 @@ func (spec Spec) Run(ctx context.Context, output io.Writer) error {
 	if err := command.Run(); err == nil {
 		result.Output = stdout.String()
 	} else if exit, ok := err.(*exec.ExitError); ok {
+		log.Error().
+			Int("exit-code", exit.ExitCode()).
+			Stringer("stdout", &stdout).
+			Stringer("stderr", &stderr).
+			Msg("bad exit code")
+
 		result.ExitCode = exit.ExitCode()
 		result.Output = stderr.String()
-		fmt.Fprintln(os.Stderr, "stdout:", stderr.String())
-		fmt.Fprintln(os.Stderr, "stderr:", stderr.String())
-		fmt.Fprintln(os.Stderr, "exit-code:", exit.ExitCode())
 	} else {
+		log.Error().
+			Err(err).
+			Stringer("stdout", &stdout).
+			Stringer("stderr", &stderr).
+			Msg("command failed")
+
 		result.ExitCode = 1
 		result.Output = err.Error()
-		fmt.Fprintln(os.Stderr, "stdout:", stderr.String())
-		fmt.Fprintln(os.Stderr, "stderr:", stderr.String())
-		fmt.Fprintln(os.Stderr, "error:", err.Error())
 	}
 
 	return json.NewEncoder(output).Encode(result)

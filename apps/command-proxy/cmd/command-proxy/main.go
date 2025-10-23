@@ -2,24 +2,31 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net"
 	"os"
 
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+
 	"sb/command-proxy/internal/command"
 )
+
+func init() {
+	log.Logger = zerolog.New(zerolog.ConsoleWriter{
+		Out: os.Stderr, FormatTimestamp: func(_ any) string { return "" },
+	})
+}
 
 func main() {
 	address := os.Getenv("PROXY_ADDRESS")
 
 	if address != "" {
 		if err := listen(address); err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+			log.Fatal().Err(err).Msg("could not start listener")
 		}
 	} else if err := handler(os.Stdin, os.Stdout); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		log.Fatal().Err(err).Msg("could not start handler")
 	}
 }
 
@@ -29,7 +36,13 @@ func handler(input io.Reader, output io.Writer) error {
 		return err
 	}
 
-	fmt.Fprintln(os.Stderr, "run command", spec)
+	log.Info().
+		Str("executable", spec.Executable).
+		Strs("arguments", spec.Arguments).
+		Float64("timeout", spec.Timeout).
+		Interface("stdin", spec.Stdin).
+		Msg("run command")
+
 	return spec.Run(context.Background(), output)
 }
 
@@ -38,7 +51,9 @@ func listen(address string) error {
 	if err != nil {
 		return err
 	}
+
 	defer listener.Close()
+	log.Info().Str("address", address).Msg("started listener")
 
 	for {
 		conn, err := listener.Accept()
@@ -55,7 +70,6 @@ func accept(conn net.Conn) {
 	defer conn.Close()
 
 	if err := handler(conn, conn); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return
+		log.Fatal().Err(err).Msg("could not start handler")
 	}
 }
