@@ -100,7 +100,7 @@ assets/Inter:
 	curl --silent -L $(inter) | bsdtar -C assets -s /^web/Inter/ -xf- web
 
 .PHONY: commit
-commit: commit_message ?= $(shell git diff --name-only --cached | xargs)
+commit: commit_message ?= $(shell git diff --name-only --cached | xargs basename)
 commit:
 	test -n "$(commit_message)"
 	git commit -m "$(commit_message)"
