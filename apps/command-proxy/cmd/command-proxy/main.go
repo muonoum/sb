@@ -36,11 +36,8 @@ func handler(input io.Reader, output io.Writer) error {
 		return err
 	}
 
-	log.Info().
-		Str("executable", spec.Executable).
-		Strs("arguments", spec.Arguments).
-		Float64("timeout", spec.Timeout).
-		Interface("stdin", spec.Stdin).
+	log.Info().Str("executable", spec.Executable).Float64("timeout", spec.Timeout).
+		Strs("arguments", spec.Arguments).Interface("stdin", spec.Stdin).
 		Msg("run command")
 
 	return spec.Run(context.Background(), output)

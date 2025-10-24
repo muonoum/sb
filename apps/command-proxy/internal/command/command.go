@@ -54,19 +54,15 @@ func (spec Spec) Run(ctx context.Context, output io.Writer) error {
 	if err := command.Run(); err == nil {
 		result.Output = stdout.String()
 	} else if exit, ok := err.(*exec.ExitError); ok {
-		log.Error().
-			Int("exit-code", exit.ExitCode()).
-			Str("stdout", stdout.String()).
-			Str("stderr", stderr.String()).
+		log.Error().Int("exit-code", exit.ExitCode()).
+			Str("stdout", stdout.String()).Str("stderr", stderr.String()).
 			Msg("bad exit code")
 
 		result.ExitCode = exit.ExitCode()
 		result.Output = stderr.String()
 	} else {
-		log.Error().
-			Err(err).
-			Str("stdout", stdout.String()).
-			Str("stderr", stderr.String()).
+		log.Error().Err(err).
+			Str("stdout", stdout.String()).Str("stderr", stderr.String()).
 			Msg("command failed")
 
 		result.ExitCode = 1
