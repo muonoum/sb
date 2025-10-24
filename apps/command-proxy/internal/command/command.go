@@ -56,8 +56,8 @@ func (spec Spec) Run(ctx context.Context, output io.Writer) error {
 	} else if exit, ok := err.(*exec.ExitError); ok {
 		log.Error().
 			Int("exit-code", exit.ExitCode()).
-			Stringer("stdout", &stdout).
-			Stringer("stderr", &stderr).
+			Str("stdout", stdout.String()).
+			Str("stderr", stderr.String()).
 			Msg("bad exit code")
 
 		result.ExitCode = exit.ExitCode()
@@ -65,8 +65,8 @@ func (spec Spec) Run(ctx context.Context, output io.Writer) error {
 	} else {
 		log.Error().
 			Err(err).
-			Stringer("stdout", &stdout).
-			Stringer("stderr", &stderr).
+			Str("stdout", stdout.String()).
+			Str("stderr", stderr.String()).
 			Msg("command failed")
 
 		result.ExitCode = 1
