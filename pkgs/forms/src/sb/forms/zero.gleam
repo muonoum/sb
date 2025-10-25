@@ -1,3 +1,4 @@
+import gleam/dict.{type Dict}
 import gleam/option.{type Option, None, Some}
 import sb/forms/decoder.{type Decoder}
 
@@ -41,6 +42,10 @@ pub fn bool(decoder: Decoder(Bool)) -> Zero(Bool, err) {
 
 pub fn list(decoder: Decoder(List(v))) -> Zero(List(v), err) {
   new([], decoder)
+}
+
+pub fn dict(decoder: Decoder(Dict(k, v))) -> Zero(Dict(k, v), err) {
+  new(dict.new(), decoder)
 }
 
 pub fn option(decoder: Decoder(v)) -> Zero(Option(v), err) {

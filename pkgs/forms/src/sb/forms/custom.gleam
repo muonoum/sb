@@ -13,14 +13,6 @@ import sb/forms/props
 pub type Custom =
   Dict(String, Dynamic)
 
-pub type Commands {
-  Commands(custom: Dict(String, Custom))
-}
-
-pub fn empty_commands() -> Commands {
-  Commands(dict.new())
-}
-
 pub type Fields {
   Fields(custom: Dict(String, Custom))
 }
