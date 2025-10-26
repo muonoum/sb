@@ -164,26 +164,21 @@ fn evaluate_command(
   use scope <- reader.bind(evaluate.get_scope())
   let passthrough = fn(stdin) { reader.return(Ok(Command(command:, stdin:))) }
 
-  use command_string <- reader.try(
+  use command <- reader.try(
     text.evaluate(command, scope, placeholder: search)
     |> reader.return,
   )
 
-  case command_string {
-    None -> passthrough(None)
+  case command, stdin {
+    None, _stdin -> passthrough(None)
+    Some(command), None -> run_command(command:, stdin: None)
 
-    Some(command) -> {
+    Some(command), Some(stdin) -> {
+      use stdin <- reader.try(evaluate(stdin, search))
+
       case stdin {
-        None -> run_command(command:, stdin: None)
-
-        Some(stdin) -> {
-          use stdin <- reader.try(evaluate(stdin, search))
-
-          case stdin {
-            Literal(value) -> run_command(command:, stdin: Some(value))
-            source -> passthrough(Some(source))
-          }
-        }
+        Literal(value) -> run_command(command:, stdin: Some(value))
+        source -> passthrough(Some(source))
       }
     }
   }
@@ -221,32 +216,26 @@ fn evaluate_fetch(
   use scope <- reader.bind(evaluate.get_scope())
   let placeholder = option.map(search, uri.percent_encode)
 
-  use uri_string <- reader.try(
+  let passthrough = fn() {
+    reader.return(Ok(Fetch(method:, uri:, headers:, timeout:, body:)))
+  }
+
+  use uri <- reader.try(
     text.evaluate(uri, scope, placeholder:)
     |> reader.return,
   )
 
-  let passthrough = fn(body) {
-    reader.return(Ok(Fetch(method:, uri:, headers:, timeout:, body:)))
-  }
+  case uri, body {
+    None, _body -> passthrough()
+    Some(uri), None -> run_fetch(method:, uri:, headers:, timeout:, body: None)
 
-  case uri_string {
-    None -> passthrough(body)
-
-    Some(uri) -> {
-      let with_body = run_fetch(method:, uri:, headers:, timeout:, body: _)
+    Some(uri), Some(body) -> {
+      use body <- reader.try(evaluate(body, search))
 
       case body {
-        None -> with_body(None)
-
-        Some(body) -> {
-          use body <- reader.try(evaluate(body, search))
-
-          case body {
-            Literal(value) -> with_body(Some(value))
-            source -> passthrough(Some(source))
-          }
-        }
+        Literal(value) ->
+          run_fetch(method:, uri:, headers:, timeout:, body: Some(value))
+        _source -> passthrough()
       }
     }
   }
