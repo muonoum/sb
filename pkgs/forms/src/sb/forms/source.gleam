@@ -162,7 +162,7 @@ fn evaluate_command(
   search search: Option(String),
 ) -> Reader(Result(Source, Report(Error)), evaluate.Context) {
   use scope <- reader.bind(evaluate.get_scope())
-  let passthrough = fn(stdin) { reader.return(Ok(Command(command:, stdin:))) }
+  let passthrough = Ok(Command(command:, stdin:))
 
   use command <- reader.try(
     text.evaluate(command, scope, placeholder: search)
@@ -170,7 +170,7 @@ fn evaluate_command(
   )
 
   case command, stdin {
-    None, _stdin -> passthrough(None)
+    None, _stdin -> reader.return(passthrough)
     Some(command), None -> run_command(command:, stdin: None)
 
     Some(command), Some(stdin) -> {
@@ -178,7 +178,7 @@ fn evaluate_command(
 
       case stdin {
         Literal(value) -> run_command(command:, stdin: Some(value))
-        source -> passthrough(Some(source))
+        _source -> reader.return(passthrough)
       }
     }
   }
@@ -215,10 +215,7 @@ fn evaluate_fetch(
 ) -> Reader(Result(Source, Report(Error)), evaluate.Context) {
   use scope <- reader.bind(evaluate.get_scope())
   let placeholder = option.map(search, uri.percent_encode)
-
-  let passthrough = fn() {
-    reader.return(Ok(Fetch(method:, uri:, headers:, timeout:, body:)))
-  }
+  let passthrough = Ok(Fetch(method:, uri:, headers:, timeout:, body:))
 
   use uri <- reader.try(
     text.evaluate(uri, scope, placeholder:)
@@ -226,7 +223,7 @@ fn evaluate_fetch(
   )
 
   case uri, body {
-    None, _body -> passthrough()
+    None, _body -> reader.return(passthrough)
     Some(uri), None -> run_fetch(method:, uri:, headers:, timeout:, body: None)
 
     Some(uri), Some(body) -> {
@@ -235,7 +232,7 @@ fn evaluate_fetch(
       case body {
         Literal(value) ->
           run_fetch(method:, uri:, headers:, timeout:, body: Some(value))
-        _source -> passthrough()
+        _source -> reader.return(passthrough)
       }
     }
   }
