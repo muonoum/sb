@@ -59,17 +59,14 @@ pub fn evaluate(
   search: Option(String),
 ) -> Reader(Field, evaluate.Context) {
   use kind <- reader.bind(kind.evaluate(field.kind, search))
-  use scope <- reader.bind(evaluate.get_scope())
-  use <- return(reader.return)
 
-  Field(
-    ..field,
-    kind:,
-    disabled: reset.map(field.disabled, condition.evaluate(_, scope)),
-    hidden: reset.map(field.hidden, condition.evaluate(_, scope)),
-    ignored: reset.map(field.ignored, condition.evaluate(_, scope)),
-    optional: reset.map(field.optional, condition.evaluate(_, scope)),
-  )
+  let evaluate_condition = evaluate.reset(_, condition.evaluate)
+  use disabled <- reader.bind(evaluate_condition(field.disabled))
+  use hidden <- reader.bind(evaluate_condition(field.hidden))
+  use ignored <- reader.bind(evaluate_condition(field.ignored))
+  use optional <- reader.bind(evaluate_condition(field.optional))
+
+  reader.return(Field(..field, kind:, disabled:, hidden:, ignored:, optional:))
 }
 
 pub fn update(

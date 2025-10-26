@@ -15,24 +15,40 @@ import sb/forms/task
 import sb/forms/value
 
 pub fn condition_test() {
+  let base_context =
+    evaluate.Context(
+      scope: scope.error(),
+      search: dict.new(),
+      task_commands: dict.new(),
+      handlers: handlers.empty(),
+    )
+
   // scope={} | a==10
-  condition.Equal("a", value.Int(10))
-  |> condition.evaluate(scope.error())
+  let condition = condition.Equal("a", value.Int(10))
+  let scope = scope.error()
+  evaluate.Context(..base_context, scope:)
+  |> reader.run(condition.evaluate(condition), context: _)
   |> should.equal(condition.Equal("a", value.Int(10)))
 
   // scope={a=10} | a==20
-  condition.Equal("a", value.Int(20))
-  |> condition.evaluate(scope.put(scope.error(), "a", Ok(value.Int(10))))
+  let condition = condition.Equal("a", value.Int(20))
+  let scope = scope.put(scope.error(), "a", Ok(value.Int(10)))
+  evaluate.Context(..base_context, scope:)
+  |> reader.run(condition.evaluate(condition), context: _)
   |> should.equal(condition.Resolved(False))
 
   // scope={} | a!=10
-  condition.NotEqual("a", value.Int(10))
-  |> condition.evaluate(scope.error())
+  let condition = condition.NotEqual("a", value.Int(10))
+  let scope = scope.error()
+  evaluate.Context(..base_context, scope:)
+  |> reader.run(condition.evaluate(condition), context: _)
   |> should.equal(condition.NotEqual("a", value.Int(10)))
 
   // scope={a=10} | a!=20
-  condition.Equal("a", value.Int(20))
-  |> condition.evaluate(scope.put(scope.error(), "a", Ok(value.Int(10))))
+  let condition = condition.Equal("a", value.Int(20))
+  let scope = scope.put(scope.error(), "a", Ok(value.Int(10)))
+  evaluate.Context(..base_context, scope:)
+  |> reader.run(condition.evaluate(condition), context: _)
   |> should.equal(condition.Resolved(False))
 }
 

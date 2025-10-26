@@ -4,12 +4,14 @@ import gleam/dynamic/decode
 import gleam/option.{None, Some}
 import gleam/result
 import sb/extra/function.{return}
+import sb/extra/reader.{type Reader}
 import sb/extra/report
 import sb/extra/state
 import sb/forms/decoder
 import sb/forms/error
+import sb/forms/evaluate
 import sb/forms/props
-import sb/forms/scope.{type Scope}
+import sb/forms/scope
 import sb/forms/value.{type Value}
 import sb/forms/zero.{type Zero}
 
@@ -36,7 +38,10 @@ pub fn is_true(cond: Condition) -> Bool {
   }
 }
 
-pub fn evaluate(condition: Condition, scope: Scope) -> Condition {
+pub fn evaluate(condition: Condition) -> Reader(Condition, evaluate.Context) {
+  use scope <- reader.bind(evaluate.get_scope())
+  use <- return(reader.return)
+
   case condition {
     Resolved(bool) -> Resolved(bool)
 
