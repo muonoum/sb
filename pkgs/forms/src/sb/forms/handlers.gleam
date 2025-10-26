@@ -36,6 +36,6 @@ pub fn empty_http() -> Http {
 }
 
 pub fn empty_command() -> Command {
-  use _arguments, _input, _commands <- identity
+  use _arguments, _input, _task_commands <- identity
   Ok("")
 }

@@ -3,7 +3,7 @@ import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/list
 import gleam/result
-import sb/extra/function.{return}
+import sb/extra/function.{compose, return}
 import sb/extra/report
 import sb/extra/state
 import sb/forms/access
@@ -11,6 +11,7 @@ import sb/forms/command
 import sb/forms/custom
 import sb/forms/decoder
 import sb/forms/error
+import sb/forms/filter
 import sb/forms/props
 import sb/forms/task
 import sb/forms/zero
@@ -110,7 +111,13 @@ fn tasks_v1_decoder() -> props.Try(Kind) {
     list.try_map(list, props.decode(_, command.decoder()))
   })
 
-  let filters = custom.Filters(dict.new())
+  // TODO: Duplicates
+  use filters <- props.try("filters", {
+    use dynamic <- zero.new(custom.Filters(dict.new()))
+    use <- return(result.map(_, compose(dict.from_list, custom.Filters)))
+    use list <- result.try(decoder.run(dynamic, decode.list(decode.dynamic)))
+    list.try_map(list, props.decode(_, custom.decoder(filter.builtin)))
+  })
 
   let context =
     task.Context(category:, runners:, approvers:, commands:, filters:)

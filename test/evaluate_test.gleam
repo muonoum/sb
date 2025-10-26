@@ -35,11 +35,11 @@ pub fn evaluate_single_data_literal_test() {
   helpers.field_errors(task) |> should.equal([])
 
   let handlers = handlers.empty()
-  let task_commands = dict.new()
   let scope = scope.error()
   let search = dict.new()
-
+  let task_commands = dict.new()
   let context = evaluate.Context(scope:, search:, task_commands:, handlers:)
+
   reader.run(context:, reader: task.step(task))
   string.join([debug.task(task), debug.scope(scope)], "\n")
   |> birdie.snap("evaluate--task-single-data-literal")
@@ -67,12 +67,13 @@ pub fn evaluate_select_with_reference_to_data_test() {
   helpers.field_errors(task) |> should.equal([])
 
   let handlers = handlers.empty()
-  let task_commands = dict.new()
   let scope = scope.error()
   let search = dict.new()
-
+  let task_commands = dict.new()
   let context = evaluate.Context(scope:, search:, task_commands:, handlers:)
+
   let #(task, scope) = reader.run(context:, reader: task.step(task))
+
   string.join([debug.task(task), debug.scope(scope)], "\n")
   |> birdie.snap("evaluate--select-with-reference-to-data--step1")
 

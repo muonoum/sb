@@ -127,11 +127,11 @@ pub fn radio_custom_source_test() {
       http: helpers.http_handler,
     )
 
-  let task_commands = dict.new()
   let scope = scope.error()
   let search = dict.new()
-
+  let task_commands = dict.new()
   let context = evaluate.Context(scope:, search:, task_commands:, handlers:)
+
   let #(task, _scope) = reader.run(context:, reader: task.evaluate(task))
 
   helpers.field_sources(task, "field1") |> result.all |> should.be_ok

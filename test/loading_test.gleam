@@ -60,9 +60,9 @@ pub fn loading_propagation_test() {
       |> Ok
     })
 
-  let task_commands = dict.new()
   let scope = scope.error()
   let search = dict.new()
+  let task_commands = dict.new()
   let context = evaluate.Context(scope:, search:, task_commands:, handlers:)
 
   let #(task, _scope) = reader.run(context:, reader: task.step(task))

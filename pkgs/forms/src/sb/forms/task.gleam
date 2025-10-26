@@ -30,7 +30,6 @@ const task_keys = [
 ]
 
 pub type Context {
-  // TODO: commands, filters -- ID-er kan overstyre de som finnes globalt?
   Context(
     category: List(String),
     runners: Access,
@@ -165,6 +164,12 @@ pub fn decoder(
     use list <- result.map(decoder.run(dynamic, decode.list(decode.dynamic)))
     use <- return(pair.second)
     use seen, dynamic <- list.map_fold(list, set.new())
+
+    let filters =
+      custom.Filters(case filters, context.filters {
+        custom.Filters(a), custom.Filters(b) -> dict.merge(a, b)
+      })
+
     let decoder = field.decoder(sources:, fields:, filters:)
     props.decode(dynamic, decoder) |> try_unique_id(seen)
   })
@@ -172,7 +177,6 @@ pub fn decoder(
   let results = list.map(fields, result.map(_, pair.first))
   let fields = dict.from_list(pair.first(result.partition(fields)))
   use layout <- props.try("layout", layout.decoder(results))
-  let commands = context.commands
 
   state.ok(Task(
     id:,
@@ -185,7 +189,7 @@ pub fn decoder(
     approvers:,
     layout:,
     fields:,
-    commands:,
+    commands: context.commands,
   ))
 }
 
