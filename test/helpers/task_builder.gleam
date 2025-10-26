@@ -17,7 +17,7 @@ pub type Builder {
     sources: Option(custom.Sources),
     fields: Option(custom.Fields),
     filters: Option(custom.Filters),
-    defaults: task.Defaults,
+    context: task.Context,
     loader: fn(String) -> Result(Dynamic, Exception),
   )
 }
@@ -31,13 +31,13 @@ pub fn new(
     sources: None,
     fields: None,
     filters: None,
-    defaults: empty_defaults(),
+    context: empty_context(),
     loader:,
   )
 }
 
-pub fn empty_defaults() -> task.Defaults {
-  task.Defaults(
+pub fn empty_context() -> task.Context {
+  task.Context(
     category: [],
     runners: access.none(),
     approvers: access.none(),
@@ -46,8 +46,8 @@ pub fn empty_defaults() -> task.Defaults {
   )
 }
 
-pub fn set_defaults(builder: Builder, defaults: task.Defaults) -> Builder {
-  TaskBuilder(..builder, defaults:)
+pub fn set_defaults(builder: Builder, context: task.Context) -> Builder {
+  TaskBuilder(..builder, context:)
 }
 
 pub fn set_custom_sources(builder: Builder, sources: custom.Sources) -> Builder {
@@ -106,9 +106,9 @@ fn load_task(
   filters filters: custom.Filters,
   loader loader: fn(String) -> Result(Dynamic, _),
 ) -> Result(Task, Report(Error)) {
-  use defaults, docs <- helpers.with_tasks_file(input, loader)
+  use context, docs <- helpers.with_tasks_file(input, loader)
   let assert [doc, ..] = docs
-  decode_task(doc, sources:, fields:, filters:, defaults:)
+  decode_task(doc, sources:, fields:, filters:, context:)
 }
 
 fn decode_task(
@@ -116,8 +116,8 @@ fn decode_task(
   sources sources: custom.Sources,
   fields fields: custom.Fields,
   filters filters: custom.Filters,
-  defaults defaults: task.Defaults,
+  context context: task.Context,
 ) -> Result(Task, Report(Error)) {
-  task.decoder(defaults:, sources:, fields:, filters:)
+  task.decoder(context:, sources:, fields:, filters:)
   |> props.decode(dynamic, _)
 }

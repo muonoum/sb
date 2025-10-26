@@ -210,7 +210,7 @@ fn document(path: String, index: Int, data: Dynamic) -> Document {
 }
 
 type TaskDocument {
-  TaskDocument(document: Document, defaults: task.Defaults)
+  TaskDocument(document: Document, context: task.Context)
 }
 
 type Context {
@@ -308,10 +308,10 @@ fn load_documents(
 fn load_task_documents() -> State(List(TaskDocument), Context) {
   use files <- state.bind(get_file_kind(file.tasks))
   use <- return(state.sequence)
-  use #(path, documents, defaults) <- list.flat_map(files)
+  use #(path, documents, context) <- list.flat_map(files)
   use data, index <- list.index_map(documents)
   let document = document(path, index, data)
-  state.return(TaskDocument(document:, defaults:))
+  state.return(TaskDocument(document:, context:))
 }
 
 fn load_custom(
@@ -346,9 +346,9 @@ fn load_tasks(
   use <- return(state.run(_, context: dups()))
   use <- return(state.sequence)
 
-  use TaskDocument(document:, defaults:) <- list.map(documents)
+  use TaskDocument(document:, context:) <- list.map(documents)
   use <- return(state.map(_, error_context(document)))
-  let decoder = task.decoder(defaults:, sources:, fields:, filters:)
+  let decoder = task.decoder(context:, sources:, fields:, filters:)
 
   case props.decode(document.data, decoder) {
     Error(report) -> state.return(Error(report))

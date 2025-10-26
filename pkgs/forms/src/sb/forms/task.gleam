@@ -29,9 +29,9 @@ const task_keys = [
   "approvers", "notify", "layout", "summary_fields", "fields",
 ]
 
-pub type Defaults {
+pub type Context {
   // TODO: commands, filters -- ID-er kan overstyre de som finnes globalt?
-  Defaults(
+  Context(
     category: List(String),
     runners: Access,
     approvers: Access,
@@ -126,7 +126,7 @@ pub fn update(
 }
 
 pub fn decoder(
-  defaults defaults: Defaults,
+  context context: Context,
   filters filters: custom.Filters,
   fields fields: custom.Fields,
   sources sources: custom.Sources,
@@ -137,8 +137,8 @@ pub fn decoder(
 
   use category <- props.try("category", {
     use <- zero.try(_, decoder.from(decode.list(decode.string)))
-    use <- bool.guard(defaults.category == [], Error(Nil))
-    Ok(defaults.category)
+    use <- bool.guard(context.category == [], Error(Nil))
+    Ok(context.category)
   })
 
   use id <- props.try("id", {
@@ -157,8 +157,8 @@ pub fn decoder(
     zero.list(decoder.from(decode.list(decode.string)))
   })
 
-  use runners <- props.try("runners", access.decoder(defaults.runners))
-  use approvers <- props.try("approvers", access.decoder(defaults.approvers))
+  use runners <- props.try("runners", access.decoder(context.runners))
+  use approvers <- props.try("approvers", access.decoder(context.approvers))
 
   use fields <- props.try("fields", {
     use dynamic <- zero.list
@@ -172,7 +172,7 @@ pub fn decoder(
   let results = list.map(fields, result.map(_, pair.first))
   let fields = dict.from_list(pair.first(result.partition(fields)))
   use layout <- props.try("layout", layout.decoder(results))
-  let commands = defaults.commands
+  let commands = context.commands
 
   state.ok(Task(
     id:,

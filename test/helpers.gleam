@@ -80,11 +80,11 @@ pub fn load_file(
 pub fn with_tasks_file(
   input: String,
   loader: fn(String) -> Result(Dynamic, _),
-  then: fn(task.Defaults, List(Dynamic)) -> Result(v, Report(Error)),
+  then: fn(task.Context, List(Dynamic)) -> Result(v, Report(Error)),
 ) -> Result(v, Report(Error)) {
   use file <- result.try(load_file(input, loader))
-  let assert #(file.TasksV1(defaults), docs) = file
-  then(defaults, docs)
+  let assert #(file.TasksV1(context), docs) = file
+  then(context, docs)
 }
 
 pub fn load_custom(

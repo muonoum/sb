@@ -28,17 +28,17 @@ pub type Kind {
   FiltersV1
   SourcesV1
   NotifiersV1
-  TasksV1(task.Defaults)
+  TasksV1(task.Context)
 }
 
 pub fn empty(path: String) -> File {
   File(kind: Empty, path:, documents: [])
 }
 
-pub fn tasks(file: File) -> Result(#(String, List(Dynamic), task.Defaults), Nil) {
+pub fn tasks(file: File) -> Result(#(String, List(Dynamic), task.Context), Nil) {
   case file {
-    File(kind: TasksV1(defaults), path:, documents:) ->
-      Ok(#(path, documents, defaults))
+    File(kind: TasksV1(context), path:, documents:) ->
+      Ok(#(path, documents, context))
     _else -> Error(Nil)
   }
 }
@@ -112,8 +112,8 @@ fn tasks_v1_decoder() -> props.Try(Kind) {
 
   let filters = custom.Filters(dict.new())
 
-  let defaults =
-    task.Defaults(category:, runners:, approvers:, commands:, filters:)
+  let context =
+    task.Context(category:, runners:, approvers:, commands:, filters:)
 
-  state.ok(TasksV1(defaults))
+  state.ok(TasksV1(context))
 }
