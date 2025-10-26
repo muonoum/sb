@@ -113,7 +113,7 @@ fn tasks_v1_decoder() -> props.Try(Kind) {
 
   // TODO: Duplicates
   use filters <- props.try("filters", {
-    use dynamic <- zero.new(custom.Filters(dict.new()))
+    use dynamic <- zero.new(custom.empty_filters())
     use <- return(result.map(_, compose(dict.from_list, custom.Filters)))
     use list <- result.try(decoder.run(dynamic, decode.list(decode.dynamic)))
     list.try_map(list, props.decode(_, custom.decoder(filter.builtin)))
