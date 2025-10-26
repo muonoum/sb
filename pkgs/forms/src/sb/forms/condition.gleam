@@ -24,10 +24,8 @@ pub type Condition {
 pub fn refs(condition: Condition) -> List(String) {
   case condition {
     Resolved(_) -> []
-    Defined(id) -> [id]
-    Equal(id, _) -> [id]
-    NotDefined(id) -> [id]
-    NotEqual(id, _) -> [id]
+    Defined(id) | NotDefined(id) -> [id]
+    Equal(id, _) | NotEqual(id, _) -> [id]
   }
 }
 
