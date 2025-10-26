@@ -118,12 +118,8 @@ fn task_component(
         use <- process.spawn_unlinked
 
         let context =
-          evaluate.Context(
-            scope:,
-            search:,
-            handlers:,
-            task_commands: task.commands,
-          )
+          task.commands
+          |> evaluate.Context(scope:, search:, handlers:, task_commands: _)
 
         let #(task, scope) = reader.run(context:, reader: task.step(task))
         dispatch(message(task, scope))

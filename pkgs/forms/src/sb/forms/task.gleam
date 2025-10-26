@@ -83,6 +83,7 @@ fn evaluate_fields(
   reader.return(#(id, field))
 }
 
+// TODO: Fjern behov for reader/context
 fn field_values(fields: Dict(String, Field)) -> Reader(Scope, evaluate.Context) {
   use scope, id, field <- dict.fold(fields, reader.return(scope.ok()))
   use value <- reader.bind(field.value(field))
