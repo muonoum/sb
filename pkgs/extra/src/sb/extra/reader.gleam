@@ -11,6 +11,15 @@ pub fn run(reader reader: Reader(v, ctx), context ctx: ctx) -> v {
 
 pub const ask = Reader(identity)
 
+pub fn asks(fun: fn(ctx) -> v) -> Reader(v, ctx) {
+  map(ask, fun)
+}
+
+pub fn local(reader: Reader(v, b), fun: fn(a) -> b) -> Reader(v, a) {
+  use ctx <- map(ask)
+  run(reader, fun(ctx))
+}
+
 pub fn return(value: v) -> Reader(v, ctx) {
   use _ <- Reader
   value

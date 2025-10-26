@@ -3,9 +3,7 @@ import gleam/http/request.{type Request}
 import gleam/result
 import gleam/uri.{type Uri}
 
-// TODO: Hacks for å støtte relative URL-er i tasks.
-// Vil helst gjøre dette med standard typer.
-
+// TODO: For å støtte relative URL-er i tasks.
 pub type RequestBuilder(body) {
   Builder(build: fn(Uri) -> Result(Request(body), Nil))
 }
