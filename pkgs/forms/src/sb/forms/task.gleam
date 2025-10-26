@@ -7,15 +7,17 @@ import gleam/pair
 import gleam/result
 import gleam/set.{type Set}
 import gleam/string
-import sb/extra/function.{identity, return}
+import sb/extra/function.{compose, identity, return}
+import sb/extra/reader.{type Reader}
 import sb/extra/report.{type Report}
 import sb/extra/state
 import sb/forms/access.{type Access}
+import sb/forms/command.{type Command}
 import sb/forms/custom
 import sb/forms/decoder
 import sb/forms/error.{type Error}
+import sb/forms/evaluate
 import sb/forms/field.{type Field}
-import sb/forms/handlers.{type Handlers}
 import sb/forms/layout.{type Layout}
 import sb/forms/props
 import sb/forms/scope.{type Scope}
@@ -29,15 +31,13 @@ const task_keys = [
 
 pub type Defaults {
   // TODO: commands, filters -- ID-er kan overstyre de som finnes globalt?
-  Defaults(category: List(String), runners: Access, approvers: Access)
-}
-
-pub fn empty_defaults() -> Defaults {
-  Defaults(category: [], runners: access.none(), approvers: access.none())
-}
-
-pub fn default_category(category: List(String)) -> Defaults {
-  Defaults(category:, runners: access.none(), approvers: access.none())
+  Defaults(
+    category: List(String),
+    runners: Access,
+    approvers: Access,
+    commands: Dict(String, Command),
+    filters: custom.Filters,
+  )
 }
 
 pub type Task {
@@ -52,56 +52,45 @@ pub type Task {
     approvers: Access,
     layout: Layout,
     fields: Dict(String, Field),
+    commands: Dict(String, Command),
   )
 }
 
-pub fn step(
-  task: Task,
-  scope1: Scope,
-  search search: Dict(String, String),
-  handlers handlers: Handlers,
-) -> #(Task, Scope) {
-  let fields = evaluate_fields(task.fields, scope1, search, handlers)
-  let scope2 = field_scope(fields, handlers:)
+pub fn step(task: Task) -> Reader(#(Task, Scope), evaluate.Context) {
+  use scope1 <- reader.bind(evaluate.get_scope())
+  use fields <- reader.bind(evaluate_fields(task.fields))
+  use scope2 <- reader.bind(field_values(fields))
   let changed = changed_refs(scope1, scope2)
   let fields = reset_changed(fields, changed)
-  #(Task(..task, fields:), scope2)
+  reader.return(#(Task(..task, fields:), scope2))
 }
 
-pub fn evaluate(
-  task1: Task,
-  scope1: Scope,
-  search search: Dict(String, String),
-  handlers handlers: Handlers,
-) -> #(Task, Scope) {
-  let #(task2, scope2) = step(task1, scope1, search, handlers)
+pub fn evaluate(task1: Task) -> Reader(#(Task, Scope), evaluate.Context) {
+  use scope1 <- reader.bind(evaluate.get_scope())
+  use #(task2, scope2) <- reader.bind(step(task1))
   let changed = scope1 != scope2 || task1 != task2
-  use <- bool.guard(!changed, #(task1, scope1))
-  evaluate(task2, scope2, search:, handlers:)
+  use <- bool.guard(!changed, reader.return(#(task1, scope1)))
+  evaluate.with_scope(evaluate(task2), scope2)
 }
 
 fn evaluate_fields(
   fields: Dict(String, Field),
-  scope: Scope,
-  search: Dict(String, String),
-  handlers: Handlers,
-) -> Dict(String, Field) {
-  use id, field <- dict.map_values(fields)
-  let search = option.from_result(dict.get(search, id))
-  field.evaluate(field, scope, search:, handlers:)
+) -> Reader(Dict(String, Field), evaluate.Context) {
+  use <- return(compose(reader.sequence, reader.map(_, dict.from_list)))
+  use #(id, field) <- list.map(dict.to_list(fields))
+  use search <- reader.bind(evaluate.get_search(id))
+  use field <- reader.bind(field.evaluate(field, search))
+  reader.return(#(id, field))
 }
 
-fn field_scope(
-  fields: Dict(String, Field),
-  handlers handlers: Handlers,
-) -> Scope {
-  use scope, id, field <- dict.fold(fields, scope.ok())
+fn field_values(fields: Dict(String, Field)) -> Reader(Scope, evaluate.Context) {
+  use scope, id, field <- dict.fold(fields, reader.return(scope.ok()))
+  use value <- reader.bind(field.value(field))
+  use scope <- reader.bind(scope)
 
-  // TODO: Litt kjipt med handlers her; har ingen loading-mekanisme
-  // for value som for evaluate.
-  field.value(field, handlers:)
-  |> option.map(scope.put(scope, id, _))
+  option.map(value, scope.put(scope, id, _))
   |> option.unwrap(scope)
+  |> reader.return
 }
 
 fn changed_refs(scope1: Scope, scope2: Scope) -> Set(String) {
@@ -182,6 +171,7 @@ pub fn decoder(
   let results = list.map(fields, result.map(_, pair.first))
   let fields = dict.from_list(pair.first(result.partition(fields)))
   use layout <- props.try("layout", layout.decoder(results))
+  let commands = defaults.commands
 
   state.ok(Task(
     id:,
@@ -194,6 +184,7 @@ pub fn decoder(
     approvers:,
     layout:,
     fields:,
+    commands:,
   ))
 }
 

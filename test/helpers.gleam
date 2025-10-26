@@ -23,6 +23,7 @@ import gleeunit/should
 import sb/extra/dots
 import sb/extra/function.{return}
 import sb/extra/list as list_extra
+import sb/extra/reader.{type Reader}
 import sb/extra/report.{type Report}
 import sb/extra/request_builder.{type RequestBuilder}
 import sb/extra/reset
@@ -31,10 +32,10 @@ import sb/forms/custom
 import sb/forms/debug
 import sb/forms/decoder
 import sb/forms/error.{type Error}
+import sb/forms/evaluate
 import sb/forms/field.{type Field}
 import sb/forms/file
 import sb/forms/filter
-import sb/forms/handlers.{type Handlers}
 import sb/forms/kind
 import sb/forms/layout
 import sb/forms/props
@@ -211,38 +212,10 @@ pub fn field_errors(task: Task) {
 pub fn field_value(
   task: Task,
   field_id: String,
-  handlers handlers: Handlers,
-) -> Option(Result(Value, Report(Error))) {
+) -> Reader(Option(Result(Value, Report(Error))), evaluate.Context) {
   dict.get(task.fields, field_id)
-  |> result.map(field.value(_, handlers:))
   |> should.be_ok
-}
-
-pub fn some_field_value(
-  task: Task,
-  field_id: String,
-  handlers handlers: Handlers,
-) -> Result(Value, Report(Error)) {
-  field_value(task, field_id, handlers:)
-  |> should.be_some
-}
-
-pub fn ok_field_value(
-  task: Task,
-  field_id: String,
-  handlers handlers: Handlers,
-) -> Value {
-  some_field_value(task, field_id, handlers:)
-  |> should.be_ok
-}
-
-pub fn error_field_value(
-  task: Task,
-  field_id: String,
-  handlers handlers: Handlers,
-) -> Report(Error) {
-  some_field_value(task, field_id, handlers:)
-  |> should.be_error
+  |> field.value
 }
 
 pub fn field_sources(

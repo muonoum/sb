@@ -1,9 +1,11 @@
 import exception.{type Exception}
+import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import helpers
 import sb/extra/report.{type Report}
+import sb/forms/access
 import sb/forms/custom
 import sb/forms/error.{type Error}
 import sb/forms/props
@@ -29,8 +31,18 @@ pub fn new(
     sources: None,
     fields: None,
     filters: None,
-    defaults: task.empty_defaults(),
+    defaults: empty_defaults(),
     loader:,
+  )
+}
+
+pub fn empty_defaults() -> task.Defaults {
+  task.Defaults(
+    category: [],
+    runners: access.none(),
+    approvers: access.none(),
+    commands: dict.new(),
+    filters: custom.Filters(dict.new()),
   )
 }
 

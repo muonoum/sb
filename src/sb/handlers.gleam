@@ -1,5 +1,6 @@
 import gleam/bit_array
 import gleam/bytes_tree.{type BytesTree}
+import gleam/dict
 import gleam/dynamic/decode.{type Decoder}
 import gleam/http
 import gleam/http/request
@@ -65,7 +66,7 @@ fn command_result_decoder() -> Decoder(#(Int, String)) {
 }
 
 pub fn command_handler(store, ca_certs ca_certs: Option(String)) {
-  use command, stdin <- identity
+  use command, stdin, task_commands <- identity
 
   wisp.log_info(
     "Handle command "
@@ -78,7 +79,15 @@ pub fn command_handler(store, ca_certs ca_certs: Option(String)) {
     report.error(error.BadCommand)
   })
 
-  use command <- result.try(store.get_command(store, name))
+  use command <- result.try({
+    use <- result.lazy_or(
+      dict.get(task_commands, name)
+      |> report.replace_error(error.Todo("get command")),
+    )
+
+    store.get_command(store, name)
+  })
+
   let arguments = list.append(command.arguments, arguments)
 
   wisp.log_info(

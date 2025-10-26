@@ -11,9 +11,9 @@ import lustre/element/html
 import lustre/event
 import lustre/server_component as server
 import sb/extra/function.{compose, identity, return}
+import sb/extra/reader.{type Reader}
 import sb/extra/report
 import sb/extra/reset
-import sb/extra/state.{type State}
 import sb/forms/error
 import sb/forms/kind
 import sb/forms/options.{type Options}
@@ -46,19 +46,22 @@ fn checked_decoder() -> Decoder(Bool) {
   decode.at(["target", "checked"], decode.bool)
 }
 
-fn get_context() -> State(Context(message), Context(message)) {
-  use context <- state.bind(state.get())
-  state.return(context)
+fn get_context() -> Reader(Context(message), Context(message)) {
+  use context <- reader.bind(reader.ask)
+  reader.return(context)
 }
 
-fn put_group_index(group_index: Int) -> State(Nil, Context(message)) {
-  use context <- state.update
+fn with_group_index(
+  reader: Reader(v, Context(message)),
+  group_index: Int,
+) -> Reader(v, Context(message)) {
+  use context <- reader.local(reader)
   Context(..context, group_index:)
 }
 
-fn get_config() -> State(Config(message), Context(message)) {
-  use Context(config:, ..) <- state.bind(get_context())
-  state.return(config)
+fn get_config() -> Reader(Config(message), Context(message)) {
+  use Context(config:, ..) <- reader.bind(get_context())
+  reader.return(config)
 }
 
 pub fn radio(
@@ -71,7 +74,7 @@ pub fn radio(
   let context =
     Context(kind: "radio", group_index: 0, is_selected:, change:, config:)
 
-  state.run(field(), context:)
+  reader.run(field(), context:)
 }
 
 pub fn checkbox(
@@ -99,38 +102,38 @@ pub fn checkbox(
   let context =
     Context(config:, kind: "checkbox", group_index: 0, is_selected:, change:)
 
-  state.run(field(), context:)
+  reader.run(field(), context:)
 }
 
-fn field() -> State(Element(message), Context(message)) {
-  use config <- state.bind(get_config())
+fn field() -> Reader(Element(message), Context(message)) {
+  use config <- reader.bind(get_config())
 
   // TODO: Gjør keys her og igjen lenger ned
   case options.unique_keys(config.options) {
     Error(report) ->
       core.inspect([attr.class("text-red-800")], report)
-      |> state.return
+      |> reader.return
 
     Ok(_keys) -> {
-      use choices <- state.bind(case config.options {
+      use choices <- reader.bind(case config.options {
         options.SingleSource(source) ->
           [group_source(source)]
-          |> state.sequence
+          |> reader.sequence
 
         options.SourceGroups(groups) -> {
-          use <- return(state.sequence)
+          use <- return(reader.sequence)
           use group, group_index <- list.index_map(groups)
           let options.Group(label:, source:) = group
-          use <- state.do(put_group_index(group_index))
-          use group_source <- state.bind(group_source(source))
+          use <- return(with_group_index(_, group_index))
+          use group_source <- reader.bind(group_source(source))
 
           element.fragment([group_label(label), group_source])
-          |> state.return
+          |> reader.return
         }
       })
 
       html.div([], choices)
-      |> state.return
+      |> reader.return
     }
   }
 }
@@ -141,25 +144,25 @@ fn group_label(text: String) -> Element(message) {
 
 fn group_source(
   source: source.Resetable,
-) -> State(Element(message), Context(message)) {
-  use config <- state.bind(get_config())
+) -> Reader(Element(message), Context(message)) {
+  use config <- reader.bind(get_config())
 
   case reset.unwrap(source), config.debug {
     Error(report), _debug ->
       core.inspect([attr.class("text-red-800")], report)
-      |> state.return
+      |> reader.return
 
     Ok(source.Literal(value)), _debug -> group_members(value)
 
     Ok(source), False ->
-      state.return(
+      reader.return(
         html.div([attr.class("flex gap-2 justify-center")], [
           core.spinner([], config.is_loading(source)),
         ]),
       )
 
     Ok(source), True ->
-      state.return(
+      reader.return(
         html.div([attr.class("flex gap-2")], [
           core.inspect([], source),
           core.spinner([], config.is_loading(source)),
@@ -168,9 +171,9 @@ fn group_source(
   }
 }
 
-fn group_members(value: Value) -> State(Element(message), Context(message)) {
-  use Context(group_index:, ..) <- state.bind(get_context())
-  use config <- state.bind(get_config())
+fn group_members(value: Value) -> Reader(Element(message), Context(message)) {
+  use Context(group_index:, ..) <- reader.bind(get_context())
+  use config <- reader.bind(get_config())
 
   let keys =
     value.keys(value)
@@ -179,11 +182,11 @@ fn group_members(value: Value) -> State(Element(message), Context(message)) {
   case keys {
     Error(report) ->
       core.inspect([attr.class("text-red-800")], report)
-      |> state.return
+      |> reader.return
 
     Ok(keys) -> {
-      use choices <- state.bind({
-        use <- return(state.sequence)
+      use choices <- reader.bind({
+        use <- return(reader.sequence)
         use key, item_index <- list.index_map(keys)
 
         group_choice(key, {
@@ -201,7 +204,7 @@ fn group_members(value: Value) -> State(Element(message), Context(message)) {
       ]
 
       html.div(attr, choices)
-      |> state.return
+      |> reader.return
     }
   }
 }
@@ -209,10 +212,10 @@ fn group_members(value: Value) -> State(Element(message), Context(message)) {
 fn group_choice(
   key: Value,
   dom_id: String,
-) -> State(Element(message), Context(message)) {
-  use context <- state.bind(get_context())
-  use config <- state.bind(get_config())
-  use <- return(state.return)
+) -> Reader(Element(message), Context(message)) {
+  use context <- reader.bind(get_context())
+  use config <- reader.bind(get_config())
+  use <- return(reader.return)
   let change = event.on("change", context.change(key))
 
   let input =

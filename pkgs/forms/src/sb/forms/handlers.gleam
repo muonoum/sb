@@ -1,10 +1,12 @@
 import gleam/bit_array
 import gleam/bytes_tree.{type BytesTree}
+import gleam/dict.{type Dict}
 import gleam/http/response.{type Response}
 import gleam/option.{type Option}
 import sb/extra/function.{identity}
 import sb/extra/report.{type Report}
 import sb/extra/request_builder.{type RequestBuilder}
+import sb/forms/command
 import sb/forms/error.{type Error}
 
 pub type Handlers {
@@ -16,9 +18,10 @@ pub type Http =
   fn(RequestBuilder(Option(BytesTree)), Int) ->
     Result(Response(BitArray), Report(Error))
 
-// command, stdin
+// arguments, stdin, task_commands
 pub type Command =
-  fn(List(String), Option(String)) -> Result(String, Report(Error))
+  fn(List(String), Option(String), Dict(String, command.Command)) ->
+    Result(String, Report(Error))
 
 pub fn empty() -> Handlers {
   Handlers(http: empty_http(), command: empty_command())
@@ -33,6 +36,6 @@ pub fn empty_http() -> Http {
 }
 
 pub fn empty_command() -> Command {
-  use _command, _input <- identity
+  use _arguments, _input, _commands <- identity
   Ok("")
 }

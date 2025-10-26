@@ -13,7 +13,8 @@ import gleam/set.{type Set}
 import gleam/string
 import gleam/uri
 import sb/extra/dynamic as dynamic_extra
-import sb/extra/function.{return}
+import sb/extra/function.{compose, return}
+import sb/extra/reader.{type Reader}
 import sb/extra/report.{type Report}
 import sb/extra/request_builder.{type RequestBuilder}
 import sb/extra/reset.{type Reset}
@@ -22,9 +23,9 @@ import sb/extra/string as string_extra
 import sb/forms/custom
 import sb/forms/decoder
 import sb/forms/error.{type Error}
-import sb/forms/handlers.{type Handlers}
+import sb/forms/evaluate
 import sb/forms/props
-import sb/forms/scope.{type Scope}
+import sb/forms/scope
 import sb/forms/text.{type Text}
 import sb/forms/value.{type Value}
 import sb/forms/zero.{type Zero}
@@ -116,123 +117,159 @@ pub fn initial_placeholder(source: Resetable) -> Bool {
 
 pub fn evaluate(
   source: Source,
-  scope: Scope,
-  search search: Option(String),
-  handlers handlers: Handlers,
-) -> Result(Source, Report(Error)) {
+  search: Option(String),
+) -> Reader(Result(Source, Report(Error)), evaluate.Context) {
   case source {
-    Loading(load) -> load()
-    Literal(value) -> Ok(Literal(value))
+    Loading(load) -> reader.return(load())
+    Literal(value) -> reader.return(Ok(Literal(value)))
+    Reference(id) -> evaluate_reference(id)
+    Template(text) -> evaluate_template(text)
+    Command(command:, stdin:) -> evaluate_command(command:, stdin:, search:)
 
-    Reference(id) ->
-      case scope.value(scope, id) {
-        Some(Ok(value)) -> Ok(Literal(value))
-        Some(Error(_)) | None -> Ok(Reference(id))
-      }
+    Fetch(method:, uri:, headers:, timeout:, body:) ->
+      evaluate_fetch(method:, uri:, headers:, timeout:, body:, search:)
+  }
+}
 
-    Template(text) ->
-      case text.evaluate(text, scope, placeholder: None) {
-        Error(report) -> Error(report)
-        Ok(None) -> Ok(Template(text))
-        Ok(Some(string)) -> Ok(Literal(value.String(string)))
-      }
+fn evaluate_reference(
+  id: String,
+) -> Reader(Result(Source, Report(Error)), evaluate.Context) {
+  use scope <- reader.bind(evaluate.get_scope())
+  use <- return(reader.return)
 
-    Command(command:, stdin: None) -> {
-      case text.evaluate(command, scope, placeholder: search) {
-        Error(report) -> Error(report)
-        Ok(None) -> Ok(Command(command:, stdin: None))
+  case scope.value(scope, id) {
+    Some(Ok(value)) -> Ok(Literal(value))
+    Some(Error(_)) | None -> Ok(Reference(id))
+  }
+}
 
-        Ok(Some(command_string)) ->
-          Ok({
-            let arguments = string_extra.words(command_string)
+fn evaluate_template(
+  text: Text,
+) -> Reader(Result(Source, Report(Error)), evaluate.Context) {
+  use scope <- reader.bind(evaluate.get_scope())
+  use <- return(reader.return)
 
-            use <- Loading
-            use string <- result.try(handlers.command(arguments, None))
+  case text.evaluate(text, scope, placeholder: None) {
+    Error(report) -> Error(report)
+    Ok(None) -> Ok(Template(text))
+    Ok(Some(string)) -> Ok(Literal(value.String(string)))
+  }
+}
 
-            dynamic.string(string)
-            |> decoder.run(value.decoder())
-            |> result.map(Literal)
-          })
-      }
-    }
+fn evaluate_command(
+  command command: Text,
+  stdin stdin: Option(Source),
+  search search: Option(String),
+) -> Reader(Result(Source, Report(Error)), evaluate.Context) {
+  use scope <- reader.bind(evaluate.get_scope())
+  let passthrough = fn(stdin) { reader.return(Ok(Command(command:, stdin:))) }
 
-    Command(command:, stdin: Some(stdin)) ->
-      case text.evaluate(command, scope, placeholder: search) {
-        Error(report) -> Error(report)
-        Ok(None) -> Ok(Command(command:, stdin: Some(stdin)))
+  use command_string <- reader.try(
+    text.evaluate(command, scope, placeholder: search)
+    |> reader.return,
+  )
 
-        Ok(Some(command_string)) -> {
-          case evaluate(stdin, scope, search:, handlers:) {
-            Error(report) -> Error(report)
+  case command_string {
+    None -> passthrough(None)
 
-            Ok(Literal(value)) -> {
-              // TODO: Alltid json?
-              let stdin_string = value.to_json(value) |> json.to_string
-              let arguments = string_extra.words(command_string)
+    Some(command) -> {
+      case stdin {
+        None -> run_command(command:, stdin: None)
 
-              Ok({
-                use <- Loading
-                use string <- result.try({
-                  handlers.command(arguments, Some(stdin_string))
-                })
+        Some(stdin) -> {
+          use stdin <- reader.try(evaluate(stdin, search))
 
-                dynamic.string(string)
-                |> decoder.run(value.decoder())
-                |> result.map(Literal)
-              })
-            }
-
-            Ok(source) -> Ok(Command(command:, stdin: Some(source)))
+          case stdin {
+            Literal(value) -> run_command(command:, stdin: Some(value))
+            source -> passthrough(Some(source))
           }
         }
-      }
-
-    Fetch(method:, uri:, headers:, timeout:, body: None) -> {
-      let placeholder = option.map(search, uri.percent_encode)
-
-      case text.evaluate(uri, scope, placeholder:) {
-        Error(report) -> Error(report)
-        Ok(None) -> Ok(Fetch(method, uri, headers, timeout:, body: None))
-
-        Ok(Some(string)) -> {
-          use request <- result.map(build_request(method, string, headers))
-
-          use <- Loading
-          send_request(request, timeout, value.decoder(), handlers.http)
-          |> result.map(Literal)
-        }
-      }
-    }
-
-    Fetch(method:, uri:, headers:, timeout:, body: Some(body)) -> {
-      let placeholder = option.map(search, uri.percent_encode)
-
-      case text.evaluate(uri, scope, placeholder:) {
-        Error(report) -> Error(report)
-        Ok(None) ->
-          Ok(Fetch(method:, uri:, headers:, timeout:, body: Some(body)))
-
-        Ok(Some(string)) ->
-          case evaluate(body, scope, search:, handlers:) {
-            Error(report) -> Error(report)
-
-            Ok(Literal(value)) -> {
-              use request <- result.map(
-                build_request(method, string, headers)
-                |> result.map(set_request_body(_, value)),
-              )
-
-              use <- Loading
-              send_request(request, timeout, value.decoder(), handlers.http)
-              |> result.map(Literal)
-            }
-
-            Ok(source) ->
-              Ok(Fetch(method:, uri:, headers:, timeout:, body: Some(source)))
-          }
       }
     }
   }
+}
+
+fn run_command(
+  command command: String,
+  stdin stdin: Option(Value),
+) -> Reader(Result(Source, Report(Error)), evaluate.Context) {
+  use task_commands <- reader.bind(evaluate.get_task_commands())
+  use handlers <- reader.bind(evaluate.get_handlers())
+  use <- return(compose(Ok, reader.return))
+  use <- Loading
+
+  use output <- result.try({
+    // TODO: Stdin blir alltid tolket som JSON
+    let arguments = string_extra.words(command)
+    let stdin = option.map(stdin, compose(value.to_json, json.to_string))
+    handlers.command(arguments, stdin, task_commands)
+    |> result.map(dynamic.string)
+  })
+
+  decoder.run(output, value.decoder())
+  |> result.map(Literal)
+}
+
+fn evaluate_fetch(
+  method method: http.Method,
+  uri uri: Text,
+  headers headers: List(#(String, String)),
+  timeout timeout: Int,
+  body body: Option(Source),
+  search search: Option(String),
+) -> Reader(Result(Source, Report(Error)), evaluate.Context) {
+  use scope <- reader.bind(evaluate.get_scope())
+  let placeholder = option.map(search, uri.percent_encode)
+
+  use uri_string <- reader.try(
+    text.evaluate(uri, scope, placeholder:)
+    |> reader.return,
+  )
+
+  let passthrough = fn(body) {
+    reader.return(Ok(Fetch(method:, uri:, headers:, timeout:, body:)))
+  }
+
+  case uri_string {
+    None -> passthrough(body)
+
+    Some(uri) -> {
+      let with_body = run_fetch(method:, uri:, headers:, timeout:, body: _)
+
+      case body {
+        None -> with_body(None)
+
+        Some(body) -> {
+          use body <- reader.try(evaluate(body, search))
+
+          case body {
+            Literal(value) -> with_body(Some(value))
+            source -> passthrough(Some(source))
+          }
+        }
+      }
+    }
+  }
+}
+
+fn run_fetch(
+  method method: http.Method,
+  uri uri: String,
+  headers headers: List(#(String, String)),
+  timeout timeout: Int,
+  body body: Option(Value),
+) -> Reader(Result(Source, Report(Error)), evaluate.Context) {
+  use handlers <- reader.bind(evaluate.get_handlers())
+  use <- return(reader.return)
+  use request <- result.map(build_request(method, uri, headers))
+  use <- Loading
+
+  let request =
+    option.map(body, set_request_body(request, _))
+    |> option.unwrap(request)
+
+  send_request(request, timeout, value.decoder(), handlers.http)
+  |> result.map(Literal)
 }
 
 fn build_request(

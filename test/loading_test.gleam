@@ -7,8 +7,10 @@ import gleam/option.{Some}
 import gleeunit/should
 import helpers
 import helpers/task_builder
+import sb/extra/reader
 import sb/extra/reset
 import sb/extra_server/yaml
+import sb/forms/evaluate
 import sb/forms/field
 import sb/forms/handlers
 import sb/forms/kind
@@ -58,10 +60,12 @@ pub fn loading_propagation_test() {
       |> Ok
     })
 
+  let task_commands = dict.new()
   let scope = scope.error()
   let search = dict.new()
+  let context = evaluate.Context(scope:, search:, task_commands:, handlers:)
 
-  let #(task, _scope) = task.step(task, scope, search:, handlers:)
+  let #(task, _scope) = reader.run(context:, reader: task.step(task))
 
   let loading = {
     use id, field <- dict.map_values(task.fields)
@@ -77,16 +81,22 @@ pub fn loading_propagation_test() {
   dict.get(loading, "select3") |> should.equal(Ok(False))
   dict.get(loading, "data") |> should.equal(Ok(False))
 
-  let #(task, scope) = task.step(task, scope, search:, handlers:)
-  let #(task, scope) = task.step(task, scope, search:, handlers:)
+  let #(task, scope) = reader.run(context:, reader: task.step(task))
+
+  let #(task, scope) =
+    task.step(task)
+    |> evaluate.with_scope(scope)
+    |> reader.run(context:)
 
   let task =
     Some(value.List([value.String("a")]))
     |> task.update(task, "select1", _)
     |> should.be_ok
 
-  let #(task, scope) = task.step(task, scope, search:, handlers:)
-  let #(task, _scope) = task.step(task, scope, search:, handlers:)
+  let #(task, scope) =
+    task.step(task) |> evaluate.with_scope(scope) |> reader.run(context:)
+  let #(task, _scope) =
+    task.step(task) |> evaluate.with_scope(scope) |> reader.run(context:)
 
   Some(value.List([value.String("a")]))
   |> task.update(task, "select2", _)

@@ -1,4 +1,5 @@
 import gleam/bool
+import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/float
@@ -12,6 +13,7 @@ import gleam/string
 import sb/extra/function.{compose, identity, return}
 import sb/extra/report.{type Report}
 import sb/extra/state
+import sb/forms/command.{type Command}
 import sb/forms/decoder
 import sb/forms/error.{type Error}
 import sb/forms/handlers.{type Handlers}
@@ -79,6 +81,7 @@ pub type Filter {
 pub fn evaluate(
   value: Value,
   filter: Filter,
+  task_commands task_commands: Dict(String, Command),
   handlers handlers: Handlers,
 ) -> Result(Value, Report(Error)) {
   use <- return(report.error_context(_, error.BadFilter))
@@ -164,7 +167,10 @@ pub fn evaluate(
 
     Jq(expression) -> {
       let json = json.to_string(value.to_json(value))
-      use string <- result.try(handlers.command(["jq", expression], Some(json)))
+
+      use string <- result.try({
+        handlers.command(["jq", expression], Some(json), task_commands)
+      })
 
       dynamic.string(string)
       |> decoder.run(value.decoder())

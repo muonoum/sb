@@ -1,11 +1,15 @@
+import gleam/dict
 import gleam/option.{None, Some}
 import gleeunit/should
 import helpers
 import helpers/task_builder
+import sb/extra/reader
 import sb/extra/report
 import sb/extra_server/yaml
 import sb/forms/error
+import sb/forms/evaluate
 import sb/forms/handlers
+import sb/forms/scope
 import sb/forms/task
 import sb/forms/value
 
@@ -24,6 +28,15 @@ pub fn checkbox_list_test() {
     })
 
   let handlers = handlers.empty()
+  let task_commands = dict.new()
+
+  let context =
+    evaluate.Context(
+      scope: scope.error(),
+      search: dict.new(),
+      task_commands:,
+      handlers:,
+    )
 
   let task =
     task_builder.new(input, yaml.decode_string)
@@ -35,11 +48,19 @@ pub fn checkbox_list_test() {
   Some(value.String("ichi")) |> task.update(task, "field", _) |> should.be_error
 
   None |> task.update(task, "field", _) |> should.be_ok
-  helpers.error_field_value(task, "field", handlers:)
+
+  helpers.field_value(task, "field")
+  |> reader.run(context:)
+  |> should.be_some
+  |> should.be_error
   |> should.equal(report.new(error.Required))
 
   Some(value.List([])) |> task.update(task, "field", _) |> should.be_ok
-  helpers.error_field_value(task, "field", handlers:)
+
+  helpers.field_value(task, "field")
+  |> reader.run(context:)
+  |> should.be_some
+  |> should.be_error
   |> should.equal(report.new(error.Required))
 
   let task =
@@ -47,7 +68,10 @@ pub fn checkbox_list_test() {
     |> task.update(task, "field", _)
     |> should.be_ok
 
-  helpers.ok_field_value(task, "field", handlers:)
+  helpers.field_value(task, "field")
+  |> reader.run(context:)
+  |> should.be_some
+  |> should.be_ok
   |> should.equal(value.List([value.String("ichi")]))
 
   let task =
@@ -55,7 +79,10 @@ pub fn checkbox_list_test() {
     |> task.update(task, "field", _)
     |> should.be_ok
 
-  helpers.ok_field_value(task, "field", handlers:)
+  helpers.field_value(task, "field")
+  |> reader.run(context:)
+  |> should.be_some
+  |> should.be_ok
   |> should.equal(value.List([value.String("ichi"), value.String("san")]))
 
   task
@@ -76,6 +103,15 @@ pub fn checkbox_pairs_test() {
     })
 
   let handlers = handlers.empty()
+  let task_commands = dict.new()
+
+  let context =
+    evaluate.Context(
+      scope: scope.error(),
+      search: dict.new(),
+      task_commands:,
+      handlers:,
+    )
 
   let task =
     task_builder.new(input, yaml.decode_string)
@@ -91,11 +127,19 @@ pub fn checkbox_pairs_test() {
   |> should.be_error
 
   None |> task.update(task, "field", _) |> should.be_ok
-  helpers.error_field_value(task, "field", handlers:)
+
+  helpers.field_value(task, "field")
+  |> reader.run(context:)
+  |> should.be_some
+  |> should.be_error
   |> should.equal(report.new(error.Required))
 
   Some(value.List([])) |> task.update(task, "field", _) |> should.be_ok
-  helpers.error_field_value(task, "field", handlers:)
+
+  helpers.field_value(task, "field")
+  |> reader.run(context:)
+  |> should.be_some
+  |> should.be_error
   |> should.equal(report.new(error.Required))
 
   let task =
@@ -103,7 +147,10 @@ pub fn checkbox_pairs_test() {
     |> task.update(task, "field", _)
     |> should.be_ok
 
-  helpers.ok_field_value(task, "field", handlers:)
+  helpers.field_value(task, "field")
+  |> reader.run(context:)
+  |> should.be_some
+  |> should.be_ok
   |> should.equal(value.List([value.String("en")]))
 
   let task =
@@ -111,7 +158,10 @@ pub fn checkbox_pairs_test() {
     |> task.update(task, "field", _)
     |> should.be_ok
 
-  helpers.ok_field_value(task, "field", handlers:)
+  helpers.field_value(task, "field")
+  |> reader.run(context:)
+  |> should.be_some
+  |> should.be_ok
   |> should.equal(value.List([value.String("en"), value.String("tre")]))
 
   task
@@ -132,6 +182,15 @@ pub fn checkbox_object_test() {
     })
 
   let handlers = handlers.empty()
+  let task_commands = dict.new()
+
+  let context =
+    evaluate.Context(
+      scope: scope.error(),
+      search: dict.new(),
+      task_commands:,
+      handlers:,
+    )
 
   let task =
     task_builder.new(input, yaml.decode_string)
@@ -146,11 +205,19 @@ pub fn checkbox_object_test() {
   |> should.be_error
 
   None |> task.update(task, "field", _) |> should.be_ok
-  helpers.error_field_value(task, "field", handlers:)
+
+  helpers.field_value(task, "field")
+  |> reader.run(context:)
+  |> should.be_some
+  |> should.be_error
   |> should.equal(report.new(error.Required))
 
   Some(value.List([])) |> task.update(task, "field", _) |> should.be_ok
-  helpers.error_field_value(task, "field", handlers:)
+
+  helpers.field_value(task, "field")
+  |> reader.run(context:)
+  |> should.be_some
+  |> should.be_error
   |> should.equal(report.new(error.Required))
 
   let task =
@@ -158,7 +225,10 @@ pub fn checkbox_object_test() {
     |> task.update(task, "field", _)
     |> should.be_ok
 
-  helpers.ok_field_value(task, "field", handlers:)
+  helpers.field_value(task, "field")
+  |> reader.run(context:)
+  |> should.be_some
+  |> should.be_ok
   |> should.equal(value.List([value.String("en")]))
 
   let task =
@@ -166,7 +236,10 @@ pub fn checkbox_object_test() {
     |> task.update(task, "field", _)
     |> should.be_ok
 
-  helpers.ok_field_value(task, "field", handlers:)
+  helpers.field_value(task, "field")
+  |> reader.run(context:)
+  |> should.be_some
+  |> should.be_ok
   |> should.equal(value.List([value.String("en"), value.String("tre")]))
 
   task
@@ -249,6 +322,15 @@ pub fn defaults_test() {
     })
 
   let handlers = handlers.empty()
+  let task_commands = dict.new()
+
+  let context =
+    evaluate.Context(
+      scope: scope.error(),
+      search: dict.new(),
+      task_commands:,
+      handlers:,
+    )
 
   let task =
     task_builder.new(input, yaml.decode_string)
@@ -257,13 +339,22 @@ pub fn defaults_test() {
 
   let assert [_, _] = helpers.field_errors(task)
 
-  helpers.ok_field_value(task, "ok1", handlers:)
+  helpers.field_value(task, "ok1")
+  |> reader.run(context:)
+  |> should.be_some
+  |> should.be_ok
   |> should.equal(value.List([value.Int(10)]))
 
-  helpers.ok_field_value(task, "ok2", handlers:)
+  helpers.field_value(task, "ok2")
+  |> reader.run(context:)
+  |> should.be_some
+  |> should.be_ok
   |> should.equal(value.Int(10))
 
-  helpers.ok_field_value(task, "ok3", handlers:)
+  helpers.field_value(task, "ok3")
+  |> reader.run(context:)
+  |> should.be_some
+  |> should.be_ok
   |> should.equal(value.List([value.Int(10)]))
 
   let task =
@@ -271,7 +362,10 @@ pub fn defaults_test() {
     |> task.update(task, "ok1", _)
     |> should.be_ok
 
-  helpers.ok_field_value(task, "ok1", handlers:)
+  helpers.field_value(task, "ok1")
+  |> reader.run(context:)
+  |> should.be_some
+  |> should.be_ok
   |> should.equal(value.List([value.Int(10)]))
 
   let task =
@@ -279,7 +373,10 @@ pub fn defaults_test() {
     |> task.update(task, "ok2", _)
     |> should.be_ok
 
-  helpers.ok_field_value(task, "ok2", handlers:)
+  helpers.field_value(task, "ok2")
+  |> reader.run(context:)
+  |> should.be_some
+  |> should.be_ok
   |> should.equal(value.Int(10))
 
   task

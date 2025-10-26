@@ -8,6 +8,7 @@ import gleam/result
 import gleam/set.{type Set}
 import sb/extra/function.{compose, return}
 import sb/extra/list as list_extra
+import sb/extra/reader.{type Reader}
 import sb/extra/report.{type Report}
 import sb/extra/reset
 import sb/extra/state
@@ -15,9 +16,8 @@ import sb/forms/choice.{type Choice}
 import sb/forms/custom
 import sb/forms/decoder
 import sb/forms/error.{type Error}
-import sb/forms/handlers.{type Handlers}
+import sb/forms/evaluate
 import sb/forms/props
-import sb/forms/scope.{type Scope}
 import sb/forms/source.{type Source}
 import sb/forms/value.{type Value}
 
@@ -85,23 +85,25 @@ pub fn reset(options: Options, refs: Set(String)) -> Options {
 
 pub fn evaluate(
   options: Options,
-  scope: Scope,
-  search search: Option(String),
-  handlers handlers: Handlers,
-) -> Options {
+  search: Option(String),
+) -> Reader(Options, evaluate.Context) {
   let evaluate = fn(source) {
-    use result <- reset.map(source)
-    use source <- result.try(result)
-    source.evaluate(source, scope, search:, handlers:)
+    use source <- evaluate.reset(source)
+
+    case source {
+      Error(report) -> reader.return(Error(report))
+      Ok(source) -> source.evaluate(source, search)
+    }
   }
 
   case options {
-    SingleSource(source) -> SingleSource(evaluate(source))
+    SingleSource(source) -> reader.map(evaluate(source), SingleSource)
 
     SourceGroups(groups) -> {
-      use <- return(SourceGroups)
+      use <- return(compose(reader.sequence, reader.map(_, SourceGroups)))
       use Group(label:, source:) <- list.map(groups)
-      Group(label:, source: evaluate(source))
+      use source <- reader.bind(evaluate(source))
+      reader.return(Group(label:, source:))
     }
   }
 }

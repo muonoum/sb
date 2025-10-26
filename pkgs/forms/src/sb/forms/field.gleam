@@ -6,6 +6,7 @@ import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/set.{type Set}
 import sb/extra/function.{return}
+import sb/extra/reader.{type Reader}
 import sb/extra/report.{type Report}
 import sb/extra/reset.{type Reset}
 import sb/extra/state
@@ -13,11 +14,10 @@ import sb/forms/condition.{type Condition}
 import sb/forms/custom
 import sb/forms/decoder
 import sb/forms/error.{type Error}
+import sb/forms/evaluate
 import sb/forms/filter.{type Filter}
-import sb/forms/handlers.{type Handlers}
 import sb/forms/kind.{type Kind}
 import sb/forms/props
-import sb/forms/scope.{type Scope}
 import sb/forms/source.{type Source}
 import sb/forms/text
 import sb/forms/value.{type Value}
@@ -56,13 +56,15 @@ pub fn reset(field: Field, refs: Set(String)) -> Field {
 
 pub fn evaluate(
   field: Field,
-  scope: Scope,
-  search search: Option(String),
-  handlers handlers: Handlers,
-) -> Field {
+  search: Option(String),
+) -> Reader(Field, evaluate.Context) {
+  use kind <- reader.bind(kind.evaluate(field.kind, search))
+  use scope <- reader.bind(evaluate.get_scope())
+  use <- return(reader.return)
+
   Field(
     ..field,
-    kind: kind.evaluate(field.kind, scope, search:, handlers:),
+    kind:,
     disabled: reset.map(field.disabled, condition.evaluate(_, scope)),
     hidden: reset.map(field.hidden, condition.evaluate(_, scope)),
     ignored: reset.map(field.ignored, condition.evaluate(_, scope)),
@@ -78,10 +80,15 @@ pub fn update(
   Ok(Field(..field, kind:))
 }
 
+// TODO: Kjører i evaluate-context pga. filterne. Se på å flytte dette
+// til evaluate slik at vi kan droppe reader her.
 pub fn value(
   field: Field,
-  handlers handlers: Handlers,
-) -> Option(Result(Value, Report(Error))) {
+) -> Reader(Option(Result(Value, Report(Error))), evaluate.Context) {
+  use task_commands <- reader.bind(evaluate.get_task_commands())
+  use handlers <- reader.bind(evaluate.get_handlers())
+  use <- return(reader.return)
+
   let optional =
     reset.unwrap(field.optional)
     |> condition.is_true
@@ -91,11 +98,11 @@ pub fn value(
     None -> Some(report.error(error.Required))
     Some(Error(report)) -> Some(Error(report))
 
-    Some(Ok(value)) ->
-      Some({
-        use value, filter <- list.try_fold(field.filters, value)
-        filter.evaluate(value, filter, handlers:)
-      })
+    Some(Ok(value)) -> {
+      use <- return(Some)
+      use value, filter <- list.try_fold(field.filters, value)
+      filter.evaluate(value, filter, task_commands:, handlers:)
+    }
   }
 }
 

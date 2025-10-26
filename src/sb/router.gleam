@@ -11,7 +11,9 @@ import mist
 import sb/api
 import sb/component
 import sb/extra/function.{identity, nil, return}
+import sb/extra/reader
 import sb/extra_server
+import sb/forms/evaluate
 import sb/forms/handlers.{type Handlers}
 import sb/forms/task
 import sb/frontend
@@ -114,7 +116,16 @@ fn task_component(
         use dispatch <- effect.from
         use <- return(nil)
         use <- process.spawn_unlinked
-        let #(task, scope) = task.step(task, scope, search:, handlers:)
+
+        let context =
+          evaluate.Context(
+            scope:,
+            search:,
+            handlers:,
+            task_commands: task.commands,
+          )
+
+        let #(task, scope) = reader.run(context:, reader: task.step(task))
         dispatch(message(task, scope))
       },
     ),

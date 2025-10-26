@@ -1,11 +1,14 @@
+import gleam/dict
 import gleam/option.{Some}
 import gleeunit/should
 import helpers
 import helpers/task_builder
+import sb/extra/reader
 import sb/extra/report
 import sb/extra_server/yaml
 import sb/forms/condition
 import sb/forms/error
+import sb/forms/evaluate
 import sb/forms/handlers
 import sb/forms/scope
 import sb/forms/task
@@ -50,6 +53,7 @@ pub fn optional_test() {
     })
 
   let handlers = handlers.empty()
+  let task_commands = dict.new()
 
   let task =
     task_builder.new(source, yaml.decode_string)
@@ -58,16 +62,30 @@ pub fn optional_test() {
 
   helpers.field_errors(task) |> should.equal([])
 
-  helpers.field_value(task, "optional", handlers:) |> should.be_none
+  let context =
+    evaluate.Context(
+      scope: scope.error(),
+      search: dict.new(),
+      task_commands:,
+      handlers:,
+    )
 
-  helpers.error_field_value(task, "required", handlers:)
+  helpers.field_value(task, "optional")
+  |> reader.run(context:)
+  |> should.be_none
+
+  helpers.field_value(task, "required")
+  |> reader.run(context:)
+  |> should.be_some
+  |> should.be_error
   |> should.equal(report.new(error.Required))
 
   let task =
     task.update(task, "required", Some(value.String("string")))
     |> should.be_ok
 
-  helpers.field_value(task, "required", handlers:)
+  helpers.field_value(task, "required")
+  |> reader.run(context:)
   |> should.be_some
   |> should.be_ok
 

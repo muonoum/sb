@@ -28,12 +28,6 @@ pub fn map(reset: Reset(v), mapper: fn(v) -> v) -> Reset(v) {
   Reset(..reset, value: mapper(reset.value))
 }
 
-pub fn map2(reset: Reset(a), mapper: fn(a) -> b) -> Reset(b) {
-  Reset(..reset, value: mapper(reset.value), initial: fn() {
-    mapper(reset.initial())
-  })
-}
-
 pub fn unwrap(reset: Reset(v)) -> v {
   reset.value
 }

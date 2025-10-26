@@ -7,6 +7,7 @@ import gleam/result
 import gleam/set.{type Set}
 import sb/extra/function.{identity, return}
 import sb/extra/list as list_extra
+import sb/extra/reader.{type Reader}
 import sb/extra/report.{type Report}
 import sb/extra/reset
 import sb/extra/state
@@ -14,10 +15,9 @@ import sb/forms/choice
 import sb/forms/custom
 import sb/forms/decoder
 import sb/forms/error.{type Error}
-import sb/forms/handlers.{type Handlers}
+import sb/forms/evaluate
 import sb/forms/options.{type Options}
 import sb/forms/props
-import sb/forms/scope.{type Scope}
 import sb/forms/source.{type Source}
 import sb/forms/value.{type Value}
 import sb/forms/zero
@@ -146,35 +146,40 @@ fn select_multiple(selected: List(Value), options: Options) -> List(Value) {
 
 pub fn evaluate(
   kind: Kind,
-  scope: Scope,
-  search search: Option(String),
-  handlers handlers: Handlers,
-) -> Kind {
+  search: Option(String),
+) -> Reader(Kind, evaluate.Context) {
   case kind {
-    Text(..) | Textarea(..) -> kind
+    Data(source: reset) -> {
+      use <- return(reader.map(_, Data(source: _)))
+      use result <- evaluate.reset(reset)
 
-    Data(source:) ->
-      Data(source: {
-        use source <- reset.map(source)
-        use source <- result.try(source)
-        source.evaluate(source, scope, search:, handlers:)
-      })
+      case result {
+        Error(report) -> reader.return(Error(report))
+        Ok(source) -> source.evaluate(source, search)
+      }
+    }
 
-    Radio(selected:, options:, layout:) ->
-      options.evaluate(options, scope, search:, handlers:)
-      |> Radio(selected:, options: _, layout:)
+    Text(..) | Textarea(..) -> reader.return(kind)
 
-    Select(selected:, options:, placeholder:) ->
-      options.evaluate(options, scope, search:, handlers:)
-      |> Select(selected:, options: _, placeholder:)
+    Radio(selected:, options:, layout:) -> {
+      use options <- reader.bind(options.evaluate(options, search))
+      reader.return(Radio(selected:, options:, layout:))
+    }
 
-    Checkbox(selected:, layout:, options:) ->
-      options.evaluate(options, scope, search:, handlers:)
-      |> Checkbox(selected:, options: _, layout:)
+    Select(selected:, options:, placeholder:) -> {
+      use options <- reader.bind(options.evaluate(options, search))
+      reader.return(Select(selected:, options:, placeholder:))
+    }
 
-    MultiSelect(selected:, placeholder:, options:) ->
-      options.evaluate(options, scope, search:, handlers:)
-      |> MultiSelect(selected:, options: _, placeholder:)
+    Checkbox(selected:, layout:, options:) -> {
+      use options <- reader.bind(options.evaluate(options, search))
+      reader.return(Checkbox(selected:, options:, layout:))
+    }
+
+    MultiSelect(selected:, placeholder:, options:) -> {
+      use options <- reader.bind(options.evaluate(options, search))
+      reader.return(MultiSelect(selected:, options:, placeholder:))
+    }
   }
 }
 

@@ -6,8 +6,10 @@ import gleam/string
 import gleeunit/should
 import helpers
 import helpers/task_builder
+import sb/extra/reader
 import sb/extra_server/yaml
 import sb/forms/debug
+import sb/forms/evaluate
 import sb/forms/handlers
 import sb/forms/scope
 import sb/forms/task
@@ -125,10 +127,12 @@ pub fn radio_custom_source_test() {
       http: helpers.http_handler,
     )
 
+  let task_commands = dict.new()
   let scope = scope.error()
   let search = dict.new()
 
-  let #(task, _scope) = task.evaluate(task, scope, search:, handlers:)
+  let context = evaluate.Context(scope:, search:, task_commands:, handlers:)
+  let #(task, _scope) = reader.run(context:, reader: task.evaluate(task))
 
   helpers.field_sources(task, "field1") |> result.all |> should.be_ok
   helpers.field_sources(task, "field2") |> result.all |> should.be_ok
