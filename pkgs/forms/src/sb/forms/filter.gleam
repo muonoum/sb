@@ -1,5 +1,4 @@
 import gleam/bool
-import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/float
@@ -11,12 +10,12 @@ import gleam/regexp.{type Regexp}
 import gleam/result
 import gleam/string
 import sb/extra/function.{compose, identity, return}
+import sb/extra/reader.{type Reader}
 import sb/extra/report.{type Report}
 import sb/extra/state
-import sb/forms/command.{type Command}
 import sb/forms/decoder
 import sb/forms/error.{type Error}
-import sb/forms/handlers.{type Handlers}
+import sb/forms/evaluate
 import sb/forms/props
 import sb/forms/value.{type Value}
 import sb/forms/zero
@@ -81,9 +80,10 @@ pub type Filter {
 pub fn evaluate(
   value: Value,
   filter: Filter,
-  task_commands task_commands: Dict(String, Command),
-  handlers handlers: Handlers,
-) -> Result(Value, Report(Error)) {
+) -> Reader(Result(Value, Report(Error)), evaluate.Context) {
+  use handlers <- reader.bind(evaluate.get_handlers())
+  use task_commands <- reader.bind(evaluate.get_task_commands())
+  use <- return(reader.return)
   use <- return(report.error_context(_, error.BadFilter))
 
   case filter {

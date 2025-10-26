@@ -1,6 +1,20 @@
 kind: tasks/v1
 category: [Filters]
 ---
+name: Chain
+
+fields:
+  - id: field
+    kind: data
+    source.literal: 10
+    filters:
+      - {kind: succeed, value: 1}
+      - {kind: fail, error-message: fail}
+      - {kind: succeed, value: 2}
+      - {kind: succeed, value: 3}
+      - {kind: succeed, value: 4}
+
+---
 name: Dots
 
 fields:

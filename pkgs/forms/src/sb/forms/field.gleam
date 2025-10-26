@@ -82,23 +82,19 @@ pub fn update(
 pub fn value(
   field: Field,
 ) -> Reader(Option(Result(Value, Report(Error))), evaluate.Context) {
-  use task_commands <- reader.bind(evaluate.get_task_commands())
-  use handlers <- reader.bind(evaluate.get_handlers())
-  use <- return(reader.return)
-
   let optional =
     reset.unwrap(field.optional)
     |> condition.is_true
 
   case kind.value(field.kind) {
-    None if optional -> None
-    None -> Some(report.error(error.Required))
-    Some(Error(report)) -> Some(Error(report))
+    None if optional -> reader.return(None)
+    None -> reader.return(Some(report.error(error.Required)))
+    Some(Error(report)) -> reader.return(Some(Error(report)))
 
     Some(Ok(value)) -> {
-      use <- return(Some)
-      use value, filter <- list.try_fold(field.filters, value)
-      filter.evaluate(value, filter, task_commands:, handlers:)
+      use <- return(reader.map(_, Some))
+      use value, filter <- list.fold(field.filters, reader.return(Ok(value)))
+      reader.try(value, filter.evaluate(_, filter))
     }
   }
 }
