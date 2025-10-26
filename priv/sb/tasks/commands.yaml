@@ -1,9 +1,5 @@
 kind: tasks/v1
 category: [Commands]
-commands:
-  - id: echo
-    command: "/usr/bin/env echo Hei, verden!"
-    proxy: tcp://localhost:1234
 ---
 name: Commands
 

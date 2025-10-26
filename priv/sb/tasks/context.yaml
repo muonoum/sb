@@ -1,0 +1,27 @@
+kind: tasks/v1
+category: [Context]
+commands:
+  - id: echo
+    command: "/usr/bin/env echo Hei,"
+    proxy: tcp://localhost:1234
+filters:
+  - id: weight
+    kind: regex-match
+    pattern: ^(1?[0-9]{1,2}|2[0-4][0-9]|25[0-6])$
+    error-message: Nope!
+---
+name: Context
+
+fields:
+  - id: command
+    kind: data
+    source.command: echo context!
+    filters:
+      - kind: trim-space
+
+  - id: filter
+    kind: text
+    filters:
+      - kind: weight
+
+

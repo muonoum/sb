@@ -36,6 +36,8 @@ pub type Context {
     approvers: Access,
     commands: Dict(String, Command),
     filters: custom.Filters,
+    // fields: custom.Fields,
+    // sources: custom.Sources,
   )
 }
 
