@@ -162,7 +162,7 @@ fn evaluate_command(
   search search: Option(String),
 ) -> Reader(Result(Source, Report(Error)), evaluate.Context) {
   use scope <- reader.bind(evaluate.get_scope())
-  let passthrough = Ok(Command(command:, stdin:))
+  let passthrough = Command(command:, stdin:)
 
   use command <- reader.try(
     text.evaluate(command, scope, placeholder: search)
@@ -170,7 +170,7 @@ fn evaluate_command(
   )
 
   case command, stdin {
-    None, _stdin -> reader.return(passthrough)
+    None, _stdin -> reader.return(Ok(passthrough))
     Some(command), None -> run_command(command:, stdin: None)
 
     Some(command), Some(stdin) -> {
@@ -178,7 +178,7 @@ fn evaluate_command(
 
       case stdin {
         Literal(value) -> run_command(command:, stdin: Some(value))
-        _source -> reader.return(passthrough)
+        _source -> reader.return(Ok(passthrough))
       }
     }
   }
@@ -194,7 +194,7 @@ fn run_command(
   use <- Loading
 
   use output <- result.try({
-    // TODO: Stdin blir alltid tolket som JSON
+    // TODO: Alltid JSON?
     let arguments = string_extra.words(command)
     let stdin = option.map(stdin, compose(value.to_json, json.to_string))
     handlers.command(arguments, stdin, task_commands)
@@ -215,7 +215,7 @@ fn evaluate_fetch(
 ) -> Reader(Result(Source, Report(Error)), evaluate.Context) {
   use scope <- reader.bind(evaluate.get_scope())
   let placeholder = option.map(search, uri.percent_encode)
-  let passthrough = Ok(Fetch(method:, uri:, headers:, timeout:, body:))
+  let passthrough = Fetch(method:, uri:, headers:, timeout:, body:)
 
   use uri <- reader.try(
     text.evaluate(uri, scope, placeholder:)
@@ -223,7 +223,7 @@ fn evaluate_fetch(
   )
 
   case uri, body {
-    None, _body -> reader.return(passthrough)
+    None, _body -> reader.return(Ok(passthrough))
     Some(uri), None -> run_fetch(method:, uri:, headers:, timeout:, body: None)
 
     Some(uri), Some(body) -> {
@@ -232,7 +232,7 @@ fn evaluate_fetch(
       case body {
         Literal(value) ->
           run_fetch(method:, uri:, headers:, timeout:, body: Some(value))
-        _source -> reader.return(passthrough)
+        _source -> reader.return(Ok(passthrough))
       }
     }
   }
@@ -250,11 +250,9 @@ fn run_fetch(
   use request <- result.map(build_request(method, uri, headers))
   use <- Loading
 
-  let request =
-    option.map(body, set_request_body(request, _))
-    |> option.unwrap(request)
-
-  send_request(request, timeout, value.decoder(), handlers.http)
+  option.map(body, set_request_body(request, _))
+  |> option.unwrap(request)
+  |> send_request(timeout, value.decoder(), handlers.http)
   |> result.map(Literal)
 }
 
@@ -271,6 +269,7 @@ fn build_request(
 
   let request =
     request_builder.set_method(request, method)
+    // TODO: Alltid JSON?
     |> request_builder.set_header("accept", "application/json")
     |> request_builder.set_body(None)
 
@@ -282,12 +281,14 @@ fn set_request_body(
   request: RequestBuilder(v),
   value: Value,
 ) -> RequestBuilder(Option(BytesTree)) {
+  // TODO: Alltid JSON?
   request_builder.set_header(request, "content-type", "application/json")
-  |> request_builder.set_body(Some(
+  |> request_builder.set_body(
     value.to_json(value)
     |> json.to_string_tree
-    |> bytes_tree.from_string_tree,
-  ))
+    |> bytes_tree.from_string_tree
+    |> Some,
+  )
 }
 
 fn send_request(
