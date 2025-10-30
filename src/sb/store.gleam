@@ -219,7 +219,7 @@ type Context {
 
 fn load(config: Config) -> Model {
   let context = Context(files: [], reports: [])
-  state.run(load_model(config), context)
+  state.evaluate(load_model(config), context)
 }
 
 fn load_model(config: Config) -> State(Model, Context) {
@@ -321,7 +321,7 @@ fn load_custom(
 ) -> State(custom, Context) {
   use <- return(state.map(_, compose(dict.from_list, custom)))
   use <- return(partition_results)
-  use <- return(state.run(_, context: dups()))
+  use <- return(state.evaluate(_, context: dups()))
   use <- return(state.sequence)
 
   use document <- list.map(documents)
@@ -343,7 +343,7 @@ fn load_tasks(
   filters filters: custom.Filters,
 ) -> State(List(#(String, Task)), Context) {
   use <- return(partition_results)
-  use <- return(state.run(_, context: dups()))
+  use <- return(state.evaluate(_, context: dups()))
   use <- return(state.sequence)
 
   use TaskDocument(document:, context:) <- list.map(documents)
@@ -366,7 +366,7 @@ fn load_notifiers(
 ) -> State(Dict(String, Notifier), Context) {
   use <- return(state.map(_, dict.from_list))
   use <- return(partition_results)
-  use <- return(state.run(_, context: dups()))
+  use <- return(state.evaluate(_, context: dups()))
   use <- return(state.sequence)
 
   use document <- list.map(documents)
@@ -386,7 +386,7 @@ fn load_commands(
 ) -> State(Dict(String, Command), Context) {
   use <- return(state.map(_, dict.from_list))
   use <- return(partition_results)
-  use <- return(state.run(_, context: dups()))
+  use <- return(state.evaluate(_, context: dups()))
   use <- return(state.sequence)
 
   use document <- list.map(documents)

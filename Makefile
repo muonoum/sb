@@ -64,7 +64,7 @@ update: update-pkgs
 
 .PHONY: update-pkgs
 update-pkgs:
-	find pkgs -maxdepth 2 -name gleam.toml -execdir gleam update \;
+	find pkgs -maxdepth 2 -name gleam.toml -print -execdir gleam update \;
 
 .PHONY: clean
 clean: clean-pkgs
@@ -72,7 +72,7 @@ clean: clean-pkgs
 
 .PHONY: clean-pkgs
 clean-pkgs:
-	find pkgs -maxdepth 2 -name gleam.toml -execdir gleam clean \;
+	find pkgs -maxdepth 2 -name gleam.toml -print -execdir gleam clean \;
 
 .PHONY: clean-manifests
 clean-manifests: clean-pkgs-manifests
@@ -80,7 +80,7 @@ clean-manifests: clean-pkgs-manifests
 
 .PHONY: clean-pkgs-manifests
 clean-pkgs-manifests:
-	find pkgs -maxdepth 2 -name manifest.toml -delete
+	find pkgs -maxdepth 2 -name manifest.toml -print -delete
 
 .PHONY: build-frontend
 build-frontend: assets/Inter assets/Iosevka

@@ -17,7 +17,7 @@ pub fn asks(fun: fn(ctx) -> v) -> Reader(v, ctx) {
 
 pub fn local(reader: Reader(v, b), fun: fn(a) -> b) -> Reader(v, a) {
   use ctx <- map(ask)
-  run(reader, fun(ctx))
+  reader.run(fun(ctx))
 }
 
 pub fn return(value: v) -> Reader(v, ctx) {

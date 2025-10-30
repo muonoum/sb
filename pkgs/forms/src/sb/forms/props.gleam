@@ -54,7 +54,7 @@ pub fn decode_dict(
   dict: Dict(String, Dynamic),
   decoder: Try(v),
 ) -> Result(v, Report(Error)) {
-  state.run(context: Context(dict:), state: decoder)
+  state.evaluate(context: Context(dict:), state: decoder)
 }
 
 pub fn load(dynamic: Dynamic, decoder: Try(v)) -> Try(v) {
