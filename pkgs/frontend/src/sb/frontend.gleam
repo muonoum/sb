@@ -1,15 +1,14 @@
 import gleam/string
-import gleam/uri
 import lustre
 import lustre/attribute as attr
 import lustre/element.{type Element}
 import lustre/element/html
-import plinth/browser/window
+import modem
 import sb/frontend/app
 
 pub fn main() {
   let app = app.new()
-  let assert Ok(uri) = uri.parse(window.location()) as "window location"
+  let assert Ok(uri) = modem.initial_uri() as "window location"
 
   case lustre.start(app, "body", uri) {
     Error(error) -> panic as string.inspect(error)

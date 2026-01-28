@@ -6,7 +6,7 @@ import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/set.{type Set}
 import sb/extra/function.{return}
-import sb/extra/reader.{type Reader}
+import sb/extra/reader
 import sb/extra/report.{type Report}
 import sb/extra/reset.{type Reset}
 import sb/extra/state
@@ -54,10 +54,7 @@ pub fn reset(field: Field, refs: Set(String)) -> Field {
   )
 }
 
-pub fn evaluate(
-  field: Field,
-  search: Option(String),
-) -> Reader(Field, evaluate.Context) {
+pub fn evaluate(field: Field, search: Option(String)) -> evaluate.State(Field) {
   use kind <- reader.bind(kind.evaluate(field.kind, search))
 
   let evaluate_condition = evaluate.reset(_, condition.evaluate)
@@ -81,7 +78,7 @@ pub fn update(
 // til evaluate slik at vi kan droppe reader her.
 pub fn value(
   field: Field,
-) -> Reader(Option(Result(Value, Report(Error))), evaluate.Context) {
+) -> evaluate.State(Option(Result(Value, Report(Error)))) {
   let optional =
     reset.unwrap(field.optional)
     |> condition.is_true

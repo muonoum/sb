@@ -4,6 +4,7 @@ import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/event
 import lustre/server_component as server
+import plinth/browser/location
 import plinth/browser/window
 import sb/frontend/components/header
 import sb/frontend/portals
@@ -24,7 +25,7 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
   case message {
     Reset -> #(model, {
       use _dispatch <- effect.from
-      window.reload()
+      location.reload(window.location(window.self()))
     })
   }
 }

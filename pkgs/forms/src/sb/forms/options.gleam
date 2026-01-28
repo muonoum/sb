@@ -8,7 +8,7 @@ import gleam/result
 import gleam/set.{type Set}
 import sb/extra/function.{compose, return}
 import sb/extra/list as list_extra
-import sb/extra/reader.{type Reader}
+import sb/extra/reader
 import sb/extra/report.{type Report}
 import sb/extra/reset
 import sb/extra/state
@@ -86,7 +86,7 @@ pub fn reset(options: Options, refs: Set(String)) -> Options {
 pub fn evaluate(
   options: Options,
   search: Option(String),
-) -> Reader(Options, evaluate.Context) {
+) -> evaluate.State(Options) {
   let evaluate = fn(source) {
     use source <- evaluate.reset(source)
 

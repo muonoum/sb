@@ -326,6 +326,7 @@ fn load_custom(
 
   use document <- list.map(documents)
   use <- return(state.map(_, error_context(document)))
+
   case props.decode(document.data, custom.decoder(builtin)) {
     Error(report) -> state.return(Error(report))
 
@@ -345,7 +346,6 @@ fn load_tasks(
   use <- return(partition_results)
   use <- return(state.evaluate(_, context: dups()))
   use <- return(state.sequence)
-
   use TaskDocument(document:, context:) <- list.map(documents)
   use <- return(state.map(_, error_context(document)))
   let decoder = task.decoder(context:, sources:, fields:, filters:)
@@ -368,9 +368,9 @@ fn load_notifiers(
   use <- return(partition_results)
   use <- return(state.evaluate(_, context: dups()))
   use <- return(state.sequence)
-
   use document <- list.map(documents)
   use <- return(state.map(_, error_context(document)))
+
   case props.decode(document.data, notifier.decoder()) {
     Error(report) -> state.return(Error(report))
 
@@ -388,9 +388,9 @@ fn load_commands(
   use <- return(partition_results)
   use <- return(state.evaluate(_, context: dups()))
   use <- return(state.sequence)
-
   use document <- list.map(documents)
   use <- return(state.map(_, error_context(document)))
+
   case props.decode(document.data, command.decoder()) {
     Error(report) -> state.return(Error(report))
 

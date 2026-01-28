@@ -7,7 +7,7 @@ import gleam/result
 import gleam/set.{type Set}
 import sb/extra/function.{identity, return}
 import sb/extra/list as list_extra
-import sb/extra/reader.{type Reader}
+import sb/extra/reader
 import sb/extra/report.{type Report}
 import sb/extra/reset
 import sb/extra/state
@@ -144,10 +144,7 @@ fn select_multiple(selected: List(Value), options: Options) -> List(Value) {
   }
 }
 
-pub fn evaluate(
-  kind: Kind,
-  search: Option(String),
-) -> Reader(Kind, evaluate.Context) {
+pub fn evaluate(kind: Kind, search: Option(String)) -> evaluate.State(Kind) {
   case kind {
     Data(source: reset) -> {
       use <- return(reader.map(_, Data(source: _)))

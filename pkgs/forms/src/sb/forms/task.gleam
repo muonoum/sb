@@ -8,7 +8,7 @@ import gleam/result
 import gleam/set.{type Set}
 import gleam/string
 import sb/extra/function.{compose, identity, return}
-import sb/extra/reader.{type Reader}
+import sb/extra/reader
 import sb/extra/report.{type Report}
 import sb/extra/state
 import sb/forms/access.{type Access}
@@ -57,7 +57,7 @@ pub type Task {
   )
 }
 
-pub fn step(task: Task) -> Reader(#(Task, Scope), evaluate.Context) {
+pub fn step(task: Task) -> evaluate.State(#(Task, Scope)) {
   use scope1 <- reader.bind(evaluate.get_scope())
   use fields <- reader.bind(evaluate_fields(task.fields))
   use scope2 <- reader.bind(field_values(fields))
@@ -66,7 +66,7 @@ pub fn step(task: Task) -> Reader(#(Task, Scope), evaluate.Context) {
   reader.return(#(Task(..task, fields:), scope2))
 }
 
-pub fn evaluate(task1: Task) -> Reader(#(Task, Scope), evaluate.Context) {
+pub fn evaluate(task1: Task) -> evaluate.State(#(Task, Scope)) {
   use scope1 <- reader.bind(evaluate.get_scope())
   use #(task2, scope2) <- reader.bind(step(task1))
   let changed = scope1 != scope2 || task1 != task2
@@ -76,7 +76,7 @@ pub fn evaluate(task1: Task) -> Reader(#(Task, Scope), evaluate.Context) {
 
 fn evaluate_fields(
   fields: Dict(String, Field),
-) -> Reader(Dict(String, Field), evaluate.Context) {
+) -> evaluate.State(Dict(String, Field)) {
   use <- return(compose(reader.sequence, reader.map(_, dict.from_list)))
   use #(id, field) <- list.map(dict.to_list(fields))
   use search <- reader.bind(evaluate.get_search(id))
@@ -85,7 +85,7 @@ fn evaluate_fields(
 }
 
 // TODO: Fjern behov for reader/context
-fn field_values(fields: Dict(String, Field)) -> Reader(Scope, evaluate.Context) {
+fn field_values(fields: Dict(String, Field)) -> evaluate.State(Scope) {
   use scope, id, field <- dict.fold(fields, reader.return(scope.ok()))
   use value <- reader.bind(field.value(field))
   use scope <- reader.bind(scope)

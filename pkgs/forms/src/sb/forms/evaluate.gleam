@@ -6,6 +6,9 @@ import sb/forms/command.{type Command}
 import sb/forms/handlers.{type Handlers}
 import sb/forms/scope.{type Scope}
 
+pub type State(v) =
+  Reader(v, Context)
+
 pub type Context {
   Context(
     scope: Scope,

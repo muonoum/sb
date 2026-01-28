@@ -14,7 +14,7 @@ import gleam/string
 import gleam/uri
 import sb/extra/dynamic as dynamic_extra
 import sb/extra/function.{compose, return}
-import sb/extra/reader.{type Reader}
+import sb/extra/reader
 import sb/extra/report.{type Report}
 import sb/extra/request_builder.{type RequestBuilder}
 import sb/extra/reset.{type Reset}
@@ -118,7 +118,7 @@ pub fn initial_placeholder(source: Resetable) -> Bool {
 pub fn evaluate(
   source: Source,
   search: Option(String),
-) -> Reader(Result(Source, Report(Error)), evaluate.Context) {
+) -> evaluate.State(Result(Source, Report(Error))) {
   case source {
     Loading(load) -> reader.return(load())
     Literal(value) -> reader.return(Ok(Literal(value)))
@@ -133,7 +133,7 @@ pub fn evaluate(
 
 fn evaluate_reference(
   id: String,
-) -> Reader(Result(Source, Report(Error)), evaluate.Context) {
+) -> evaluate.State(Result(Source, Report(Error))) {
   use scope <- reader.bind(evaluate.get_scope())
   use <- return(reader.return)
 
@@ -145,7 +145,7 @@ fn evaluate_reference(
 
 fn evaluate_template(
   text: Text,
-) -> Reader(Result(Source, Report(Error)), evaluate.Context) {
+) -> evaluate.State(Result(Source, Report(Error))) {
   use scope <- reader.bind(evaluate.get_scope())
   use <- return(reader.return)
 
@@ -160,7 +160,7 @@ fn evaluate_command(
   command command: Text,
   stdin stdin: Option(Source),
   search search: Option(String),
-) -> Reader(Result(Source, Report(Error)), evaluate.Context) {
+) -> evaluate.State(Result(Source, Report(Error))) {
   use scope <- reader.bind(evaluate.get_scope())
   let passthrough = Command(command:, stdin:)
 
@@ -187,7 +187,7 @@ fn evaluate_command(
 fn run_command(
   command command: String,
   stdin stdin: Option(Value),
-) -> Reader(Result(Source, Report(Error)), evaluate.Context) {
+) -> evaluate.State(Result(Source, Report(Error))) {
   use task_commands <- reader.bind(evaluate.get_task_commands())
   use handlers <- reader.bind(evaluate.get_handlers())
   use <- return(compose(Ok, reader.return))
@@ -212,7 +212,7 @@ fn evaluate_fetch(
   timeout timeout: Int,
   body body: Option(Source),
   search search: Option(String),
-) -> Reader(Result(Source, Report(Error)), evaluate.Context) {
+) -> evaluate.State(Result(Source, Report(Error))) {
   use scope <- reader.bind(evaluate.get_scope())
   let placeholder = option.map(search, uri.percent_encode)
   let passthrough = Fetch(method:, uri:, headers:, timeout:, body:)
@@ -244,7 +244,7 @@ fn run_fetch(
   headers headers: List(#(String, String)),
   timeout timeout: Int,
   body body: Option(Value),
-) -> Reader(Result(Source, Report(Error)), evaluate.Context) {
+) -> evaluate.State(Result(Source, Report(Error))) {
   use handlers <- reader.bind(evaluate.get_handlers())
   use <- return(reader.return)
   use request <- result.map(build_request(method, uri, headers))
