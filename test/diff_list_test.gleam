@@ -27,7 +27,7 @@ fn time_list(count: Int) -> List(Int) {
 }
 
 fn time_diff_list(count: Int) -> List(Int) {
-  use <- pocket_watch.simple("diff-list")
+  use <- pocket_watch.simple("diff")
   use <- return(diff_list.to_list)
   use list, i <- list.fold(list.range(0, count), from: diff_list.new())
   diff_list.append(list, diff_list.from_list([i]))
