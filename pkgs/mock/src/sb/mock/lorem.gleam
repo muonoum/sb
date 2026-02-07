@@ -150,13 +150,13 @@ pub const words: List(String) = [
 ]
 
 pub fn get_sentence(min: Int, max: Int) -> String {
-  let sentence =
+  let words =
     int.random(max)
     |> int.clamp(min, max)
     |> get_words
     |> string.capitalise
 
-  string.join([sentence, "."], "")
+  string.join([words, "."], "")
 }
 
 pub fn get_words(count: Int) -> String {
