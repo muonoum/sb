@@ -2,6 +2,7 @@ import gleam/bit_array
 import gleam/bytes_tree.{type BytesTree}
 import gleam/dict
 import gleam/dynamic/decode.{type Decoder}
+import gleam/erlang/process
 import gleam/http
 import gleam/http/request
 import gleam/int
@@ -65,7 +66,10 @@ fn command_result_decoder() -> Decoder(#(Int, String)) {
   decode.success(#(exit_code, output))
 }
 
-pub fn command_handler(store, ca_certs ca_certs: Option(String)) {
+pub fn command_handler(
+  store: process.Subject(store.Message),
+  ca_certs ca_certs: Option(String),
+) -> handlers.Command {
   use command, stdin, task_commands <- identity
 
   wisp.log_info(

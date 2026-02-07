@@ -323,7 +323,6 @@ fn load_custom(
   use <- return(partition_results)
   use <- return(state.evaluate(_, context: dups()))
   use <- return(state.sequence)
-
   use document <- list.map(documents)
   use <- return(state.map(_, error_context(document)))
 
