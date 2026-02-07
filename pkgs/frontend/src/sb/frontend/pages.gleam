@@ -12,12 +12,9 @@ pub opaque type Model {
   Tasks(tasks.Model)
   Task(task.Model)
   Designer(designer.Model)
-
   Jobs(jobs.Model)
   Job(job.Model)
-
   Help(help.Model)
-
   NotFound(Uri)
 }
 
@@ -25,10 +22,8 @@ pub type Message {
   TasksMessage(tasks.Message)
   TaskMessage(task.Message)
   DesignerMessage(designer.Message)
-
   JobsMessage(jobs.Message)
   JobMessage(job.Message)
-
   HelpMessage(help.Message)
 }
 
