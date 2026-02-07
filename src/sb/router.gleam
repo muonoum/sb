@@ -29,6 +29,7 @@ pub fn service(
   serve_static: fn(wisp.Request, fn() -> wisp.Response) -> wisp.Response,
 ) -> wisp.Response {
   use <- wisp.rescue_crashes
+  use csp_nonce <- wisp.content_security_policy_protection()
   use <- serve_static(request)
   use <- wisp.log_request(request)
 
@@ -38,7 +39,10 @@ pub fn service(
     http.Get, [] -> wisp.redirect("/oppgaver")
 
     _method, _segments ->
-      wisp.html_body(wisp.ok(), element.to_document_string(frontend.page()))
+      wisp.html_body(
+        wisp.ok(),
+        element.to_document_string(frontend.page(csp_nonce)),
+      )
   }
 }
 

@@ -16,7 +16,7 @@ pub fn main() {
   }
 }
 
-pub fn page() -> Element(a) {
+pub fn page(csp_nonce: String) -> Element(a) {
   html.html([], [
     html.head([], [
       html.title([], "sb"),
@@ -28,16 +28,24 @@ pub fn page() -> Element(a) {
       html.script(
         [
           attr.type_("module"),
+          attr.nonce(csp_nonce),
           attr.src("/lustre/lustre-server-component.mjs"),
         ],
         "",
       ),
       html.script(
-        [attr.type_("module"), attr.src("/lustre/lustre-portal.mjs")],
+        [
+          attr.type_("module"),
+          attr.nonce(csp_nonce),
+          attr.src("/lustre/lustre-portal.mjs"),
+        ],
         "",
       ),
       html.link([attr.rel("stylesheet"), attr.href("/app.css")]),
-      html.script([attr.type_("module"), attr.src("/app.js")], ""),
+      html.script(
+        [attr.type_("module"), attr.nonce(csp_nonce), attr.src("/app.js")],
+        "",
+      ),
     ]),
     html.body([attr.class("bg-zinc-700 text-zinc-800 overscroll-y-none")], [
       html.div([attr.class("flex justify-center items-center h-screen")], [
