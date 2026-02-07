@@ -1,4 +1,3 @@
-import blah/lorem
 import gleam/erlang/process
 import gleam/http
 import gleam/http/request.{type Request}
@@ -7,6 +6,7 @@ import gleam/int
 import gleam/json
 import gleam/list
 import gleam/result
+import sb/mock/lorem
 import wisp
 
 pub fn service(request: Request(_), segments: List(String)) -> wisp.Response {
@@ -52,5 +52,5 @@ pub fn lorem_sentences(min: Int, max: Int) -> List(String) {
   int.random(max)
   |> int.clamp(min, max)
   |> list.range(1, _)
-  |> list.map(fn(_) { lorem.sentence() })
+  |> list.map(fn(_) { lorem.get_sentence(4, 16) })
 }

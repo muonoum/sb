@@ -27,7 +27,7 @@ pub fn main() {
     reader.return(Nil)
   })
 
-  state.run(context: 1, state: {
+  state.evaluate(context: 1, state: {
     use <- state.do(state_printer("before"))
 
     use <- state.do({

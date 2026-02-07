@@ -1,8 +1,8 @@
 import gleam/list
 import gleeunit/should
-import pocket_watch
 import sb/extra/diff_list
 import sb/extra/function.{return}
+import sb/extra_server
 
 pub fn diff_list_test() {
   diff_list.from_list([])
@@ -21,13 +21,13 @@ pub fn main() {
 }
 
 fn time_list(count: Int) -> List(Int) {
-  use <- pocket_watch.simple("list")
+  use <- extra_server.log_duration("list")
   use list, i <- list.fold(list.range(0, count), from: [])
   list.append(list, [i])
 }
 
 fn time_diff_list(count: Int) -> List(Int) {
-  use <- pocket_watch.simple("diff")
+  use <- extra_server.log_duration("diff")
   use <- return(diff_list.to_list)
   use list, i <- list.fold(list.range(0, count), from: diff_list.new())
   diff_list.append(list, diff_list.from_list([i]))
