@@ -91,4 +91,4 @@ fields:
 
   - id: reference
     kind: data
-    source.reference: select2
+    source.reference: select

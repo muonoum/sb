@@ -120,7 +120,6 @@ pub fn app(
   let handlers = Handlers(load:, step:, schedule:)
 
   lustre.component(init: init(_, handlers), update:, view:, options: [
-    // TODO: Denne trigger to ganger når siden lastes
     component.on_attribute_change("task-id", fn(string) {
       case string.trim(string) {
         "" -> Ok(Receive(report.error(error.BadId(""))))

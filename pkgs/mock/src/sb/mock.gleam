@@ -49,8 +49,7 @@ pub fn delayed_response(
 }
 
 pub fn lorem_sentences(min: Int, max: Int) -> List(String) {
-  int.random(max)
-  |> int.clamp(min, max)
-  |> list.range(1, _)
-  |> list.map(fn(_) { lorem.get_sentence(4, 16) })
+  let count = int.random(max) |> int.clamp(min, max)
+  use list, _ <- int.range(1, count + 1, with: [])
+  [lorem.get_sentence(4, 16), ..list]
 }

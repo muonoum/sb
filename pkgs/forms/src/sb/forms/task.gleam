@@ -57,6 +57,14 @@ pub type Task {
   )
 }
 
+pub fn evaluate(task1: Task) -> evaluate.State(#(Task, Scope)) {
+  use scope1 <- reader.bind(evaluate.get_scope())
+  use #(task2, scope2) <- reader.bind(step(task1))
+  let changed = scope1 != scope2 || task1 != task2
+  use <- bool.guard(!changed, reader.return(#(task1, scope1)))
+  evaluate.with_scope(evaluate(task2), scope2)
+}
+
 pub fn step(task: Task) -> evaluate.State(#(Task, Scope)) {
   use scope1 <- reader.bind(evaluate.get_scope())
   use fields <- reader.bind(evaluate_fields(task.fields))
@@ -64,14 +72,6 @@ pub fn step(task: Task) -> evaluate.State(#(Task, Scope)) {
   let changed = changed_refs(scope1, scope2)
   let fields = reset_changed(fields, changed)
   reader.return(#(Task(..task, fields:), scope2))
-}
-
-pub fn evaluate(task1: Task) -> evaluate.State(#(Task, Scope)) {
-  use scope1 <- reader.bind(evaluate.get_scope())
-  use #(task2, scope2) <- reader.bind(step(task1))
-  let changed = scope1 != scope2 || task1 != task2
-  use <- bool.guard(!changed, reader.return(#(task1, scope1)))
-  evaluate.with_scope(evaluate(task2), scope2)
 }
 
 fn evaluate_fields(

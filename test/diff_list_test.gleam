@@ -1,3 +1,4 @@
+import gleam/int
 import gleam/list
 import gleeunit/should
 import sb/extra/diff_list
@@ -22,13 +23,13 @@ pub fn main() {
 
 fn time_list(count: Int) -> List(Int) {
   use <- extra_server.log_duration("list")
-  use list, i <- list.fold(list.range(0, count), from: [])
+  use list, i <- int.range(from: 0, to: count, with: [])
   list.append(list, [i])
 }
 
 fn time_diff_list(count: Int) -> List(Int) {
   use <- extra_server.log_duration("diff")
   use <- return(diff_list.to_list)
-  use list, i <- list.fold(list.range(0, count), from: diff_list.new())
+  use list, i <- int.range(from: 0, to: count, with: diff_list.new())
   diff_list.append(list, diff_list.from_list([i]))
 }
