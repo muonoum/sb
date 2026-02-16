@@ -4,7 +4,7 @@ import gleam/erlang/application
 import gleam/erlang/process
 import gleam/int
 import gleam/option
-import gleam/otp/factory_supervisor
+import gleam/otp/factory_supervisor as factory
 import gleam/otp/static_supervisor as supervisor
 import gleam/result
 import gleam/uri
@@ -71,26 +71,26 @@ pub fn main() {
   }
 
   let tasks_name = process.new_name("tasks")
-  let task_name = process.new_name("task")
   let errors_name = process.new_name("errors")
+  let task_name = process.new_name("task")
 
   let tasks_spec =
     router.tasks_component(store:, store_interval:)
-    |> factory_supervisor.named(tasks_name)
-    |> factory_supervisor.supervised
-
-  let task_spec =
-    router.task_component(store:, handlers:)
-    |> factory_supervisor.named(task_name)
-    |> factory_supervisor.supervised
+    |> factory.named(tasks_name)
+    |> factory.supervised
 
   let errors_spec =
     router.errors_component(store:, store_interval:)
-    |> factory_supervisor.named(errors_name)
-    |> factory_supervisor.supervised
+    |> factory.named(errors_name)
+    |> factory.supervised
+
+  let task_spec =
+    router.task_component(store:, handlers:)
+    |> factory.named(task_name)
+    |> factory.supervised
 
   let components =
-    router.Components(tasks: tasks_name, task: task_name, errors: errors_name)
+    router.Components(tasks: tasks_name, errors: errors_name, task: task_name)
 
   let server_spec =
     router.service(_, static_handler(priv_directory))
@@ -107,8 +107,8 @@ pub fn main() {
       |> supervisor.add(server_spec)
       |> supervisor.add(store_spec)
       |> supervisor.add(tasks_spec)
-      |> supervisor.add(task_spec)
       |> supervisor.add(errors_spec)
+      |> supervisor.add(task_spec)
     })
 
   process.sleep_forever()

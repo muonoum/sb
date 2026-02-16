@@ -38,8 +38,8 @@ pub type ComponentBuilder(argument, message) =
 pub type Components {
   Components(
     tasks: Component(Nil, tasks_component.Message),
-    task: Component(Nil, task_component.Message),
     errors: Component(Nil, errors_component.Message),
+    task: Component(Nil, task_component.Message),
   )
 }
 
