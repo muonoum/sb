@@ -10,7 +10,7 @@ import mist
 import wisp
 
 pub fn service(
-  component: lustre.Runtime(message),
+  component: process.Subject(lustre.RuntimeMessage(message)),
   request: Request(mist.Connection),
 ) -> Response(mist.ResponseData) {
   let on_init = on_init(_, request, component)
@@ -20,7 +20,7 @@ pub fn service(
 type State(message) {
   State(
     request: Request(mist.Connection),
-    component: lustre.Runtime(message),
+    component: process.Subject(lustre.RuntimeMessage(message)),
     subject: process.Subject(server.ClientMessage(message)),
   )
 }
@@ -28,18 +28,18 @@ type State(message) {
 fn on_init(
   _connection: mist.WebsocketConnection,
   request: Request(mist.Connection),
-  component: lustre.Runtime(message),
+  component: process.Subject(lustre.RuntimeMessage(message)),
 ) -> #(State(message), Option(process.Selector(server.ClientMessage(message)))) {
   wisp.log_info("Join " <> request.path)
   let subject = process.new_subject()
   let selector = process.new_selector() |> process.select(subject)
-  server.register_subject(subject) |> lustre.send(to: component)
+  process.send(component, server.register_subject(subject))
   #(State(request:, component:, subject:), Some(selector))
 }
 
 fn on_close(state: State(message)) -> Nil {
   wisp.log_info("Leave " <> state.request.path)
-  lustre.send(lustre.shutdown(), to: state.component)
+  process.send(state.component, lustre.shutdown())
 }
 
 fn handler(
@@ -60,7 +60,7 @@ fn runtime_message(
   state: State(message),
 ) -> mist.Next(State(message), server.ClientMessage(message)) {
   case json.parse(text, server.runtime_message_decoder()) {
-    Ok(message) -> lustre.send(state.component, message)
+    Ok(message) -> process.send(state.component, message)
 
     Error(error) ->
       log_error([

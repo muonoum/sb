@@ -4,6 +4,7 @@ import gleam/erlang/application
 import gleam/erlang/process
 import gleam/int
 import gleam/option
+import gleam/otp/factory_supervisor
 import gleam/otp/static_supervisor as supervisor
 import gleam/result
 import gleam/uri
@@ -69,10 +70,36 @@ pub fn main() {
     Handlers(http:, command:)
   }
 
+  let tasks_component_name = process.new_name("tasks_component")
+  let task_component_name = process.new_name("task_component")
+  let errors_component_name = process.new_name("errors_component")
+
+  let tasks_component =
+    router.tasks_component(store:, store_interval:)
+    |> factory_supervisor.named(tasks_component_name)
+    |> factory_supervisor.supervised
+
+  let task_component =
+    router.task_component(store:, handlers:)
+    |> factory_supervisor.named(task_component_name)
+    |> factory_supervisor.supervised
+
+  let errors_component =
+    router.errors_component(store:, store_interval:)
+    |> factory_supervisor.named(errors_component_name)
+    |> factory_supervisor.supervised
+
+  let components =
+    router.Components(
+      tasks: tasks_component_name,
+      task: task_component_name,
+      errors: errors_component_name,
+    )
+
   let server_spec =
     router.service(_, static_handler(priv_directory))
     |> wisp_mist.handler(secret_key_base)
-    |> router.components(store_interval:, store:, handlers:)
+    |> router.component_handler(components)
     |> mist.new
     |> mist.bind(http_address)
     |> mist.port(http_port)
@@ -83,6 +110,9 @@ pub fn main() {
       supervisor.new(supervisor.OneForOne)
       |> supervisor.add(server_spec)
       |> supervisor.add(store_spec)
+      |> supervisor.add(tasks_component)
+      |> supervisor.add(task_component)
+      |> supervisor.add(errors_component)
     })
 
   process.sleep_forever()
