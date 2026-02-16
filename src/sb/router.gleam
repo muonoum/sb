@@ -156,7 +156,7 @@ fn component_service(
 
   case factory_supervisor.start_child(supervisor, argument) {
     Ok(actor.Started(pid: _, data: component)) ->
-      component.service(component, request)
+      component.service(request, component)
 
     Error(error) -> {
       let message = ["Server component", request.path, string.inspect(error)]

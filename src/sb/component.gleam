@@ -10,8 +10,8 @@ import mist
 import wisp
 
 pub fn service(
-  component: process.Subject(lustre.RuntimeMessage(message)),
   request: Request(mist.Connection),
+  component: process.Subject(lustre.RuntimeMessage(message)),
 ) -> Response(mist.ResponseData) {
   let on_init = on_init(_, request, component)
   mist.websocket(request:, on_init:, on_close:, handler:)

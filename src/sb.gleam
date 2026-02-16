@@ -70,21 +70,21 @@ pub fn main() {
     Handlers(http:, command:)
   }
 
-  let tasks_name = process.new_name("tasks_component")
-  let task_name = process.new_name("task_component")
-  let errors_name = process.new_name("errors_component")
+  let tasks_name = process.new_name("tasks")
+  let task_name = process.new_name("task")
+  let errors_name = process.new_name("errors")
 
-  let tasks_factory =
+  let tasks_spec =
     router.tasks_component(store:, store_interval:)
     |> factory_supervisor.named(tasks_name)
     |> factory_supervisor.supervised
 
-  let task_factory =
+  let task_spec =
     router.task_component(store:, handlers:)
     |> factory_supervisor.named(task_name)
     |> factory_supervisor.supervised
 
-  let errors_factory =
+  let errors_spec =
     router.errors_component(store:, store_interval:)
     |> factory_supervisor.named(errors_name)
     |> factory_supervisor.supervised
@@ -106,9 +106,9 @@ pub fn main() {
       supervisor.new(supervisor.OneForOne)
       |> supervisor.add(server_spec)
       |> supervisor.add(store_spec)
-      |> supervisor.add(tasks_factory)
-      |> supervisor.add(task_factory)
-      |> supervisor.add(errors_factory)
+      |> supervisor.add(tasks_spec)
+      |> supervisor.add(task_spec)
+      |> supervisor.add(errors_spec)
     })
 
   process.sleep_forever()
