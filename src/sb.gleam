@@ -70,31 +70,27 @@ pub fn main() {
     Handlers(http:, command:)
   }
 
-  let tasks_component_name = process.new_name("tasks_component")
-  let task_component_name = process.new_name("task_component")
-  let errors_component_name = process.new_name("errors_component")
+  let tasks_name = process.new_name("tasks_component")
+  let task_name = process.new_name("task_component")
+  let errors_name = process.new_name("errors_component")
 
-  let tasks_component =
+  let tasks_factory =
     router.tasks_component(store:, store_interval:)
-    |> factory_supervisor.named(tasks_component_name)
+    |> factory_supervisor.named(tasks_name)
     |> factory_supervisor.supervised
 
-  let task_component =
+  let task_factory =
     router.task_component(store:, handlers:)
-    |> factory_supervisor.named(task_component_name)
+    |> factory_supervisor.named(task_name)
     |> factory_supervisor.supervised
 
-  let errors_component =
+  let errors_factory =
     router.errors_component(store:, store_interval:)
-    |> factory_supervisor.named(errors_component_name)
+    |> factory_supervisor.named(errors_name)
     |> factory_supervisor.supervised
 
   let components =
-    router.Components(
-      tasks: tasks_component_name,
-      task: task_component_name,
-      errors: errors_component_name,
-    )
+    router.Components(tasks: tasks_name, task: task_name, errors: errors_name)
 
   let server_spec =
     router.service(_, static_handler(priv_directory))
@@ -110,9 +106,9 @@ pub fn main() {
       supervisor.new(supervisor.OneForOne)
       |> supervisor.add(server_spec)
       |> supervisor.add(store_spec)
-      |> supervisor.add(tasks_component)
-      |> supervisor.add(task_component)
-      |> supervisor.add(errors_component)
+      |> supervisor.add(tasks_factory)
+      |> supervisor.add(task_factory)
+      |> supervisor.add(errors_factory)
     })
 
   process.sleep_forever()
