@@ -204,17 +204,17 @@ fn task_component(
       let task = store.get_task(store, task_id)
       dispatch(message(task))
     },
+    // TODO: Avbryte ved reload/navigering
     step: fn(task, scope, search, message: task_component.StepMessage) {
-      // TODO: Avbryte ved reload/navigering
       use dispatch <- effect.from
       use <- return(nil)
       use <- process.spawn_unlinked
 
-      let context =
+      let #(task, scope) =
         task.commands
         |> evaluate.Context(scope:, search:, handlers:, task_commands: _)
+        |> reader.run(context: _, reader: task.step(task))
 
-      let #(task, scope) = reader.run(context:, reader: task.step(task))
       dispatch(message(task, scope))
     },
   )
