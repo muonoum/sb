@@ -66,6 +66,8 @@ pub fn component_handler(
   case wisp.path_segments(request) {
     ["components", "tasks"] -> component_service(request, components.tasks, Nil)
 
+    // TODO: Denne avslutter når vi laster /oppgaver direkte, men funker hvis vi navigerer
+    // tilbake til /oppgaver fra f.eks. /oppgave/[..]
     ["components", "errors"] ->
       component_service(request, components.errors, Nil)
 
