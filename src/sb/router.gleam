@@ -19,14 +19,13 @@ import sb/frontend/components/tasks as tasks_component
 import sb/mock
 import wisp
 
-pub type Runtime(message) =
-  process.Subject(lustre.RuntimeMessage(message))
-
-pub type Component(argument, message) =
-  process.Name(factory_supervisor.Message(argument, Runtime(message)))
-
-pub type ComponentBuilder(argument, message) =
-  factory_supervisor.Builder(argument, Runtime(message))
+type Component(argument, message) =
+  process.Name(
+    factory_supervisor.Message(
+      argument,
+      process.Subject(lustre.RuntimeMessage(message)),
+    ),
+  )
 
 pub type Components {
   Components(
