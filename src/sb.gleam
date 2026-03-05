@@ -8,7 +8,7 @@ import gleam/otp/static_supervisor as supervisor
 import gleam/result
 import gleam/uri
 import mist
-import sb/components
+import sb/components.{Components}
 import sb/extra/function.{identity}
 import sb/forms/handlers.{Handlers} as _
 import sb/handlers
@@ -65,7 +65,7 @@ pub fn main() {
     })
 
   let components =
-    components.Components(
+    Components(
       tasks: process.new_name("sb-tasks"),
       errors: process.new_name("sb-errors"),
       task: process.new_name("sb-task"),
