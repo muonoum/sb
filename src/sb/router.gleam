@@ -1,39 +1,19 @@
 import gleam/bytes_tree
-import gleam/erlang/process
 import gleam/http
 import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
 import gleam/otp/actor
 import gleam/otp/factory_supervisor
 import gleam/string
-import lustre
 import lustre/element
 import mist
 import sb/api
 import sb/component
+import sb/components.{type Component, type Components}
 import sb/extra/function.{identity}
 import sb/frontend
-import sb/frontend/components/errors as errors_component
-import sb/frontend/components/task as task_component
-import sb/frontend/components/tasks as tasks_component
 import sb/mock
 import wisp
-
-type Component(argument, message) =
-  process.Name(
-    factory_supervisor.Message(
-      argument,
-      process.Subject(lustre.RuntimeMessage(message)),
-    ),
-  )
-
-pub type Components {
-  Components(
-    tasks: Component(Nil, tasks_component.Message),
-    errors: Component(Nil, errors_component.Message),
-    task: Component(Nil, task_component.Message),
-  )
-}
 
 pub fn service(
   request: wisp.Request,
@@ -57,6 +37,7 @@ pub fn service(
   }
 }
 
+// TODO: Flytt inn i den vanlige ruteren når wisp får websocket-støtte
 pub fn component_handler(
   next_router: fn(Request(_)) -> Response(_),
   components: Components,
