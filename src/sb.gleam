@@ -71,14 +71,16 @@ pub fn main() {
       task: process.new_name("sb-task"),
     )
 
-  let handlers =
-    Handlers(
-      http: handlers.http_handler(base_uri, ca_certs),
-      command: handlers.command_handler(store, ca_certs),
-    )
-
   let components_spec =
-    components.supervised(components:, store:, store_interval:, handlers:)
+    components.supervised(
+      components:,
+      store:,
+      store_interval:,
+      handlers: Handlers(
+        handlers.http_handler(base_uri, ca_certs),
+        handlers.command_handler(store, ca_certs),
+      ),
+    )
 
   let server_spec =
     router.service(_, static_handler(priv_directory))

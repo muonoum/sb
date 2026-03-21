@@ -27,11 +27,13 @@ pub fn set_method(
   builder: RequestBuilder(body),
   method: http.Method,
 ) -> RequestBuilder(body) {
-  map(builder, request.set_method(_, method))
+  use request <- map(builder)
+  request.set_method(request, method)
 }
 
 pub fn set_body(builder: RequestBuilder(a), body: b) -> RequestBuilder(b) {
-  map(builder, request.set_body(_, body))
+  use request <- map(builder)
+  request.set_body(request, body)
 }
 
 pub fn set_header(
@@ -39,5 +41,6 @@ pub fn set_header(
   key: String,
   value: String,
 ) -> RequestBuilder(body) {
-  map(builder, request.set_header(_, key, value))
+  use request <- map(builder)
+  request.set_header(request, key, value)
 }
