@@ -8,6 +8,7 @@ import gleam/otp/static_supervisor as supervisor
 import gleam/result
 import gleam/uri
 import mist
+import sb/components.{Components}
 import sb/extra/function.{identity}
 import sb/forms/handlers.{Handlers} as _
 import sb/handlers
@@ -51,7 +52,7 @@ pub fn main() {
     envoy.get("CA_CERTS")
     |> option.from_result
 
-  let store_name = process.new_name("store")
+  let store_name = process.new_name("sb-store")
   let store = process.named_subject(store_name)
 
   let store_spec =
@@ -63,16 +64,28 @@ pub fn main() {
       )
     })
 
-  let handlers = {
-    let http = handlers.http_handler(base_uri, ca_certs)
-    let command = handlers.command_handler(store, ca_certs)
-    Handlers(http:, command:)
-  }
+  let components =
+    Components(
+      tasks: process.new_name("sb-tasks"),
+      errors: process.new_name("sb-errors"),
+      task: process.new_name("sb-task"),
+    )
+
+  let components_spec =
+    components.supervised(
+      components:,
+      store:,
+      store_interval:,
+      handlers: Handlers(
+        handlers.http_handler(base_uri, ca_certs),
+        handlers.command_handler(store, ca_certs),
+      ),
+    )
 
   let server_spec =
     router.service(_, static_handler(priv_directory))
     |> wisp_mist.handler(secret_key_base)
-    |> router.components(store_interval:, store:, handlers:)
+    |> router.component_handler(components)
     |> mist.new
     |> mist.bind(http_address)
     |> mist.port(http_port)
@@ -81,8 +94,9 @@ pub fn main() {
   let assert Ok(_) =
     supervisor.start({
       supervisor.new(supervisor.OneForOne)
-      |> supervisor.add(server_spec)
       |> supervisor.add(store_spec)
+      |> supervisor.add(components_spec)
+      |> supervisor.add(server_spec)
     })
 
   process.sleep_forever()

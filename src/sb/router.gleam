@@ -1,27 +1,18 @@
 import gleam/bytes_tree
-import gleam/erlang/process
 import gleam/http
 import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
+import gleam/otp/actor
+import gleam/otp/factory_supervisor
 import gleam/string
-import lustre
-import lustre/effect
 import lustre/element
 import mist
 import sb/api
 import sb/component
-import sb/extra/function.{identity, nil, return}
-import sb/extra/reader
-import sb/extra_server
-import sb/forms/evaluate
-import sb/forms/handlers.{type Handlers}
-import sb/forms/task
+import sb/components.{type Component, type Components}
+import sb/extra/function.{identity}
 import sb/frontend
-import sb/frontend/components/errors as errors_component
-import sb/frontend/components/task as task_component
-import sb/frontend/components/tasks as tasks_component
 import sb/mock
-import sb/store
 import wisp
 
 pub fn service(
@@ -46,18 +37,23 @@ pub fn service(
   }
 }
 
-pub fn components(
+// TODO: Flytt inn i den vanlige ruteren når wisp får websocket-støtte
+pub fn component_handler(
   next_router: fn(Request(_)) -> Response(_),
-  store_interval store_interval: Int,
-  store store: process.Subject(store.Message),
-  handlers handlers: Handlers,
+  components: Components,
 ) -> fn(Request(_)) -> Response(_) {
   use request <- identity
 
   case wisp.path_segments(request) {
-    ["components", "tasks"] -> tasks_component(request, store_interval, store)
-    ["components", "errors"] -> errors_component(request, store_interval, store)
-    ["components", "task"] -> task_component(request, store, handlers)
+    ["components", "tasks"] -> component_service(request, components.tasks, Nil)
+
+    // TODO: Denne avslutter når vi laster /oppgaver direkte, men funker hvis vi navigerer
+    // tilbake til /oppgaver fra f.eks. /oppgave/[..]
+    ["components", "errors"] ->
+      component_service(request, components.errors, Nil)
+
+    ["components", "task"] -> component_service(request, components.task, Nil)
+
     // ["components", "jobs", "requested"] -> component_service(request, todo)
     // ["components", "jobs", "started"] -> component_service(request, todo)
     // ["components", "jobs", "finished"] -> component_service(request, todo)
@@ -65,79 +61,16 @@ pub fn components(
   }
 }
 
-fn tasks_component(
-  request: Request(mist.Connection),
-  store_interval: Int,
-  store: process.Subject(store.Message),
-) -> Response(mist.ResponseData) {
-  component_service(
-    request,
-    tasks_component.app(
-      schedule: extra_server.schedule(store_interval, _),
-      load: fn(message: tasks_component.LoadMessage) {
-        use dispatch <- effect.from
-        let tasks = store.get_tasks(store)
-        dispatch(message(tasks))
-      },
-    ),
-  )
-}
-
-fn errors_component(
-  request: Request(mist.Connection),
-  store_interval: Int,
-  store: process.Subject(store.Message),
-) -> Response(mist.ResponseData) {
-  component_service(
-    request,
-    errors_component.app(
-      schedule: extra_server.schedule(store_interval, _),
-      load: fn(message: errors_component.LoadMessage) {
-        use dispatch <- effect.from
-        let reports = store.get_reports(store)
-        dispatch(message(reports))
-      },
-    ),
-  )
-}
-
-fn task_component(
-  request: Request(mist.Connection),
-  store: process.Subject(store.Message),
-  handlers: Handlers,
-) -> Response(mist.ResponseData) {
-  component_service(
-    request,
-    task_component.app(
-      schedule: extra_server.schedule,
-      load: fn(task_id, message: task_component.LoadMessage) {
-        use dispatch <- effect.from
-        let task = store.get_task(store, task_id)
-        dispatch(message(task))
-      },
-      step: fn(task, scope, search, message: task_component.StepMessage) {
-        // TODO: Avbryte ved reload/navigering
-        use dispatch <- effect.from
-        use <- return(nil)
-        use <- process.spawn_unlinked
-
-        let context =
-          task.commands
-          |> evaluate.Context(scope:, search:, handlers:, task_commands: _)
-
-        let #(task, scope) = reader.run(context:, reader: task.step(task))
-        dispatch(message(task, scope))
-      },
-    ),
-  )
-}
-
 fn component_service(
   request: Request(mist.Connection),
-  app: lustre.App(Nil, model, message),
+  component: Component(argument, message),
+  argument: argument,
 ) -> Response(mist.ResponseData) {
-  case lustre.start_server_component(app, Nil) {
-    Ok(component) -> component.service(component, request)
+  let supervisor = factory_supervisor.get_by_name(component)
+
+  case factory_supervisor.start_child(supervisor, argument) {
+    Ok(actor.Started(pid: _, data: component)) ->
+      component.service(request, component)
 
     Error(error) -> {
       let message = ["Server component", request.path, string.inspect(error)]
