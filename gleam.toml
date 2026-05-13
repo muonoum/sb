@@ -25,6 +25,6 @@ splitter = ">= 1.1.0 and < 2.0.0"
 mug = ">= 3.1.0 and < 4.0.0"
 
 [dev-dependencies]
-birdie = ">= 1.4.0 and < 2.0.0"
+birdie = ">= 2.0.0 and < 3.0.0"
 gleeunit = ">= 1.0.0 and < 2.0.0"
 pprint = ">= 1.0.6 and < 2.0.0"
